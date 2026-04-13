@@ -1,4 +1,4 @@
-package com.tmi.core.word.adapter.out.persistence;
+package com.tmi.core.word.domain;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -20,9 +20,9 @@ public class SentenceEntity {
     @Column(name = "korean_ref", nullable =  false, columnDefinition = "TEXT")
     private String koreanRef;
 
-    @Column(name = "difficulty", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
-    private DifficultyType difficulty;
+    @Column(name = "difficulty", nullable = false, length = 20)
+    private Difficulty difficulty;
 
     @Column(name = "category", nullable = false, length = 50)
     private String category;
@@ -32,8 +32,4 @@ public class SentenceEntity {
 
     @Column(name = "source", nullable = false, length = 30)
     private String source;
-
-    public enum DifficultyType {
-        STARTER, BEGINNER, INTERMEDIATE, ADVANCED, CHALLENGE
-    }
 }

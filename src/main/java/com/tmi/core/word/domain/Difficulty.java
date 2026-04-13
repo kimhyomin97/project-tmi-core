@@ -1,4 +1,4 @@
-package com.tmi.core.word.domain.model;
+package com.tmi.core.word.domain;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

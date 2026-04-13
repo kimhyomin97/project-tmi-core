@@ -1,8 +1,8 @@
-package com.tmi.core.word.adapter.in.web;
+package com.tmi.core.word.controller;
 
-import com.tmi.core.word.domain.model.Difficulty;
-import com.tmi.core.word.domain.model.Sentence;
-import com.tmi.core.word.domain.port.in.GetSentenceUseCase;
+import com.tmi.core.word.domain.Difficulty;
+import com.tmi.core.word.domain.SentenceEntity;
+import com.tmi.core.word.service.SentenceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,24 +17,24 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SentenceController {
 
-    private final GetSentenceUseCase getSentenceUseCase;
+    private final SentenceService sentenceService;
 
     @GetMapping("/random")
-    public ResponseEntity<Sentence> getRandomSentence(
+    public ResponseEntity<SentenceEntity> getRandomSentence(
             @RequestParam Difficulty difficulty,
             @RequestParam(defaultValue = "DAILY") String category) {
 
-        Sentence sentence = getSentenceUseCase.getRandomSentence(difficulty, category);
+        SentenceEntity sentence = sentenceService.getRandomSentence(difficulty, category);
         return ResponseEntity.ok(sentence);
     }
 
     @GetMapping
-    public ResponseEntity<List<Sentence>> getSentences(
+    public ResponseEntity<List<SentenceEntity>> getSentences(
             @RequestParam Difficulty difficulty,
             @RequestParam(defaultValue = "DAILY") String category,
             @RequestParam(defaultValue = "10") int size) {
 
-        List<Sentence> sentences = getSentenceUseCase.getSentences(difficulty, category, size);
+        List<SentenceEntity> sentences = sentenceService.getSentences(difficulty, category, size);
         return ResponseEntity.ok(sentences);
     }
 }
