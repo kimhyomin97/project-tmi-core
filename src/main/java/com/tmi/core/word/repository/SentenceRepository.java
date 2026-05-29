@@ -2,9 +2,7 @@ package com.tmi.core.word.repository;
 
 import com.tmi.core.word.domain.Difficulty;
 import com.tmi.core.word.domain.SentenceEntity;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 
