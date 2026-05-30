@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>TMI 시스템 구성도</title>
+  <style>
+    :root {
+      --bg: #fafbfc;
+      --fg: #1f2328;
+      --muted: #656d76;
+      --border: #d0d7de;
+      --accent: #0969da;
+      --accent-soft: #ddf4ff;
+      --highlight: #fff8c5;
+      --highlight-border: #d4a72c;
+      --card-bg: #ffffff;
+      --arrow: #57606a;
+      --shadow: 0 1px 0 rgba(31, 35, 40, 0.04), 0 1px 3px rgba(31, 35, 40, 0.08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --fg: #e6edf3;
+        --muted: #8b949e;
+        --border: #30363d;
+        --accent: #2f81f7;
+        --accent-soft: #0c2d6b;
+        --highlight: #3d3622;
+        --highlight-border: #d4a72c;
+        --card-bg: #161b22;
+        --arrow: #8b949e;
+        --shadow: 0 0 0 1px rgba(240, 246, 252, 0.04);
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 48px 24px;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR",
+                   "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .wrapper {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .diagram {
+      position: relative;
+      padding: 56px 32px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .layer {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      position: relative;
+    }
+
+    .layer + .layer {
+      margin-top: 96px;
+    }
+
+    .node {
+      flex: 0 1 280px;
+      padding: 20px 24px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      text-align: center;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      cursor: default;
+    }
+
+    .node:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(9, 105, 218, 0.15);
+      border-color: var(--accent);
+    }
+
+    .node.primary {
+      background: var(--highlight);
+      border-color: var(--highlight-border);
+      border-width: 2px;
+    }
+
+    .node.primary .badge {
+      background: var(--highlight-border);
+      color: #fff;
+    }
+
+    .node-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .node-tech {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .node-role {
+      font-size: 12.5px;
+      color: var(--fg);
+      opacity: 0.85;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      letter-spacing: 0.3px;
+    }
+
+    /* SVG로 연결선을 그릴 컨테이너 */
+    .arrows {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+
+    .arrow-label {
+      position: absolute;
+      background: var(--card-bg);
+      padding: 2px 8px;
+      font-size: 11px;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    .legend {
+      margin-top: 28px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      border: 1.5px solid var(--border);
+    }
+
+    .swatch.primary {
+      background: var(--highlight);
+      border-color: var(--highlight-border);
+    }
+
+    .swatch.secondary {
+      background: var(--card-bg);
+    }
+
+    footer {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: 12.5px;
+      text-align: right;
+    }
+
+    @media (max-width: 720px) {
+      .layer { flex-direction: column; align-items: center; }
+      .layer + .layer { margin-top: 48px; }
+      .arrows { display: none; }
+      .node { width: 100%; max-width: 320px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <h1>TMI 시스템 구성도</h1>
+      <p class="subtitle">project-tmi-core를 중심으로 한 멀티 서비스 구성</p>
+    </header>
+
+    <div class="diagram">
+      <!-- Layer 1: Client -->
+      <div class="layer" id="layer-client">
+        <div class="node" data-id="web">
+          <span class="badge">Client</span>
+          <div class="node-title">Web Client</div>
+          <div class="node-tech">React · TypeScript</div>
+          <div class="node-role">사용자 화면 · 입력</div>
+        </div>
+      </div>
+
+      <!-- Layer 2: API (이 레포) -->
+      <div class="layer" id="layer-api">
+        <div class="node primary" data-id="core">
+          <span class="badge">API · 이 레포</span>
+          <div class="node-title">TMI Core</div>
+          <div class="node-tech">Spring Boot 4 · Java 21</div>
+          <div class="node-role">문제 출제 · 답안 접수 · 결과 조립</div>
+        </div>
+      </div>
+
+      <!-- Layer 3: 의존 시스템 -->
+      <div class="layer" id="layer-deps">
+        <div class="node" data-id="db">
+          <span class="badge">Storage</span>
+          <div class="node-title">PostgreSQL</div>
+          <div class="node-tech">RDBMS</div>
+          <div class="node-role">문장 · 답안 이력 저장</div>
+        </div>
+        <div class="node" data-id="sim">
+          <span class="badge">Service</span>
+          <div class="node-title">TMI Similarity</div>
+          <div class="node-tech">Python · sentence-transformers</div>
+          <div class="node-role">의미 유사도 계산</div>
+        </div>
+      </div>
+
+      <!-- 연결선 -->
+      <svg class="arrows" id="arrows" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrowhead" markerWidth="10" markerHeight="10"
+                  refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="currentColor" />
+          </marker>
+        </defs>
+        <!-- 자바스크립트로 동적으로 그림 -->
+      </svg>
+    </div>
+
+    <div class="legend">
+      <div class="legend-item">
+        <span class="swatch primary"></span>
+        <span>이 레포가 담당하는 컴포넌트</span>
+      </div>
+      <div class="legend-item">
+        <span class="swatch secondary"></span>
+        <span>외부 컴포넌트 (별도 레포 또는 인프라)</span>
+      </div>
+    </div>
+
+    <footer>
+      마지막 업데이트 · 2026-05-28
+    </footer>
+  </div>
+
+  <script>
+    // 박스 좌표를 측정해 SVG로 화살표를 그린다 (반응형 대응)
+    function drawArrows() {
+      const svg = document.getElementById('arrows');
+      const diagram = svg.parentElement;
+      const rect = diagram.getBoundingClientRect();
+
+      svg.setAttribute('width', rect.width);
+      svg.setAttribute('height', rect.height);
+      svg.innerHTML = svg.querySelector('defs').outerHTML;
+
+      // 라벨도 모두 제거하고 다시 그림
+      document.querySelectorAll('.arrow-label').forEach(el => el.remove());
+
+      const connections = [
+        { from: 'web',  to: 'core', label: 'REST' },
+        { from: 'core', to: 'db',   label: 'JDBC' },
+        { from: 'core', to: 'sim',  label: 'HTTP' },
+      ];
+
+      const getCenter = (id) => {
+        const el = document.querySelector(`[data-id="${id}"]`);
+        const r = el.getBoundingClientRect();
+        return {
+          x: r.left + r.width / 2 - rect.left,
+          top: r.top - rect.top,
+          bottom: r.bottom - rect.top,
+        };
+      };
+
+      connections.forEach(conn => {
+        const from = getCenter(conn.from);
+        const to = getCenter(conn.to);
+
+        const x1 = from.x;
+        const y1 = from.bottom;
+        const x2 = to.x;
+        const y2 = to.top - 6; // 화살표 머리 여백
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        path.setAttribute('x1', x1);
+        path.setAttribute('y1', y1);
+        path.setAttribute('x2', x2);
+        path.setAttribute('y2', y2);
+        path.setAttribute('stroke', getComputedStyle(document.documentElement).getPropertyValue('--arrow').trim());
+        path.setAttribute('stroke-width', '1.5');
+        path.setAttribute('marker-end', 'url(#arrowhead)');
+        path.style.color = getComputedStyle(document.documentElement).getPropertyValue('--arrow').trim();
+        svg.appendChild(path);
+
+        // 중간 지점에 라벨
+        const label = document.createElement('div');
+        label.className = 'arrow-label';
+        label.textContent = conn.label;
+        label.style.left = ((x1 + x2) / 2 - 20) + 'px';
+        label.style.top = ((y1 + y2) / 2 - 12) + 'px';
+        diagram.appendChild(label);
+      });
+    }
+
+    window.addEventListener('load', drawArrows);
+    window.addEventListener('resize', drawArrows);
+  </script>
+</body>
+</html>

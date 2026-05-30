@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>TMI 학습 사이클</title>
+  <style>
+    :root {
+      --bg: #fafbfc;
+      --fg: #1f2328;
+      --muted: #656d76;
+      --border: #d0d7de;
+      --accent: #0969da;
+      --accent-soft: #ddf4ff;
+      --card-bg: #ffffff;
+      --arrow: #57606a;
+      --shadow: 0 1px 0 rgba(31, 35, 40, 0.04), 0 1px 3px rgba(31, 35, 40, 0.08);
+
+      --step1: #ddf4ff;
+      --step1-border: #54aeff;
+      --step2: #dafbe1;
+      --step2-border: #4ac26b;
+      --step3: #fff8c5;
+      --step3-border: #d4a72c;
+      --step4: #fbefff;
+      --step4-border: #c297ff;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --fg: #e6edf3;
+        --muted: #8b949e;
+        --border: #30363d;
+        --accent: #2f81f7;
+        --accent-soft: #0c2d6b;
+        --card-bg: #161b22;
+        --arrow: #8b949e;
+        --shadow: 0 0 0 1px rgba(240, 246, 252, 0.04);
+
+        --step1: #0c2d6b;
+        --step1-border: #2f81f7;
+        --step2: #033a16;
+        --step2-border: #2ea043;
+        --step3: #3d3622;
+        --step3-border: #d4a72c;
+        --step4: #2c1f3d;
+        --step4-border: #a371f7;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 48px 24px;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR",
+                   "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .wrapper {
+      max-width: 1080px;
+      margin: 0 auto;
+    }
+
+    header { margin-bottom: 32px; }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .cycle {
+      position: relative;
+      padding: 56px 32px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .step {
+      position: relative;
+      padding: 20px 18px 22px;
+      background: var(--card-bg);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .step:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(9, 105, 218, 0.12);
+    }
+
+    .step.s1 { background: var(--step1); border-color: var(--step1-border); }
+    .step.s2 { background: var(--step2); border-color: var(--step2-border); }
+    .step.s3 { background: var(--step3); border-color: var(--step3-border); }
+    .step.s4 { background: var(--step4); border-color: var(--step4-border); }
+
+    .step-num {
+      position: absolute;
+      top: -14px;
+      left: 16px;
+      width: 28px;
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--card-bg);
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .s1 .step-num { color: var(--step1-border); }
+    .s2 .step-num { color: var(--step2-border); }
+    .s3 .step-num { color: var(--step3-border); }
+    .s4 .step-num { color: var(--step4-border); }
+
+    .step-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 4px 0 8px;
+    }
+
+    .step-summary {
+      font-size: 13px;
+      color: var(--fg);
+      margin-bottom: 12px;
+    }
+
+    .step-actor {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px dashed currentColor;
+      opacity: 0.7;
+      font-size: 11.5px;
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      letter-spacing: 0.3px;
+    }
+
+    .s1 .step-actor { color: var(--step1-border); }
+    .s2 .step-actor { color: var(--step2-border); }
+    .s3 .step-actor { color: var(--step3-border); }
+    .s4 .step-actor { color: var(--step4-border); }
+
+    /* 단계 사이 화살표 */
+    .step + .step::before {
+      content: '';
+      position: absolute;
+      left: -18px;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      border-top: 2px solid var(--arrow);
+      border-right: 2px solid var(--arrow);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    /* 마지막 → 처음으로 돌아가는 회귀 화살표 */
+    .loop-back {
+      margin-top: 32px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 14px;
+      border: 1px dashed var(--border);
+      border-radius: 8px;
+      background: var(--card-bg);
+    }
+
+    .loop-back strong {
+      color: var(--fg);
+      font-weight: 600;
+    }
+
+    .legend {
+      margin-top: 24px;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    footer {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12.5px;
+      text-align: right;
+    }
+
+    @media (max-width: 780px) {
+      .cycle { grid-template-columns: 1fr; gap: 32px; }
+      .step + .step::before {
+        left: 50%;
+        top: -22px;
+        transform: translateX(-50%) rotate(135deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <h1>TMI 학습 사이클</h1>
+      <p class="subtitle">사용자 한 번의 학습 루프 · 4단계 순환</p>
+    </header>
+
+    <div class="cycle">
+      <div class="step s1">
+        <div class="step-num">1</div>
+        <div class="step-title">출제</div>
+        <div class="step-summary">
+          선택한 난이도·카테고리에서 영어 문장 1건 랜덤 추출.
+          모범 답안은 숨김.
+        </div>
+        <div class="step-actor">System → User</div>
+      </div>
+
+      <div class="step s2">
+        <div class="step-num">2</div>
+        <div class="step-title">번역 입력</div>
+        <div class="step-summary">
+          사용자가 영어 문장을 보고 한국어로 번역해 제출.
+        </div>
+        <div class="step-actor">User → System</div>
+      </div>
+
+      <div class="step s3">
+        <div class="step-num">3</div>
+        <div class="step-title">채점</div>
+        <div class="step-summary">
+          유사도 서버가 사용자 답안과 모범 답안의
+          의미적 유사도를 점수로 계산.
+        </div>
+        <div class="step-actor">System (AI)</div>
+      </div>
+
+      <div class="step s4">
+        <div class="step-num">4</div>
+        <div class="step-title">피드백</div>
+        <div class="step-summary">
+          점수 + 모범 답안 + 사용자 답안 나란히 표시.
+          다음 문제로 이어짐.
+        </div>
+        <div class="step-actor">System → User</div>
+      </div>
+    </div>
+
+    <div class="loop-back">
+      ↻ <strong>4 → 1로 회귀.</strong> 사용자가 멈출 때까지 루프 반복.
+    </div>
+
+    <footer>
+      마지막 업데이트 · 2026-05-28
+    </footer>
+  </div>
+</body>
+</html>

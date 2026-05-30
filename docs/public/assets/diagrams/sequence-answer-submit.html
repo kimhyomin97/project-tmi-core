@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>시퀀스 · 답안 채점</title>
+  <style>
+    :root {
+      --bg: #fafbfc;
+      --fg: #1f2328;
+      --muted: #656d76;
+      --border: #d0d7de;
+      --accent: #0969da;
+      --card-bg: #ffffff;
+      --lifeline: #afb8c1;
+      --arrow: #1f2328;
+      --activation: #ddf4ff;
+      --activation-border: #54aeff;
+
+      --external: #fff8c5;
+      --external-border: #d4a72c;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d1117;
+        --fg: #e6edf3;
+        --muted: #8b949e;
+        --border: #30363d;
+        --accent: #2f81f7;
+        --card-bg: #161b22;
+        --lifeline: #484f58;
+        --arrow: #e6edf3;
+        --activation: #0c2d6b;
+        --activation-border: #2f81f7;
+
+        --external: #3d3622;
+        --external-border: #d4a72c;
+      }
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 48px 24px;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR",
+                   "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      line-height: 1.5;
+    }
+
+    .wrapper { max-width: 1200px; margin: 0 auto; }
+    header { margin-bottom: 24px; }
+    h1 { margin: 0 0 8px; font-size: 22px; font-weight: 600; }
+    .subtitle { margin: 0; color: var(--muted); font-size: 14px; }
+
+    .diagram-card {
+      padding: 24px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+
+    .seq-svg { display: block; min-width: 1150px; }
+
+    .actor-label {
+      font: 600 13px -apple-system, BlinkMacSystemFont, sans-serif;
+      fill: var(--fg);
+    }
+
+    .actor-box {
+      fill: var(--card-bg);
+      stroke: var(--border);
+      stroke-width: 1.5;
+    }
+    .actor-box.external {
+      fill: var(--external);
+      stroke: var(--external-border);
+      stroke-width: 2;
+      stroke-dasharray: 6 3;
+    }
+
+    .lifeline {
+      stroke: var(--lifeline);
+      stroke-width: 1.2;
+      stroke-dasharray: 4 4;
+    }
+
+    .activation {
+      fill: var(--activation);
+      stroke: var(--activation-border);
+      stroke-width: 1;
+    }
+
+    .msg-line {
+      stroke: var(--arrow);
+      stroke-width: 1.5;
+      fill: none;
+    }
+
+    .msg-line.return { stroke-dasharray: 5 4; }
+    .msg-line.external { stroke: var(--external-border); }
+
+    .msg-label {
+      font: 11.5px ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      fill: var(--fg);
+    }
+
+    .msg-label.return { fill: var(--muted); }
+
+    .step-num {
+      font: 700 10px -apple-system, BlinkMacSystemFont, sans-serif;
+      fill: var(--accent);
+    }
+
+    .legend {
+      margin-top: 20px;
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; }
+
+    .legend-swatch { width: 32px; height: 2px; background: var(--arrow); }
+    .legend-swatch.return {
+      background: repeating-linear-gradient(to right, var(--muted) 0 5px, transparent 5px 9px);
+    }
+    .legend-swatch.external {
+      width: 12px; height: 12px;
+      background: var(--external);
+      border: 1.5px dashed var(--external-border);
+      border-radius: 2px;
+    }
+
+    footer {
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <header>
+      <h1>시퀀스 · 답안 채점</h1>
+      <p class="subtitle">POST /api/v1/attempts &nbsp;·&nbsp; body { sentenceId, userAnswer }</p>
+    </header>
+
+    <div class="diagram-card">
+      <svg class="seq-svg" viewBox="0 0 1150 540" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="답안 채점 시퀀스 다이어그램">
+        <!-- Actor columns (x centers): 80, 280, 480, 680, 880, 1040 -->
+        <g>
+          <rect class="actor-box" x="30"  y="20" width="100" height="40" rx="6"/>
+          <text class="actor-label" x="80"  y="45" text-anchor="middle">Client</text>
+
+          <rect class="actor-box" x="190" y="20" width="180" height="40" rx="6"/>
+          <text class="actor-label" x="280" y="45" text-anchor="middle">AttemptController</text>
+
+          <rect class="actor-box" x="405" y="20" width="150" height="40" rx="6"/>
+          <text class="actor-label" x="480" y="45" text-anchor="middle">AttemptService</text>
+
+          <rect class="actor-box" x="590" y="20" width="180" height="40" rx="6"/>
+          <text class="actor-label" x="680" y="45" text-anchor="middle">SentenceRepository</text>
+
+          <rect class="actor-box" x="820" y="20" width="120" height="40" rx="6"/>
+          <text class="actor-label" x="880" y="45" text-anchor="middle">PostgreSQL</text>
+
+          <rect class="actor-box external" x="960" y="20" width="160" height="40" rx="6"/>
+          <text class="actor-label" x="1040" y="40" text-anchor="middle">Similarity Server</text>
+          <text class="msg-label return" x="1040" y="54" text-anchor="middle">(external · Python)</text>
+        </g>
+
+        <!-- Lifelines -->
+        <line class="lifeline" x1="80"   y1="60" x2="80"   y2="510"/>
+        <line class="lifeline" x1="280"  y1="60" x2="280"  y2="510"/>
+        <line class="lifeline" x1="480"  y1="60" x2="480"  y2="510"/>
+        <line class="lifeline" x1="680"  y1="60" x2="680"  y2="510"/>
+        <line class="lifeline" x1="880"  y1="60" x2="880"  y2="510"/>
+        <line class="lifeline" x1="1040" y1="60" x2="1040" y2="510"/>
+
+        <defs>
+          <marker id="head2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="9" markerHeight="9" orient="auto">
+            <path d="M0,0 L0,10 L10,5 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <!-- Activation bars -->
+        <rect class="activation" x="275"  y="100" width="10" height="370" rx="2"/>  <!-- AttemptController -->
+        <rect class="activation" x="475"  y="136" width="10" height="298" rx="2"/>  <!-- AttemptService -->
+        <rect class="activation" x="675"  y="172" width="10" height="90"  rx="2"/>  <!-- SentenceRepository -->
+        <rect class="activation" x="875"  y="208" width="10" height="36"  rx="2"/>  <!-- PostgreSQL -->
+        <rect class="activation" x="1035" y="316" width="10" height="36"  rx="2"/>  <!-- Similarity Server -->
+
+        <!-- Messages -->
+        <!-- 1: Client → AttemptController -->
+        <g color="var(--arrow)">
+          <text class="step-num" x="85" y="92">1</text>
+          <line class="msg-line" x1="80" y1="100" x2="275" y2="100" marker-end="url(#head2)"/>
+          <text class="msg-label" x="177" y="93" text-anchor="middle">POST /attempts</text>
+        </g>
+
+        <!-- 2: AttemptController → AttemptService -->
+        <g color="var(--arrow)">
+          <text class="step-num" x="285" y="128">2</text>
+          <line class="msg-line" x1="285" y1="136" x2="475" y2="136" marker-end="url(#head2)"/>
+          <text class="msg-label" x="380" y="129" text-anchor="middle">score(request)</text>
+        </g>
+
+        <!-- 3: AttemptService → SentenceRepository -->
+        <g color="var(--arrow)">
+          <text class="step-num" x="485" y="164">3</text>
+          <line class="msg-line" x1="485" y1="172" x2="675" y2="172" marker-end="url(#head2)"/>
+          <text class="msg-label" x="580" y="165" text-anchor="middle">findById(sentenceId)</text>
+        </g>
+
+        <!-- 4: SentenceRepository → PostgreSQL -->
+        <g color="var(--arrow)">
+          <text class="step-num" x="685" y="200">4</text>
+          <line class="msg-line" x1="685" y1="208" x2="875" y2="208" marker-end="url(#head2)"/>
+          <text class="msg-label" x="780" y="201" text-anchor="middle">SELECT ... WHERE id=?</text>
+        </g>
+
+        <!-- 5: PostgreSQL → SentenceRepository (return) -->
+        <g color="var(--muted)">
+          <text class="step-num" x="860" y="236">5</text>
+          <line class="msg-line return" x1="875" y1="244" x2="685" y2="244" marker-end="url(#head2)"/>
+          <text class="msg-label return" x="780" y="237" text-anchor="middle">row</text>
+        </g>
+
+        <!-- 6: SentenceRepository → AttemptService (return) -->
+        <g color="var(--muted)">
+          <text class="step-num" x="660" y="272">6</text>
+          <line class="msg-line return" x1="675" y1="280" x2="485" y2="280" marker-end="url(#head2)"/>
+          <text class="msg-label return" x="580" y="273" text-anchor="middle">SentenceEntity (with koreanRef)</text>
+        </g>
+
+        <!-- 7: AttemptService → Similarity Server -->
+        <g color="var(--external-border)">
+          <text class="step-num" x="485" y="308">7</text>
+          <line class="msg-line external" x1="485" y1="316" x2="1035" y2="316" marker-end="url(#head2)"/>
+          <text class="msg-label" x="760" y="309" text-anchor="middle">POST /similarity { answer, reference } &nbsp;·&nbsp; timeout 2s</text>
+        </g>
+
+        <!-- 8: Similarity Server → AttemptService (return) -->
+        <g color="var(--muted)">
+          <text class="step-num" x="1020" y="344">8</text>
+          <line class="msg-line return" x1="1035" y1="352" x2="485" y2="352" marker-end="url(#head2)"/>
+          <text class="msg-label return" x="760" y="345" text-anchor="middle">{ score: 0.0 ~ 1.0 }</text>
+        </g>
+
+        <!-- 9: AttemptService → AttemptController (return) -->
+        <g color="var(--muted)">
+          <text class="step-num" x="460" y="416">9</text>
+          <line class="msg-line return" x1="475" y1="424" x2="285" y2="424" marker-end="url(#head2)"/>
+          <text class="msg-label return" x="380" y="417" text-anchor="middle">AttemptResponse</text>
+        </g>
+
+        <!-- 10: AttemptController → Client (return) -->
+        <g color="var(--muted)">
+          <text class="step-num" x="260" y="452">10</text>
+          <line class="msg-line return" x1="275" y1="460" x2="80" y2="460" marker-end="url(#head2)"/>
+          <text class="msg-label return" x="177" y="453" text-anchor="middle">200 OK · score + correctAnswer</text>
+        </g>
+      </svg>
+
+      <div class="legend">
+        <div class="legend-item">
+          <span class="legend-swatch"></span>
+          <span>요청 (synchronous call)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-swatch return"></span>
+          <span>응답 (return)</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-swatch external"></span>
+          <span>외부 시스템 (별도 레포)</span>
+        </div>
+      </div>
+    </div>
+
+    <footer>마지막 업데이트 · 2026-05-28</footer>
+  </div>
+</body>
+</html>
