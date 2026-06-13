@@ -1,8 +1,9 @@
-package com.tmi.core.word.service;
+package com.tmi.core.sentence.service;
 
-import com.tmi.core.word.domain.Difficulty;
-import com.tmi.core.word.domain.SentenceEntity;
-import com.tmi.core.word.repository.SentenceRepository;
+import com.tmi.core.sentence.domain.Category;
+import com.tmi.core.sentence.domain.Level;
+import com.tmi.core.sentence.domain.SentenceEntity;
+import com.tmi.core.sentence.repository.SentenceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,12 +17,12 @@ public class SentenceService {
 
     private final SentenceRepository sentenceRepository;
 
-    public SentenceEntity getRandomSentence(Difficulty difficulty, String category) {
-        List<SentenceEntity> sentences = sentenceRepository.findByDifficultyAndCategory(difficulty, category);
+    public SentenceEntity getRandomSentence(Level level, Category category) {
+        List<SentenceEntity> sentences = sentenceRepository.findByLevelAndCategory(level, category);
 
         if (sentences.isEmpty()) {
             throw new IllegalArgumentException(
-                    "조건에 맞는 문장이 없습니다: " + difficulty + ", " + category
+                    "조건에 맞는 문장이 없습니다: " + level + ", " + category
             );
         }
 
@@ -29,8 +30,8 @@ public class SentenceService {
         return sentences.get(randomIndex);
     }
 
-    public List<SentenceEntity> getSentences(Difficulty difficulty, String category, int size) {
-        List<SentenceEntity> sentences = sentenceRepository.findByDifficultyAndCategory(difficulty, category);
+    public List<SentenceEntity> getSentences(Level level, Category category, int size) {
+        List<SentenceEntity> sentences = sentenceRepository.findByLevelAndCategory(level, category);
 
         if (sentences.isEmpty()) {
             return List.of();
