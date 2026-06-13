@@ -8,10 +8,13 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum ECommonErrorType implements IErrorType {
 
-    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "TMI.COMMON.INVALID_REQUEST"),
-    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "TMI.COMMON.INTERNAL_ERROR"),
+    INVALID_REQUEST  ("TMI.COMMON.INVALID_REQUEST"),
+    INTERNAL_ERROR   ("TMI.COMMON.INTERNAL_ERROR"),
+    NOT_FOUND_URL    ("TMI.COMMON.NOT_FOUND_URL"),
+    METHOD_NOT_SUPPORTED("TMI.COMMON.METHOD_NOT_SUPPORTED"),
+    MISSING_PARAMETER("TMI.COMMON.MISSING_PARAMETER"),
+    BAD_REQUEST      ("TMI.COMMON.BAD_REQUEST"),
     ;
 
-    private final HttpStatus status;
     private final String errorCode;
 }
