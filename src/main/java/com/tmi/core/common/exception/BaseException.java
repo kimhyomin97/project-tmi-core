@@ -8,39 +8,38 @@ public abstract class BaseException extends RuntimeException {
 
     private static final Object[] EMPTY_ARGS = new Object[0];
 
-    private final HttpStatus httpStatus;
     private final IErrorType errorType;
     private final Object[] args;
 
     private ELogLevel logLevel = ELogLevel.ERROR;
     private String logMessage;
 
-    protected BaseException(HttpStatus httpStatus, IErrorType errorType) {
+    protected BaseException(IErrorType errorType) {
         super(errorType.getErrorCode());
-        this.httpStatus = httpStatus;
         this.errorType = errorType;
         this.args = EMPTY_ARGS;
     }
 
-    protected BaseException(HttpStatus httpStatus, IErrorType errorType, Throwable cause) {
+    protected BaseException(IErrorType errorType, Throwable cause) {
         super(errorType.getErrorCode(), cause);
-        this.httpStatus = httpStatus;
         this.errorType = errorType;
         this.args = EMPTY_ARGS;
     }
 
-    protected BaseException(HttpStatus httpStatus, IErrorType errorType, Object... args) {
+    protected BaseException(IErrorType errorType, Object... args) {
         super(errorType.getErrorCode());
-        this.httpStatus = httpStatus;
         this.errorType = errorType;
         this.args = args;
     }
 
-    protected BaseException(HttpStatus httpStatus, IErrorType errorType, Throwable cause, Object... args) {
+    protected BaseException(IErrorType errorType, Throwable cause, Object... args) {
         super(errorType.getErrorCode(), cause);
-        this.httpStatus = httpStatus;
         this.errorType = errorType;
         this.args = args;
+    }
+
+    public HttpStatus getStatus() {
+        return errorType.getStatus();
     }
 
     @SuppressWarnings("unchecked")
