@@ -1,16 +1,19 @@
 package com.tmi.core.sentence.exception;
 
 import com.tmi.core.common.exception.BaseException;
+import com.tmi.core.common.exception.ETmiErrorType;
 import com.tmi.core.common.exception.IErrorType;
+import org.springframework.http.HttpStatus;
 
-public class SentenceException extends BaseException {
+public class SentenceException  {
 
-    public SentenceException(IErrorType errorType, Object... args) {
-        super(errorType, args);
-    }
+    private SentenceException() {}
 
-    public SentenceException(IErrorType errorType, Throwable cause, Object... args) {
-        super(errorType, cause, args);
+    // 조건에 맞는 영어 문장이 없음
+    public static class NotFound extends BaseException {
+        public NotFound(String detail) {
+            super(HttpStatus.NOT_FOUND, ETmiErrorType.SENTENCE_NOT_FOUND, detail);
+        }
     }
 
 }

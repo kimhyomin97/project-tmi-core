@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
     // 도메인 예외
     @ExceptionHandler(BaseException.class)
     public ResponseEntity<ErrorResponse> handleBase(BaseException e) {
-        return respond(e.getErrorType(), e.getLogLevel(), e, e.getArgs());
+        return respond(e.getHttpStatus(), e.getErrorType(), e.getLogLevel(), e, e.getArgs());
     }
 
     // Spring 표준 예외
@@ -35,47 +35,47 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .map(err -> err.getField() + ": " + err.getDefaultMessage())
                 .orElse("Invalid request.");
-        IErrorType errorType = ECommonErrorType.INVALID_REQUEST;
+        IErrorType errorType = ETmiErrorType.INVALID_REQUEST;
         ELogLevel.INFO.log(log, "[{}] {}", errorType.getErrorCode(), message);
-        return ResponseEntity.status(errorType.getStatus())
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(ErrorResponse.of(errorType.getErrorCode(), message));
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse>
     handleTypeMismatch(MethodArgumentTypeMismatchException e) {
-        return respond(ECommonErrorType.INVALID_REQUEST, ELogLevel.INFO, e, e.getName(), e.getValue());
+        return respond(HttpStatus.BAD_REQUEST, ETmiErrorType.INVALID_REQUEST, ELogLevel.INFO, e, e.getName(), e.getValue());
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public ResponseEntity<ErrorResponse>
     handleMissingParam(MissingServletRequestParameterException e) {
-        return respond(ECommonErrorType.MISSING_PARAMETER, ELogLevel.INFO, e, e.getParameterName());
+        return respond(HttpStatus.BAD_REQUEST, ETmiErrorType.MISSING_PARAMETER, ELogLevel.INFO, e, e.getParameterName());
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(NoResourceFoundException e) {
-        return respond(ECommonErrorType.NOT_FOUND_URL, ELogLevel.INFO, e, e.getHttpMethod(), e.getResourcePath());
+        return respond(HttpStatus.NOT_FOUND, ETmiErrorType.NOT_FOUND_URL, ELogLevel.INFO, e, e.getHttpMethod(), e.getResourcePath());
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
     public ResponseEntity<ErrorResponse>
     handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
-        return respond(ECommonErrorType.METHOD_NOT_SUPPORTED, ELogLevel.INFO, e, e.getMethod());
+        return respond(HttpStatus.METHOD_NOT_ALLOWED, ETmiErrorType.METHOD_NOT_SUPPORTED, ELogLevel.INFO, e, e.getMethod());
     }
 
     // 모드 예외 (catch-all)
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnknown(Exception e) {
-        return respond(ECommonErrorType.INTERNAL_ERROR, ELogLevel.ERROR, e);
+        return respond(HttpStatus.INTERNAL_SERVER_ERROR, ETmiErrorType.INTERNAL_ERROR, ELogLevel.ERROR, e);
     }
 
     // 공통 헬퍼
-    private ResponseEntity<ErrorResponse> respond(IErrorType errorType, ELogLevel logLevel, Exception e, Object... args) {
+    private ResponseEntity<ErrorResponse> respond(HttpStatus status, IErrorType errorType, ELogLevel logLevel, Exception e, Object... args) {
         String code = errorType.getErrorCode();
         String message = messageSource.getMessage(code, args, code, LocaleContextHolder.getLocale());
         logLevel.log(log, "[{}] {} - {}", code, message, e.getMessage());
-        return ResponseEntity.status(errorType.getStatus()).body(ErrorResponse.of(code, message));
+        return ResponseEntity.status(status).body(ErrorResponse.of(code, message));
     }
 
 }
