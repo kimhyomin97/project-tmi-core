@@ -148,7 +148,7 @@
   <div class="wrapper">
     <header>
       <h1>시퀀스 · 답안 채점</h1>
-      <p class="subtitle">POST /api/v1/attempts &nbsp;·&nbsp; body { sentenceId, userAnswer }</p>
+      <p class="subtitle">POST /api/v1/answers &nbsp;·&nbsp; body { sentenceId, userAnswer }</p>
     </header>
 
     <div class="diagram-card">
@@ -159,10 +159,10 @@
           <text class="actor-label" x="80"  y="45" text-anchor="middle">Client</text>
 
           <rect class="actor-box" x="190" y="20" width="180" height="40" rx="6"/>
-          <text class="actor-label" x="280" y="45" text-anchor="middle">AttemptController</text>
+          <text class="actor-label" x="280" y="45" text-anchor="middle">AnswerController</text>
 
           <rect class="actor-box" x="405" y="20" width="150" height="40" rx="6"/>
-          <text class="actor-label" x="480" y="45" text-anchor="middle">AttemptService</text>
+          <text class="actor-label" x="480" y="45" text-anchor="middle">AnswerService</text>
 
           <rect class="actor-box" x="590" y="20" width="180" height="40" rx="6"/>
           <text class="actor-label" x="680" y="45" text-anchor="middle">SentenceRepository</text>
@@ -190,28 +190,28 @@
         </defs>
 
         <!-- Activation bars -->
-        <rect class="activation" x="275"  y="100" width="10" height="370" rx="2"/>  <!-- AttemptController -->
-        <rect class="activation" x="475"  y="136" width="10" height="298" rx="2"/>  <!-- AttemptService -->
+        <rect class="activation" x="275"  y="100" width="10" height="370" rx="2"/>  <!-- AnswerController -->
+        <rect class="activation" x="475"  y="136" width="10" height="298" rx="2"/>  <!-- AnswerService -->
         <rect class="activation" x="675"  y="172" width="10" height="90"  rx="2"/>  <!-- SentenceRepository -->
         <rect class="activation" x="875"  y="208" width="10" height="36"  rx="2"/>  <!-- PostgreSQL -->
         <rect class="activation" x="1035" y="316" width="10" height="36"  rx="2"/>  <!-- Similarity Server -->
 
         <!-- Messages -->
-        <!-- 1: Client → AttemptController -->
+        <!-- 1: Client → AnswerController -->
         <g color="var(--arrow)">
           <text class="step-num" x="85" y="92">1</text>
           <line class="msg-line" x1="80" y1="100" x2="275" y2="100" marker-end="url(#head2)"/>
-          <text class="msg-label" x="177" y="93" text-anchor="middle">POST /attempts</text>
+          <text class="msg-label" x="177" y="93" text-anchor="middle">POST /answers</text>
         </g>
 
-        <!-- 2: AttemptController → AttemptService -->
+        <!-- 2: AnswerController → AnswerService -->
         <g color="var(--arrow)">
           <text class="step-num" x="285" y="128">2</text>
           <line class="msg-line" x1="285" y1="136" x2="475" y2="136" marker-end="url(#head2)"/>
           <text class="msg-label" x="380" y="129" text-anchor="middle">score(request)</text>
         </g>
 
-        <!-- 3: AttemptService → SentenceRepository -->
+        <!-- 3: AnswerService → SentenceRepository -->
         <g color="var(--arrow)">
           <text class="step-num" x="485" y="164">3</text>
           <line class="msg-line" x1="485" y1="172" x2="675" y2="172" marker-end="url(#head2)"/>
@@ -232,35 +232,35 @@
           <text class="msg-label return" x="780" y="237" text-anchor="middle">row</text>
         </g>
 
-        <!-- 6: SentenceRepository → AttemptService (return) -->
+        <!-- 6: SentenceRepository → AnswerService (return) -->
         <g color="var(--muted)">
           <text class="step-num" x="660" y="272">6</text>
           <line class="msg-line return" x1="675" y1="280" x2="485" y2="280" marker-end="url(#head2)"/>
           <text class="msg-label return" x="580" y="273" text-anchor="middle">SentenceEntity (with koreanRef)</text>
         </g>
 
-        <!-- 7: AttemptService → Similarity Server -->
+        <!-- 7: AnswerService → Similarity Server -->
         <g color="var(--external-border)">
           <text class="step-num" x="485" y="308">7</text>
           <line class="msg-line external" x1="485" y1="316" x2="1035" y2="316" marker-end="url(#head2)"/>
           <text class="msg-label" x="760" y="309" text-anchor="middle">POST /similarity { answer, reference } &nbsp;·&nbsp; timeout 2s</text>
         </g>
 
-        <!-- 8: Similarity Server → AttemptService (return) -->
+        <!-- 8: Similarity Server → AnswerService (return) -->
         <g color="var(--muted)">
           <text class="step-num" x="1020" y="344">8</text>
           <line class="msg-line return" x1="1035" y1="352" x2="485" y2="352" marker-end="url(#head2)"/>
           <text class="msg-label return" x="760" y="345" text-anchor="middle">{ score: 0.0 ~ 1.0 }</text>
         </g>
 
-        <!-- 9: AttemptService → AttemptController (return) -->
+        <!-- 9: AnswerService → AnswerController (return) -->
         <g color="var(--muted)">
           <text class="step-num" x="460" y="416">9</text>
           <line class="msg-line return" x1="475" y1="424" x2="285" y2="424" marker-end="url(#head2)"/>
-          <text class="msg-label return" x="380" y="417" text-anchor="middle">AttemptResponse</text>
+          <text class="msg-label return" x="380" y="417" text-anchor="middle">AnswerResponse</text>
         </g>
 
-        <!-- 10: AttemptController → Client (return) -->
+        <!-- 10: AnswerController → Client (return) -->
         <g color="var(--muted)">
           <text class="step-num" x="260" y="452">10</text>
           <line class="msg-line return" x1="275" y1="460" x2="80" y2="460" marker-end="url(#head2)"/>
