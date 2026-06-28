@@ -6,6 +6,8 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 @Entity
 @Table(name="sentence")
 @Getter
@@ -28,5 +30,15 @@ public class SentenceEntity extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "category", nullable = false, length = 20)
     private Category category;
+
+    public static SentenceEntity create(String englishText, String koreanRef, Level level, Category category) {
+        SentenceEntity entity = new SentenceEntity();
+        entity.id = UUID.randomUUID().toString();
+        entity.englishText = englishText;
+        entity.koreanRef = koreanRef;
+        entity.level = level;
+        entity.category = category;
+        return entity;
+    }
 
 }

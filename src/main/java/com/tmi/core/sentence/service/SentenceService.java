@@ -3,41 +3,29 @@ package com.tmi.core.sentence.service;
 import com.tmi.core.sentence.domain.Category;
 import com.tmi.core.sentence.domain.Level;
 import com.tmi.core.sentence.domain.SentenceEntity;
+import com.tmi.core.sentence.exception.SentenceException;
 import com.tmi.core.sentence.repository.SentenceRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SentenceService {
 
     private final SentenceRepository sentenceRepository;
 
-    public SentenceEntity getRandomSentence(Level level, Category category) {
-        List<SentenceEntity> sentences = sentenceRepository.findByLevelAndCategory(level, category);
-
-        if (sentences.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "조건에 맞는 문장이 없습니다: " + level + ", " + category
-            );
-        }
-
-        int randomIndex = ThreadLocalRandom.current().nextInt(sentences.size());
-        return sentences.get(randomIndex);
+    @Transactional(readOnly = true)
+    public SentenceEntity getRandom(Level level, Category category) {
+        log.info("문장 출제 : level={} category={}", level, category);
+        return sentenceRepository.findRandomBy(level, category)
+                .orElseThrow(() -> new SentenceException.NotFound("level="+level+ ", category="+category));
     }
-
-    public List<SentenceEntity> getSentences(Level level, Category category, int size) {
-        List<SentenceEntity> sentences = sentenceRepository.findByLevelAndCategory(level, category);
-
-        if (sentences.isEmpty()) {
-            return List.of();
-        }
-
-        Collections.shuffle(sentences);
-        return sentences.subList(0, Math.min(size, sentences.size()));
-    }
+    
 }
