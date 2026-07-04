@@ -15,14 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("${rest.api.version}/sentences")
 @RequiredArgsConstructor
-public class SentenceController {
+public class SentenceController implements SentenceApi {
 
     private final SentenceService sentenceService;
 
+    @Override
     @GetMapping("/random")
-    public ResponseEntity<SentenceResponse> getNext(@RequestParam Level level, @RequestParam Category category) {
+    public ResponseEntity<SentenceResponse> getRandom(@RequestParam Level level,
+                                                      @RequestParam Category category) {
         SentenceEntity sentence = sentenceService.getRandom(level, category);
         return ResponseEntity.ok(SentenceResponse.from(sentence));
     }
-
 }
