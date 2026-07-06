@@ -20,4 +20,6 @@ public interface SentenceRepository extends JpaRepository<SentenceEntity, String
               LIMIT 1
               """, nativeQuery = true)
     Optional<SentenceEntity> findRandomBy(@Param("level") Level level, @Param("category") Category category);
+
+    Optional<SentenceEntity> findByIdAndDeletedAtIsNull(String id);
 }
