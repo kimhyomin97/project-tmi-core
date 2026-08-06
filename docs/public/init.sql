@@ -55,3 +55,37 @@ INSERT INTO sentence (id, english_text, korean_ref, level, category) VALUES
      'The deployment failed because of a missing environment variable.',
      '환경 변수 누락 때문에 배포가 실패했어요.',
      'LEVEL_3', 'TECH');
+
+-- ─────────────────────────────────────────────
+-- 4. Toss 보유자산 스냅샷
+--    설계 문서: docs/public/toss/01_보유자산스냅샷.md
+-- ─────────────────────────────────────────────
+
+CREATE TABLE toss_holdings_snapshot (
+    id                    bigserial     PRIMARY KEY,
+    account_seq           bigint        NOT NULL,
+    snapshot_at           timestamptz   NOT NULL,
+    snapshot_date         date          NOT NULL,
+
+    total_purchase_krw    numeric(20,4) NOT NULL,
+    total_purchase_usd    numeric(20,4),
+    market_value_krw      numeric(20,4) NOT NULL,
+    market_value_usd      numeric(20,4),
+    profit_loss_krw       numeric(20,4) NOT NULL,
+    profit_loss_usd       numeric(20,4),
+    daily_pl_krw          numeric(20,4) NOT NULL,
+    daily_pl_usd          numeric(20,4),
+
+    profit_loss_rate      numeric(9,6)  NOT NULL,
+    daily_pl_rate         numeric(9,6)  NOT NULL,
+
+    raw_response          jsonb         NOT NULL,
+
+    created_at            timestamptz   NOT NULL DEFAULT now(),
+
+    CONSTRAINT uq_toss_holdings_snapshot__account_time
+        UNIQUE (account_seq, snapshot_at)
+);
+
+CREATE INDEX idx_toss_holdings_snapshot__date_account
+    ON toss_holdings_snapshot (snapshot_date, account_seq);
