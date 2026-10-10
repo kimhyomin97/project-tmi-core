@@ -321,7 +321,7 @@ After ([examples/answer-scoring/option-b-modular/similarity/SimilarityScorer.jav
 
 | 규칙 | 근거 |
 |---|---|
-| 복합 타입 파라미터에는 `@RequestBody` (또는 `@RequestParam`·`@PathVariable`) 필수 | F1 — 누락 시 호출 전에 `IllegalStateException` (current-state §7.2 P7). ArchUnit R7 로 강제 |
+| 복합 타입 파라미터에는 `@RequestBody` (또는 `@RequestParam`·`@PathVariable`) 필수 | F1 — 누락 시 호출 전에 `IllegalStateException` (current-state §7.2 P8). ArchUnit R7 로 강제 |
 | 클라이언트마다 `MockRestServiceServer` 테스트 1개 이상 (§6.2) | F1 은 이 테스트 하나로 잡힘 |
 | `RestClient.builder()` 정적 호출 유지. `RestClient.Builder` 주입은 `spring-boot-starter-restclient` 추가 결정 후 | Boot 4 에서 Builder 빈 없음 (current-state §4.6) → D7 |
 | 설정은 `@ConfigurationProperties` record + `@EnableConfigurationProperties` | `@Value` 필드 주입은 불변·검증 불가 (`RestClientConfig.java:18-22`) |

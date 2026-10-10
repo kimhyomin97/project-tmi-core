@@ -36,7 +36,7 @@
         "bash ./gradlew test --tests '*SimilarityClientTest' --tests '*ConventionArchitectureTest'"
       ],
       "acceptance": "SimilarityClientTest·ArchUnit R7 의 @Disabled 제거 후 통과",
-      "evidence": "current-state.md F1, §7.2 P7",
+      "evidence": "current-state.md F1, §7.2 P8",
       "passes": false,
       "blocked": null
     },

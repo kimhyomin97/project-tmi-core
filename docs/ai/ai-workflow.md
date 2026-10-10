@@ -40,7 +40,7 @@
 
 | 예외 | 이유 | 예 |
 |---|---|---|
-| 기계적 포맷 커밋 | 의미 변경 0, `spotlessCheck` 가 판정 | `SIG-2` (29파일) |
+| 기계적 포맷 커밋 | 의미 변경 0, `spotlessCheck` 가 판정 | `SIG-2` (30파일 — src/main 29 + 테스트 1) |
 | 테스트만 추가 | `src/main` 변경 0 | `TEST-1` (3개 모듈에 테스트) |
 | 빌드 설정 변경 | 모듈이 아닌 프로젝트 단위 | `SIG-1` |
 | 모듈 경계 이동 | 이동 자체가 목적 | `ARCH-B2` |
@@ -170,7 +170,7 @@ flowchart TD
     "bash ./gradlew test --tests '*SimilarityClientTest' --tests '*ConventionArchitectureTest'"
   ],
   "acceptance": "SimilarityClientTest·ArchUnit R7 의 @Disabled 제거 후 통과",
-  "evidence": "current-state.md F1, §7.2 P7",
+  "evidence": "current-state.md F1, §7.2 P8",
   "passes": false,
   "blocked": null
 }

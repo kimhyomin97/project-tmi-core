@@ -13,7 +13,7 @@
 | 순서 | ID | 내용 | 근거 | 규모 |
 |---|---|---|---|---|
 | 1 | `TEST-1` | DB 없이 도는 테스트 3종 (현재 실패하는 2개는 FIX id 를 단 `@Disabled`) | conventions §6.3 (현재 코드로 실패 재현 검증) | 테스트 3파일 |
-| 2 | `FIX-F1` | `SimilarityClient.score` 파라미터에 `@RequestBody` — **채점 API 가 지금 항상 500** | current-state F1, §7.2 P7 [실행] | 1줄 |
+| 2 | `FIX-F1` | `SimilarityClient.score` 파라미터에 `@RequestBody` — **채점 API 가 지금 항상 500** | current-state F1, §7.2 P8 [실행] | 1줄 |
 | 3 | `FIX-F1T` | read timeout·빈 응답 → 503 (`RestClientException` catch + null 처리) — F1 을 고치는 순간 드러나는 다음 결함 | current-state §3.3(f) [실행·리뷰] | 수 줄 + 테스트 1 |
 | 4 | `FIX-F2` | `spring.messages.basename=messages/messages` + `fallback-to-system-locale=false` — 에러 메시지가 코드 문자열로 나가는 문제 | current-state F2 [실행], conventions §2.1 (검증) | 2줄 |
 | 5 | `FIX-R5` | `SentenceService.getRandom` 이 DTO 반환 (구조 결정과 무관, A′·B 공통) | conventions §3.1, ArchUnit R5 | 2파일 |

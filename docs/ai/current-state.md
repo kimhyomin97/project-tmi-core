@@ -3,6 +3,8 @@
 > 상태: **제안 단계 산출물** — 이 문서는 사실 기록이며 결정을 담지 않는다. 결정 항목은 [decisions-needed.md](./decisions-needed.md).
 > 분석 기준: 브랜치 `claude/ai-dev-prep` 의 `src/main` (Java 34 파일, 중첩 클래스 포함 40 타입). 이 브랜치는 `src/main` 을 변경하지 않으므로 `main` HEAD `e85dba5` 와 동일하다 (`git diff e85dba5 HEAD -- src/main` 0줄).
 > 개정: Round 1 리뷰([reviews/current-state-round-1.md](./reviews/current-state-round-1.md)) 반영 — OSIV 커넥션 점유(C1), `RestClient.Builder` 빈 부재, SpEL 필요성, 계약 불일치 등.
+> 개정: Round 2 리뷰([reviews/current-state-round-2.md](./reviews/current-state-round-2.md)) 반영 — R2 위반 19건 분해(현행 규칙 위반 10 / B 기준 9), 규칙별 탐지 한계·음성 대조, read timeout → 500 추가.
+> 개정: Round 3 리뷰([reviews/current-state-round-3.md](./reviews/current-state-round-3.md)) — 4·4·4·4. 경미 7건 반영 (FIX-F1T 연결, P7/P8 번호, 43 class 파일·바이트코드 동일, R6 jakarta 한계).
 > 작업 트리에만 존재하는 미커밋 변경(WIP)은 §5 에 별도로 정리했다. 이 문서의 표는 **커밋된 코드** 기준이다.
 
 표기 규칙
@@ -17,7 +19,7 @@
 
 | # | 발견 | 근거 | 검증 |
 |---|---|---|---|
-| F1 | `POST /api/v1/answers` 가 **항상 500** — `SimilarityClient.score` 의 `@RequestBody` 누락 | `infra/similarity/SimilarityClient.java:10`, §7.2 P7 | [실행] |
+| F1 | `POST /api/v1/answers` 가 **항상 500** — `SimilarityClient.score` 의 `@RequestBody` 누락 | `infra/similarity/SimilarityClient.java:10`, §7.2 P8 | [실행] |
 | F2 | 에러 메시지 번들이 로드되지 않아 모든 에러 `message` 가 코드 문자열, i18n 미동작. basename 만 고치면 `fallback-to-system-locale`(기본 `true`) 때문에 서버 로케일이 ko 일 때 영어 요청에도 한글이 나감 | `resources/messages/` 위치 + basename 미설정, §3.3(b), §7.2 P2·P3 | [실행] / 폴백은 [실행·리뷰] |
 | F3 | 깨진 JSON 등 클라이언트 오류가 500 + ERROR 로 처리, **Similarity read timeout 도 503 이 아닌 500** (§3.3(f)), 500 로그에 스택트레이스 없음, 404 가 ERROR 레벨 | `GlobalExceptionHandler.java:68-78`, `BaseException.java:15`, §7.2 P5 | [실행] |
 | F4 | `@Transactional` self-invocation — 어노테이션이 무효이고, 파생 쿼리라 리포지토리 기본 트랜잭션도 없어 **조회가 트랜잭션 없이 실행**. 여기에 OSIV(기본 `true`)가 겹쳐 **Similarity 외부 호출 동안 DB 커넥션 1개를 점유** — 06 §3.3 이 막으려던 안티패턴이 이미 발생 중. 원인의 일부는 06 §3.3 의 "권장" 예시 자체가 self-invocation 패턴이라는 점 | `AnswerService.java:28,35`, §3.4 | [실행] |
@@ -75,7 +77,7 @@
 
 | 패키지 | 클래스 | 역할 | 레이어 | 의존 대상 | 컨벤션 불일치 사항 |
 |---|---|---|---|---|---|
-| `infra.similarity` | `SimilarityClient` | HTTP Interface (`@PostExchange("/similarity")`) | infra | `infra.similarity.dto.*` | **`score(SimilarityRequest)` 파라미터에 `@RequestBody` 누락 → 호출 시 항상 `IllegalStateException`** (`SimilarityClient.java:10`, §7.2 P7 실행 확인) |
+| `infra.similarity` | `SimilarityClient` | HTTP Interface (`@PostExchange("/similarity")`) | infra | `infra.similarity.dto.*` | **`score(SimilarityRequest)` 파라미터에 `@RequestBody` 누락 → 호출 시 항상 `IllegalStateException`** (`SimilarityClient.java:10`, §7.2 P8 실행 확인) |
 | `infra.similarity.dto` | `SimilarityRequest` | 요청 record `(answer, reference)` | infra | — | 없음 |
 | `infra.similarity.dto` | `SimilarityResponse` | 응답 record `(score)` | infra | — | 없음 |
 | `infra.similarity.exception` | `SimilarityException` | 예외 홀더 | infra | `common.exception.*` | 없음 |
@@ -284,8 +286,8 @@ public <T extends BaseException> T logMessage(String logMessage) {
 } catch(ResourceAccessException e) {
 ```
 
-- **read timeout 이 500 이 된다** [실행·리뷰, examples-round-1 C1]: 현재 설정(`SimpleClientHttpRequestFactory`)에서 read timeout 은 `ResourceAccessException` 이 아니라 `RestClientException("Error while extracting response …") → SocketTimeoutException` 으로 올라온다. 두 catch 어디에도 걸리지 않아 catch-all 500. `AnswerApi.java:93` 이 문서화한 "타임아웃 → 503" 계약과 다르다. (F1 때문에 지금은 요청 자체가 나가지 않아 드러나지 않는다 — F1 수정 즉시 표면화)
-- 응답 역직렬화 실패도 같은 `RestClientException` 경로 → 500 [정적]. 200/204 빈 본문이면 HTTP Interface 가 `null` 을 반환해 `.score()` 에서 NPE → 500 [실행·리뷰, examples-round-1 m4].
+- **read timeout 이 500 이 된다** [실행·리뷰, examples-round-1 C1]: 현재 설정(`SimpleClientHttpRequestFactory`)에서 read timeout 은 `ResourceAccessException` 이 아니라 `RestClientException("Error while extracting response …") → SocketTimeoutException` 으로 올라온다. 두 catch 어디에도 걸리지 않아 catch-all 500. `AnswerApi.java:93` 이 문서화한 "타임아웃 → 503" 계약과 다르다. (F1 때문에 지금은 요청 자체가 나가지 않아 드러나지 않는다 — F1 수정 즉시 표면화) → 해소 작업 `FIX-F1T`
+- 응답 역직렬화 실패도 같은 `RestClientException` 경로 → 500 [정적]. 200/204 빈 본문이면 HTTP Interface 가 `null` 을 반환해 `.score()` 에서 NPE → 500 [실행·리뷰, examples-round-1 m4] → `FIX-F1T`.
 - 비표준 상태 코드: 599 는 `HttpServerErrorException`(이미 잡힘), 600 이상은 기본 `ResponseErrorHandler` 가 에러로 보지 않아 **성공으로 처리** [실행·리뷰, examples-round-1 M4]. `UnknownHttpStatusCodeException` 은 기본 설정에서 나오지 않는다.
 - 로그: 네트워크 오류는 서비스에서 `log.error(..., e)` 한 뒤 핸들러가 다시 ERROR 로 남김(이중 로깅). 4xx/5xx 는 서비스 로그 없이 핸들러만 기록. 06 §3.5 "외부 호출 실패 ERROR" 와 06 §6.6 "throw 직전 로그 금지" 가 서로 충돌하는 지점.
 
@@ -482,7 +484,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | R3 | `RestClientConfig.similarityClient()` 반환 타입 `SimilarityClient`, `SimilarityClient.class` 참조 (`RestClientConfig.java:38`) | §1.6 |
 | R5 | `SentenceService.getRandom(Level, Category)` returns `SentenceEntity` | §3.2, F5 |
 | R6 | `AnswerService.score` calls `AnswerService.loadSentence` (`AnswerService.java:28`) | §3.4, F4 |
-| R7 | `SimilarityClient.score(SimilarityRequest)` parameter[0] has no binding annotation | §7.2 P7, F1 |
+| R7 | `SimilarityClient.score(SimilarityRequest)` parameter[0] has no binding annotation | §7.2 P8, F1 |
 
 ### 6.3 오탐 점검과 규칙 조정
 
@@ -500,7 +502,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | 규칙 | 한계 | 조치 |
 |---|---|---|
 | R5 | (Round 2 시점) raw 반환 타입만 검사 → `Optional<E>`·`List<E>` 미탐지 | **수정함** — `getReturnType().getAllInvolvedRawTypes()` 로 제네릭 인자까지. 음성 대조 2 로 확인 |
-| R6 | 메서드 레벨 `org.springframework.transaction.annotation.Transactional` 만. 클래스 레벨 `@Transactional`(예: 클래스에 `REQUIRES_NEW`)·`jakarta.transaction.Transactional` 의 self-invocation 미탐지 | 테스트 코드 주석에 명시. 현재 코드에 해당 사례 없음 |
+| R6 | 메서드 레벨 `org.springframework.transaction.annotation.Transactional` 만. 클래스 레벨 `@Transactional` 은 바깥 메서드도 같은 설정을 받아 대부분 무해하다고 보고 제외(테스트 주석에 근거 명시). `jakarta.transaction.Transactional` 미탐지(테스트 주석에 추가, 현재 코드 사용처 0) | 현재 코드에 해당 사례 없음 |
 | R2 | 모듈 = 직속 패키지라는 B 의 해석에 고정 → A′ 를 고르면 규칙 자체를 교체해야 함 | architecture-proposal.md §2 A′, feature_list `ARCH-A2` |
 | 공통 | 픽스처 코드는 커밋하지 않음 → 양성·음성 대조를 재현하려면 위 설명대로 다시 만들어야 함 | 재현 절차는 이 표의 "방법" 열 |
 
@@ -531,13 +533,13 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | P4 | `level=LEVEL_9` (잘못된 enum) | 400 | 400 `"message":"TMI.COMMON.INVALID_REQUEST"` | 코드 정상, 메시지 미해결 |
 | P5 | `POST /answers` body `{broken` | 400 | **500** `TMI.COMMON.INTERNAL_ERROR` + ERROR 로그 | **결함** (§3.3c 확인) |
 | P6 | `POST /answers` `userAnswer: ""` | 400 | 400 `"userAnswer: must not be blank"` (다른 실행에서는 `"userAnswer: size must be between 1 and 500"`) | 코드 정상, **메시지 비결정** |
-| P8 | `GET /sentences/random?category=DAILY` (level 누락) [실행·리뷰] | 03 §2.1: 400 `INVALID_REQUEST` | 400 `TMI.COMMON.MISSING_PARAMETER` | **계약 불일치** (F9) |
-| P7 | `POST /answers` 정상 body, Similarity 서버 다운 | **503** `TMI.SIMILARITY.UNAVAILABLE` | **500** `TMI.COMMON.INTERNAL_ERROR` | **치명 결함** — 아래 |
+| P7 | `GET /sentences/random?category=DAILY` (level 누락) [실행·리뷰] | 03 §2.1: 400 `INVALID_REQUEST` | 400 `TMI.COMMON.MISSING_PARAMETER` | **계약 불일치** (F9) |
+| P8 | `POST /answers` 정상 body, Similarity 서버 다운 | **503** `TMI.SIMILARITY.UNAVAILABLE` | **500** `TMI.COMMON.INTERNAL_ERROR` | **치명 결함** — 아래 |
 
 - 자동 구성 `messageSource` 빈의 실제 타입: `org.springframework.context.support.DelegatingMessageSource` (빈 껍데기). §3.3(b) 추론 확정.
 - 기동 로그: `spring.jpa.open-in-view is enabled by default ... Explicitly configure spring.jpa.open-in-view to disable this warning` 경고 확인.
 
-**P7 치명 결함 — `SimilarityClient` 요청 본문 바인딩 누락**
+**P8 치명 결함 — `SimilarityClient` 요청 본문 바인딩 누락**
 
 ```java
 // infra/similarity/SimilarityClient.java:9-10
@@ -560,7 +562,7 @@ ERROR ... GlobalExceptionHandler : [TMI.COMMON.INTERNAL_ERROR] TMI.COMMON.INTERN
 |---|---|---|
 | 404(`SENTENCE.NOT_FOUND`)가 **ERROR** 레벨로 기록 | `ERROR ... [TMI.SENTENCE.NOT_FOUND] TMI.SENTENCE.NOT_FOUND - TMI.SENTENCE.NOT_FOUND` | `BaseException.logLevel` 기본값 `ERROR` (`BaseException.java:15`). 정상적인 "없음" 응답이 장애 알람 대상이 됨 |
 | 예외 `args`(`level=LEVEL_5, category=TECH`) 가 로그에 남지 않음 | 위와 동일 — 세 칸 모두 코드 문자열 | `e.getMessage()` 는 `errorCode` (`BaseException.java:19`), 메시지 번들도 미해결 → **원인 추적 정보 소실** |
-| 500 에 스택트레이스 없음 | P5·P7 로그가 한 줄 | §3.3(a) 확인 |
+| 500 에 스택트레이스 없음 | P5·P8 로그가 한 줄 | §3.3(a) 확인 |
 
 ### 7.3 포맷 검사 (Spotless)
 
@@ -571,8 +573,8 @@ ERROR ... GlobalExceptionHandler : [TMI.COMMON.INTERNAL_ERROR] TMI.COMMON.INTERN
 | Gradle 9.3.0 + JDK 21 에서 플러그인 동작 | ✓ (`spotlessCheck`, `spotlessApply` 정상 실행) |
 | `./gradlew build` 에 영향 | 없음 (`check` 에 미연결) |
 | `src/main` 위반 | **34 파일 중 29 파일** (+178 / −214 줄). 사본에서 `spotlessApply` 후 `git diff --stat` 로 계수. `target` 이 `src/*/java/**` 라 일괄 적용 커밋에는 `CoreApplicationTests.java` 도 포함되어 **30 파일** |
-| 변경 성격 | 공백·import 정리·줄바꿈. **의미 변경 없음** — 적용 전후 `src/main` 40개 class 파일의 상수 풀(문자열·text block 포함)이 전부 동일 [실행·리뷰, round-2 m5] |
+| 변경 성격 | 공백·import 정리·줄바꿈. **의미 변경 없음** — 적용 전후 `src/main` 40개 타입(43 class 파일 — `ELogLevel$1~3` 포함)의 상수 풀과 바이트코드(`javap -c -p`)가 전부 동일 [실행·리뷰, round-2 m5·round-3 m3] |
 | 이 작업이 추가한 ArchUnit 테스트 | palantir 포맷 적용 완료 (위반 0) |
 | 기존 `CoreApplicationTests` | 위반 (탭 들여쓰기) — 작업 범위 밖이라 미수정 |
 
-→ `spotlessApply` 단독 커밋 1개로 기존 위반을 일괄 해소할 수 있다. 이 커밋은 `src/main` 29파일을 건드리므로 사람 승인 사항 (decisions-needed.md D5).
+→ `spotlessApply` 단독 커밋 1개로 기존 위반을 일괄 해소할 수 있다. 이 커밋은 30파일(`src/main` 29 + 테스트 1)을 건드리므로 사람 승인 사항 (decisions-needed.md D5).

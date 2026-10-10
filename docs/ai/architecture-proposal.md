@@ -238,7 +238,7 @@ com.tmi.core.sentence
 | R4 | 모듈 내부 레이어: controller → service → repository | Service 레이어 = `..service..` 또는 `@Service` (B 의 공개 API 포함) | 레이어 붕괴 | 통과 |
 | R4b | `domain` → controller·service·repository·dto 금지 | | WIP 의 `domain → dto` (D9) | 통과 |
 | R5 | `@Service` public 메서드는 `@Entity` 를 반환하지 않는다 | 제네릭 인자까지 검사 (`Optional<E>`, `List<E>`) | P4, OSIV 의존 | 위반 1 → `FIX-R5` |
-| R6 | `@Transactional` 메서드를 같은 클래스 안에서 호출 금지 | 메서드 레벨 어노테이션만. 클래스 레벨 `@Transactional` 클래스 내부 호출은 미검사 | F4 재발 | 위반 1 → `FIX-F4` |
+| R6 | `@Transactional` 메서드를 같은 클래스 안에서 호출 금지 | 메서드 레벨 Spring `@Transactional` 만. 클래스 레벨·`jakarta.transaction.Transactional` 은 미검사 | F4 재발 | 위반 1 → `FIX-F4` |
 | R7 | HTTP Interface 메서드의 **모든** 파라미터에 바인딩 어노테이션 | 예외 타입 `URI`·`HttpMethod`·`UriBuilderFactory` (estimated) | F1 재발 | 위반 1 → `FIX-F1` |
 
 R5~R7 은 컨벤션 성격이지만 기계 검증이 가능해서 함께 둔다 (conventions-proposal.md 와 연결). 오탐 점검: 선택지 B 형태의 임시 픽스처로 R2·R5 위반 0, 위반 형태로 탐지 확인 (current-state.md §6.3).

@@ -34,7 +34,7 @@
 
 | 항목 | 내용 | 근거 |
 |---|---|---|
-| F1 | HTTP Interface 파라미터에 `@RequestBody` | current-state §7.2 P7 |
+| F1 | HTTP Interface 파라미터에 `@RequestBody` | current-state §7.2 P8 |
 | 외부 예외 분류 | `RestClientResponseException`(4xx→`RequestInvalid`, 5xx→`Unavailable`) / `ResourceAccessException`(연결 오류→`Unavailable`) / **`RestClientException`(→`Unavailable`)** | `SimpleClientHttpRequestFactory` 에서 **read timeout 은 `RestClientException`** 으로 온다 — 세 번째 catch 가 없으면 타임아웃이 500 (examples-round-1 C1 실행: 3초 지연에 catch 2개 = 500, 3개 = 503) |
 | 빈 응답 | 200/204 빈 본문 → HTTP Interface 가 `null` 반환 → `Unavailable` | examples-round-1 m4 실행 (없으면 NPE → 500) |
 | 점수 범위 | `Math.clamp(score, 0.0, 1.0)` — 부동소수 오차(1.0000001) 보정 | examples-round-1 M3. C 의 `AnswerScore` 불변식은 보정 후 값만 받음 |
