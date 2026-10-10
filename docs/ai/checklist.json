@@ -3,9 +3,14 @@
     {
       "id": "current-state",
       "artifact": "docs/ai/current-state.md",
-      "done": false,
-      "review_rounds": 0,
-      "rubric_scores": {}
+      "done": true,
+      "review_rounds": 3,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      }
     },
     {
       "id": "research",

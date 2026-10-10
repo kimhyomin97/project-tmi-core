@@ -25,6 +25,8 @@ bash ./gradlew spotlessApply         # 포맷 자동 수정 — 사람 승인 �
   스키마: `psql -h localhost -p 15432 -U postgres -d tmi_word -f docs/public/init.sql`
 - 아키텍처 테스트 중 `@Disabled` 는 **알려진 위반** (사유 주석에 해소 작업 ID). 위반을 고쳤으면 `@Disabled` 를 지워 통과를 확인한다. 새 위반을 `@Disabled` 로 숨기지 말 것.
 - 테스트 소스셋에는 **Lombok 이 없다** (main 에만 선언). 테스트 코드는 Lombok 없이 작성.
+- Gradle `--tests` 를 여러 개 주면 **OR** 다 — 특정 테스트들이 실제로 돌았는지 확인하려면 클래스마다 따로 실행.
+- `.gitignore` 의 `out/` 규칙이 `adapter/out/` 같은 경로도 무시한다 — 그런 경로에 새 파일을 만들면 `git status` 로 추적 여부 확인.
 - Boot 4: `@MockitoBean` 사용 (`@MockBean` 제거됨). `@WebMvcTest` 는 `org.springframework.boot.webmvc.test.autoconfigure`.
 
 ## 패키지·의존 규칙
@@ -34,7 +36,7 @@ bash ./gradlew spotlessApply         # 포맷 자동 수정 — 사람 승인 �
 - controller → service → repository 방향만. controller 에서 repository 직접 사용 금지 (ArchUnit R4).
 - `domain` 은 controller·service·repository·dto 에 의존 금지 (R4b).
 - `common` 은 기능 모듈에 의존 금지 (R3) — 현재 `RestClientConfig` 가 위반 중.
-- `[제안]` 다른 모듈은 그 모듈의 **base package 타입(공개 API)** 으로만 사용 — 하위 패키지(repository/domain/…) 직접 import 금지 (R2, 선택지 B).
+- `[제안]` 다른 기능의 `repository`·`domain`·`exception` 직접 import 금지. 추천안(B)이면 더 좁게 — 다른 모듈은 그 모듈의 **base package 타입(공개 API)** 으로만 사용 (R2). A′/B 는 decisions-needed D1 에서 결정.
 - 헥사고날(포트·어댑터) 구조로 바꾸지 말 것 — 팀이 한 번 도입했다 되돌렸다 (02 설계 §2.2).
 
 ## 반드시 지킬 것 (실제 결함에서 나온 규칙)
@@ -54,7 +56,7 @@ bash ./gradlew spotlessApply         # 포맷 자동 수정 — 사람 승인 �
 - 에러 응답 형식 `{"error":{"code":"TMI.{DOMAIN}.{REASON}","message":...}}` 은 외부 계약 (03 API 명세 §1.4). 바꾸지 말 것.
 - 현재 메시지 번들이 로드되지 않는다 (`spring.messages.basename` 미설정) — 응답 message 가 코드 문자열이면 이것 때문.
 - 로그: `@Slf4j`, placeholder `{}`, 형식 `"{대상} {동작}: key=value"`. throw 직전에 로그 남기지 말 것 (핸들러가 단일 기록). 토큰·시크릿 로그 금지.
-- 외부 호출 예외는 `RestClientResponseException`(4xx→502 `RequestInvalid`, 5xx→503 `Unavailable`) / `ResourceAccessException`(→503) 으로 분류해 도메인 예외로 변환.
+- 외부 호출 예외는 **catch 3개**로 도메인 예외로 변환: `RestClientResponseException`(4xx→502 `RequestInvalid`, 5xx→503 `Unavailable`) / `ResourceAccessException`(→503) / `RestClientException`(→503). 세 번째를 빼면 POST 의 read timeout 이 500 이 된다 (현재 `AnswerService` 가 이 상태). 빈 응답(`null`)도 503.
 
 ## 작업 방식
 
