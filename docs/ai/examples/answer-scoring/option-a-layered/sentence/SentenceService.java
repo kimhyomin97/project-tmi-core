@@ -24,7 +24,7 @@ public class SentenceService {
     @Transactional(readOnly = true)
     public SentenceEntity getRandom(Level level, Category category) {   // FIX-R5 대상 (AS-IS 그대로)
         log.info("문장 출제: level={} category={}", level, category);
-        return sentenceRepository.findRandomBy(level, category)
+        return sentenceRepository.findRandomBy(level, category)   // conventions §1.2 의 개명(findRandomActiveByLevelAndCategory)은 FIX-R5 에서 — 구조 무관
                 .orElseThrow(() -> new SentenceException.NotFound("level=" + level + ", category=" + category));
     }
 

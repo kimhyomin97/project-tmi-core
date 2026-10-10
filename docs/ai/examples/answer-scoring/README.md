@@ -36,7 +36,7 @@
 | 항목 | 내용 | 근거 |
 |---|---|---|
 | F1 | HTTP Interface 파라미터에 `@RequestBody` | current-state §7.2 P8 |
-| 외부 예외 분류 | `RestClientResponseException`(4xx→`RequestInvalid`, 5xx→`Unavailable`) / `ResourceAccessException`(연결 오류→`Unavailable`) / **`RestClientException`(→`Unavailable`)** | `SimpleClientHttpRequestFactory` 에서 **read timeout 은 `RestClientException`** 으로 온다 — 세 번째 catch 가 없으면 타임아웃이 500 (examples-round-1 C1 실행: 3초 지연에 catch 2개 = 500, 3개 = 503) |
+| 외부 예외 분류 | `RestClientResponseException`(4xx→`RequestInvalid`, 5xx→`Unavailable`) / `ResourceAccessException`(연결 오류→`Unavailable`) / **`RestClientException`(→`Unavailable`)** | `SimpleClientHttpRequestFactory` 에서 **본문 있는 요청(POST)의 read timeout 은 `RestClientException`** 으로 온다 (본문 없는 요청은 `ResourceAccessException` — conventions §2.4 표) — 세 번째 catch 가 없으면 타임아웃이 500 (examples-round-1 C1 실행: 3초 지연에 catch 2개 = 500, 3개 = 503) |
 | 빈 응답 | 200/204 빈 본문 → HTTP Interface 가 `null` 반환 → `Unavailable` | examples-round-1 m4 실행 (없으면 NPE → 500). 회귀 테스트는 feature_list `FIX-F1T` (`SimilarityTimeoutTest`) |
 | 점수 범위 | 허용 오차(1e-6) 안의 범위 밖 값만 `[0, 1]` 로 보정, 그 밖(1.5, -0.2 등)은 계약(03 §5.1) 위반 → `Unavailable` (원래 값은 예외 메시지에) | examples-round-1 M3, round-2 M2 — 관대한 clamp 는 서버 결함을 "만점" 으로 바꿨다. 정책 자체는 decisions-needed.md D13 |
 | 등급 계산 위치 | DTO 밖 (`AnswerService` 가 `Grade.fromScore` 호출) | conventions §3.2 |

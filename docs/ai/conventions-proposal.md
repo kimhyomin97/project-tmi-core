@@ -5,6 +5,7 @@
 > 기존 규칙 [05_개발컨벤션.md](../public/05_개발컨벤션.md), [06_코드가이드라인.md](../public/06_코드가이드라인.md) 을 **대체하지 않고 고친다**. 각 항목에 "05/06 과의 관계" 를 적었다.
 > 구조 선택(architecture-proposal.md D1)과 무관하게 적용되는 규칙이 기본이다. **규칙은 같고 After 코드의 클래스 위치·이름만 선택지에 따라 다른 경우** `[B 전제]` 로 표시하고 A′ 형태를 한 줄 덧붙였다.
 > 개정: Round 1 리뷰([reviews/conventions-proposal-round-1.md](./reviews/conventions-proposal-round-1.md)) 반영 — `BaseException` 생성자 NPE(C1), 상위 `handleExceptionInternal` 동작 보존(M1), Toss 예시를 설계 §6 과 일치(M2), §8 재작성(M5).
+> 개정: Round 3 리뷰([reviews/conventions-proposal-round-3.md](./reviews/conventions-proposal-round-3.md)) 반영 — 스케줄러의 raw 예외 분류를 §2.4 의 명시적 예외 규칙으로, Toss 예시에 `[B 전제]`·A′ 형태(M1), 검증 표 갱신 등 경미 7건.
 > 개정: Round 2 리뷰([reviews/conventions-proposal-round-2.md](./reviews/conventions-proposal-round-2.md)) 반영 — §2.4 A′ 서술·timeout 분류를 요청 방식별 실행 결과로(M1·M2), Toss 토큰 단계 분리(M3), §8 누락 3행(M4), 경미 8건.
 
 ## 0. 검증 방법
@@ -15,10 +16,10 @@
 |---|---|---|
 | §2.1 basename 수정 | `@WebMvcTest(properties = "spring.messages.basename=messages/messages")` | en/ko 메시지 정상 해석 ✓ |
 | §2.2 `GlobalExceptionHandler` After (1차) | 테스트 소스셋에 Lombok 을 걷어낸 같은 로직(`@Slf4j`→`LoggerFactory`, `@RequiredArgsConstructor`→생성자)을 다른 이름으로 두고, `@WebMvcTest` 에서 기존 핸들러를 `excludeFilters` 로 빼고 `@Import` | 7개 시나리오 중 7개 의도대로 동작 (아래 §2.2 표) ✓ |
-| §2.2 + §2.3 + §2.1 After (2차, Round 1 반영본) | 전용 git worktree 의 `src/main` 에 **문서 After 코드를 그대로** 적용 (worktree 는 실행 후 삭제, 이 브랜치의 `src/main` 은 불변) + `@WebMvcTest` + `OutputCaptureExtension` | 404 → `"Sentence not found: x"` + **INFO, 스택트레이스 없음** / 503 → **ERROR + 원인 스택트레이스** / 깨진 JSON 400 `BAD_REQUEST` / text/plain 415 / DELETE 405 + `Allow` ✓ |
+| §2.2 + §2.3 + §2.1 After (2차, Round 1 반영본 — Round 2 의 commit WARN 줄 포함 재현은 round-3 리뷰 [실행·리뷰]) | 전용 git worktree 의 `src/main` 에 **문서 After 코드를 그대로** 적용 (worktree 는 실행 후 삭제, 이 브랜치의 `src/main` 은 불변) + `@WebMvcTest` + `OutputCaptureExtension` | 404 → `"Sentence not found: x"` + **INFO, 스택트레이스 없음** / 503 → **ERROR + 원인 스택트레이스** / 깨진 JSON 400 `BAD_REQUEST` / text/plain 415 / DELETE 405 + `Allow` ✓ |
 | §6 테스트 예시 4종 | 현재 코드에 그대로 실행 | `GradeTest` 통과, `SimilarityClientTest` 는 **F1 을 재현하며 실패**, `SentenceControllerTest` 는 **F2 를 재현하며 실패**, `AnswerControllerTest` 는 **F3(깨진 JSON → 500)을 재현하며 실패** — 의도한 결과 ✓. After 적용 시 4종 모두 통과 (round-2 리뷰 재현 [실행·리뷰]) |
 
-검증하지 못한 것: §3·§4 의 서비스 코드 After (구조 변경을 동반 — examples/ 에 있으며 컴파일 대상 아님), §4.3 Toss 예시 (WIP 클래스 미구현). §7 Spotless 는 사본에서 적용 결과를 계수 (current-state.md §7.3).
+검증하지 못한 것: §3·§4.1 의 서비스 코드 After (구조 변경을 동반 — examples/ 에 있으며 컴파일 대상 아님). §4.3 Toss 예시는 WIP 클래스를 스텁으로 두고 컴파일·설계 §6 의 5개 정책 실행 확인 (round-3 리뷰 [실행·리뷰]). §7 Spotless 는 사본에서 적용 결과를 계수 (current-state.md §7.3).
 
 ---
 
@@ -165,6 +166,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleExceptionInternal(
             Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         // 상위 구현의 두 동작을 보존: (1) 이미 commit 된 응답엔 쓰지 않음 (2) 500 이면 원인 예외를 요청 속성에 기록
+        // (표준 MVC 예외 경로에만 해당. BaseException·Exception 핸들러는 AS-IS 와 같이 commit 검사 없음 — 스트리밍 응답이 없어 현재 영향 없음)
         if (request instanceof ServletWebRequest swr && swr.getResponse() != null && swr.getResponse().isCommitted()) {
             log.warn("Response already committed. Ignoring: {}", ex.toString());   // 상위 구현과 같은 WARN — 로그 소실 방지
             return null;
@@ -241,7 +243,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 - `MissingServletRequestParameterException` 은 계속 `MISSING_PARAMETER` 를 낸다. 03 §2.1 은 `INVALID_REQUEST` 라고 적었으므로 **03 을 고칠지 코드를 고칠지** 결정 필요 (→ D6, 추천: 03 수정 — 코드가 더 구체적).
 - `@ExceptionHandler(Exception.class)` 와 상위 클래스의 `@ExceptionHandler` 목록이 공존해도 더 구체적인 타입이 우선한다 (Spring MVC 의 예외 핸들러 해석 규칙, research.md §3.1 [S]). 검증에서 충돌 없음.
 - 응답을 RFC 9457 `ProblemDetail` 로 바꾸는 것은 외부 계약 변경이라 별도 결정 (→ D2, 추천: 현행 형식 유지).
-- 05/06 관계: 05 §5.4 "추가 `@RestControllerAdvice` 작성 금지" 유지 (핸들러는 여전히 1개). 06 §4.5 표에 415·깨진 JSON 행 추가.
+- 05/06 관계: 05 §5.4 "추가 `@RestControllerAdvice` 작성 금지" 유지 (핸들러는 여전히 1개). 06 §4.5 표에 415·깨진 JSON·빈 body 행 추가, 03 §3.1 Errors 표 갱신 (§8).
 
 ### 2.3 `BaseException` — 기본 로그 레벨을 상태 코드로 결정하고, 죽은 API 를 정리
 
@@ -329,6 +331,7 @@ After ([examples/answer-scoring/option-b-modular/similarity/SimilarityScorer.jav
 | 상태 499 / 599 | `HttpClientErrorException` / `HttpServerErrorException` | 1번째 catch → 502 / 503 |
 | 상태 600, 299 | **예외 없음, 정상 반환** | 미처리 — decisions-needed.md D13 (보류) |
 
+- **예외 규칙** — 호출 측이 raw 예외를 직접 분류해도 되는 경우는 하나: **HTTP 응답으로 변환하지 않는 진입점(스케줄러)이 재시도·로그 레벨 정책 때문에 분류가 필요하고, 클라이언트가 같은 모듈의 internal 일 때**. 이때도 세 catch 범주를 모두 다룬다 (§4.3 Toss 예시). 그 밖의 호출 측은 변환 클래스의 도메인 예외만 받는다.
 - 따라서 규칙은 "**세 catch 를 모두 둔다**" 이다. 어느 예외로 오는지가 요청 방식에 따라 달라서, 한 종류만 잡으면 어떤 클라이언트에서는 타임아웃이 500 이 된다. `RestClientResponseException` 을 상위 타입으로 잡는 것은 커스텀 `ResponseErrorHandler` 를 도입할 때를 대비한 것이며, 기본 설정에서 `UnknownHttpStatusCodeException` 경로는 관찰되지 않는다.
 - 05/06 관계: 05 §5.7 예시 코드를 위 After 로 교체하고 마지막 문단도 수정. 02 §5.2 의 매핑 표(3종)도 같이 고친다.
 
@@ -390,7 +393,7 @@ return ResponseEntity.ok(sentenceService.getRandom(level, category));
 - 반환 타입: 컨트롤러용 서비스 → **응답 DTO**. 다른 기능용 메서드 → **record** (`SentenceDetail`). `[B 전제]` 위치는 모듈 base package (`sentence.SentenceDetail`, `SentenceReader`); A′ 이면 `sentence.dto.SentenceDetail`, `SentenceService.getActive`.
 - 강제: ArchUnit R5 (`@Service` public 메서드 반환 타입에 `@Entity` 금지).
 - 이 규칙은 A′·B 모두에 적용된다 (architecture-proposal.md §2 — A′ 도 서비스 간에 record 를 쓴다). 따라서 R5 는 어느 선택지에서도 완화하지 않는다. 해제 작업: `FIX-R5`.
-- 05/06 관계: 06 §4.3 예시(컨트롤러가 변환)와 §3.3 예시(서비스가 변환) 중 **§3.3 쪽으로 통일**. 06 §3.2·§4.3 코드 수정 (`getRandom` 반환 타입).
+- 05/06 관계: 06 §4.3 예시(컨트롤러가 변환)와 §3.3 예시(서비스가 변환) 중 **§3.3 쪽으로 통일**. 06 §3.2·§4.3·§4.4 코드 수정 (§8).
 
 ### 3.2 DTO 는 변환만, 규칙 계산은 도메인·서비스
 
@@ -476,7 +479,7 @@ public SentenceDetail getActive(String sentenceId) { ... }
 | 조회 → 외부 호출 → 응답 (답안 채점) | 오케스트레이터(`AnswerService.score`)는 `@Transactional` 없음. 조회 = 다른 빈의 readOnly 메서드 |
 | 외부 호출 → 저장 (Toss 스냅샷, 향후 답안 이력) | 외부 호출은 오케스트레이터에서. 저장이 리포지토리 상속 `save` 1회면 그 자체 트랜잭션, 여러 쓰기를 묶어야 하면 저장 전용 빈의 `@Transactional` 메서드 |
 
-Toss 스냅샷 적용 예 — **트랜잭션 경계와 에러 정책만** 보이는 축약 예시. 이름·정책은 설계 문서 `docs/public/toss/01_보유자산스냅샷.md` §3(시퀀스)·§6(에러 정책)을 따른다.
+Toss 스냅샷 적용 예 `[B 전제]` — **트랜잭션 경계와 에러 정책만** 보이는 축약 예시. B 에서 `TossHoldingsClient` 는 같은 `toss` 모듈의 internal 이라 §2.4 예외 규칙에 해당한다. A′ 이면 클라이언트가 `infra/toss` 에 있으므로 서비스가 직접 쓰면 A′ 규칙 (b) 위반 → `infra/toss/TossHoldingsFetcher` 같은 변환 클래스가 재시도·분류를 맡고 서비스는 그 결과와 도메인 예외(`TossException.Rejected`/`.Unavailable` 등)만 받는다 (architecture-proposal.md §2 A′ (b) 의 허용 목록에 그 이름 추가). 이름·정책은 설계 문서 `docs/public/toss/01_보유자산스냅샷.md` §3(시퀀스)·§6(에러 정책)을 따른다.
 
 ```java
 // toss/holdings/service/HoldingsSnapshotService.java — 트랜잭션 없음 (설계 §3 의 진입점 이름)
@@ -508,7 +511,8 @@ public void collect() {
     }
 }
 
-// 설계 §6: 5xx·네트워크·타임아웃 → 재시도 1회. GET 은 timeout 이 ResourceAccessException, 본문 수신 중 정지는 RestClientException (§2.4 표)
+// 설계 §6: 5xx·네트워크·타임아웃 → 재시도 1회. 본문 없는 요청의 timeout 은 ResourceAccessException, 본문 수신 중 정지는 RestClientException (§2.4 표).
+// 마지막 catch 는 역직렬화 실패·600+ 상태도 1회 더 시도한다 — 결정적 실패라 결과는 같고 무해
 private <T> T withOneRetry(Supplier<T> call) {
     try {
         return call.get();
@@ -523,7 +527,7 @@ private <T> T withOneRetry(Supplier<T> call) {
 ```
 
 - 스케줄러는 `GlobalExceptionHandler` 를 거치지 않으므로 **스케줄러 진입점만** 직접 catch·로깅한다 (§5.1 예외). 레벨은 설계 §6 의 정책을 따른다.
-- 저장은 `HoldingsSnapshotRepository.save` 직접 호출 — 상속 메서드라 `SimpleJpaRepository` 의 트랜잭션이 걸린다 (§4.2). 매핑은 `domain → dto` 의존(R4b 위반)을 피하려고 엔티티 밖(`HoldingsSnapshotMapper`)에 둔다. 저장 전에 여러 테이블을 묶어야 하면 그때 저장 전용 `@Transactional` 빈을 둔다.
+- 저장은 `HoldingsSnapshotRepository.save` 직접 호출 — 상속 메서드라 `SimpleJpaRepository` 의 트랜잭션이 걸린다 (§4.2). 매핑은 `domain → dto` 의존(R4b 위반)을 피하려고 `toss/holdings/service/HoldingsSnapshotMapper` 에 두고, 엔티티 팩토리는 dto 가 아닌 원시값을 받도록 WIP 의 `HoldingsSnapshotEntity.create(…, HoldingsApiResponse.Result, …)` 시그니처를 바꾼다. 저장 전에 여러 테이블을 묶어야 하면 그때 저장 전용 `@Transactional` 빈을 둔다.
 - 이름: WIP 의 `TossHoldingsClient`·`HoldingsApiResponse`, 설계 §3 의 `TossTokenProvider.getAccessToken()`. `tossHoldingsClient.get(token, accountSeq)` 시그니처는 미구현이라 가정. `clock` 주입은 테스트에서 시각 고정용.
 
 ### 4.4 유지하는 규칙

@@ -286,7 +286,7 @@ public <T extends BaseException> T logMessage(String logMessage) {
 } catch(ResourceAccessException e) {
 ```
 
-- **read timeout 이 500 이 된다** [실행·리뷰, examples-round-1 C1]: 현재 설정(`SimpleClientHttpRequestFactory`)에서 read timeout 은 `ResourceAccessException` 이 아니라 `RestClientException("Error while extracting response …") → SocketTimeoutException` 으로 올라온다. 두 catch 어디에도 걸리지 않아 catch-all 500. `AnswerApi.java:93` 이 문서화한 "타임아웃 → 503" 계약과 다르다. (F1 때문에 지금은 요청 자체가 나가지 않아 드러나지 않는다 — F1 수정 즉시 표면화) → 해소 작업 `FIX-F1T`
+- **read timeout 이 500 이 된다** [실행·리뷰, examples-round-1 C1]: 현재 설정(`SimpleClientHttpRequestFactory`)에서 **본문 있는 요청(Similarity 의 POST)의** read timeout 은 `ResourceAccessException` 이 아니라 `RestClientException("Error while extracting response …") → SocketTimeoutException` 으로 올라온다. 두 catch 어디에도 걸리지 않아 catch-all 500. `AnswerApi.java:93` 이 문서화한 "타임아웃 → 503" 계약과 다르다. (F1 때문에 지금은 요청 자체가 나가지 않아 드러나지 않는다 — F1 수정 즉시 표면화) → 해소 작업 `FIX-F1T`
 - 응답 역직렬화 실패도 같은 `RestClientException` 경로 → 500 [정적]. 200/204 빈 본문이면 HTTP Interface 가 `null` 을 반환해 `.score()` 에서 NPE → 500 [실행·리뷰, examples-round-1 m4] → `FIX-F1T`.
 - 비표준 상태 코드: 599 는 `HttpServerErrorException`(이미 잡힘), 600 이상은 기본 `ResponseErrorHandler` 가 에러로 보지 않아 **성공으로 처리** [실행·리뷰, examples-round-1 M4]. `UnknownHttpStatusCodeException` 은 기본 설정에서 나오지 않는다.
 - 로그: 네트워크 오류는 서비스에서 `log.error(..., e)` 한 뒤 핸들러가 다시 ERROR 로 남김(이중 로깅). 4xx/5xx 는 서비스 로그 없이 핸들러만 기록. 06 §3.5 "외부 호출 실패 ERROR" 와 06 §6.6 "throw 직전 로그 금지" 가 서로 충돌하는 지점.

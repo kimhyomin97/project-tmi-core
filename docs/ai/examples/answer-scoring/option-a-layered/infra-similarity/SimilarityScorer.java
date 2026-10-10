@@ -32,10 +32,10 @@ public class SimilarityScorer {
             throw e.getStatusCode().is4xxClientError()
                     ? new SimilarityException.RequestInvalid(e)
                     : new SimilarityException.Unavailable(e);
-        } catch (ResourceAccessException e) {            // 연결 거부 등 I/O 오류 (연결 단계)
+        } catch (ResourceAccessException e) {            // I/O 오류: 연결 거부, 본문 없는 요청의 read timeout
             throw new SimilarityException.Unavailable(e);
         } catch (RestClientException e) {
-            // SimpleClientHttpRequestFactory 에서는 **read timeout 이 여기로 온다** ("Error while extracting response"
+            // SimpleClientHttpRequestFactory 에서 본문 있는 요청(POST)의 **read timeout 이 여기로 온다** ("Error while extracting response"
             // → SocketTimeoutException, examples-round-1 리뷰 C1 실행 확인). 응답 역직렬화 실패도 여기.
             // 이 catch 를 지우면 타임아웃이 503 → 500 으로 회귀한다 — 회귀 테스트: 지연 응답 + 짧은 readTimeout.
             throw new SimilarityException.Unavailable(e);
