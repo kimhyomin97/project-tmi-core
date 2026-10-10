@@ -3,7 +3,8 @@
 > 상태: **제안 — 미확정**. 결정 항목은 [decisions-needed.md](./decisions-needed.md) 에 D 번호로 연결했다.
 > 범위: 네이밍 · 예외 처리 · DTO 변환 · 트랜잭션 경계 · 로깅 · 테스트 (+ 포맷 도구).
 > 기존 규칙 [05_개발컨벤션.md](../public/05_개발컨벤션.md), [06_코드가이드라인.md](../public/06_코드가이드라인.md) 을 **대체하지 않고 고친다**. 각 항목에 "05/06 과의 관계" 를 적었다.
-> 구조 선택(architecture-proposal.md D1)과 무관하게 적용되는 규칙이 기본이고, 선택지에 따라 달라지는 규칙은 `[B 전제]` 로 표시했다.
+> 구조 선택(architecture-proposal.md D1)과 무관하게 적용되는 규칙이 기본이다. **규칙은 같고 After 코드의 클래스 위치·이름만 선택지에 따라 다른 경우** `[B 전제]` 로 표시하고 A′ 형태를 한 줄 덧붙였다.
+> 개정: Round 1 리뷰([reviews/conventions-proposal-round-1.md](./reviews/conventions-proposal-round-1.md)) 반영 — `BaseException` 생성자 NPE(C1), 상위 `handleExceptionInternal` 동작 보존(M1), Toss 예시를 설계 §6 과 일치(M2), §8 재작성(M5).
 
 ## 0. 검증 방법
 
@@ -12,10 +13,11 @@
 | 검증 대상 | 방법 | 결과 |
 |---|---|---|
 | §2.1 basename 수정 | `@WebMvcTest(properties = "spring.messages.basename=messages/messages")` | en/ko 메시지 정상 해석 ✓ |
-| §2.2 `GlobalExceptionHandler` After | 테스트 소스셋에 같은 코드를 다른 이름으로 두고, `@WebMvcTest` 에서 기존 핸들러를 `excludeFilters` 로 빼고 `@Import` | 7개 시나리오 중 7개 의도대로 동작 (아래 §2.2 표) ✓ |
+| §2.2 `GlobalExceptionHandler` After (1차) | 테스트 소스셋에 Lombok 을 걷어낸 같은 로직(`@Slf4j`→`LoggerFactory`, `@RequiredArgsConstructor`→생성자)을 다른 이름으로 두고, `@WebMvcTest` 에서 기존 핸들러를 `excludeFilters` 로 빼고 `@Import` | 7개 시나리오 중 7개 의도대로 동작 (아래 §2.2 표) ✓ |
+| §2.2 + §2.3 + §2.1 After (2차, Round 1 반영본) | 전용 git worktree 의 `src/main` 에 **문서 After 코드를 그대로** 적용 (worktree 는 실행 후 삭제, 이 브랜치의 `src/main` 은 불변) + `@WebMvcTest` + `OutputCaptureExtension` | 404 → `"Sentence not found: x"` + **INFO, 스택트레이스 없음** / 503 → **ERROR + 원인 스택트레이스** / 깨진 JSON 400 `BAD_REQUEST` / text/plain 415 / DELETE 405 + `Allow` ✓ |
 | §6 테스트 예시 3종 | 현재 코드에 그대로 실행 | `GradeTest` 통과, `SimilarityClientTest` 는 **F1 을 재현하며 실패**, 메시지 테스트는 **F2 를 재현하며 실패** — 의도한 결과 ✓ |
 
-검증하지 못한 것: §3·§4 의 서비스 코드 After (구조 변경을 동반 — examples/ 에 있으며 컴파일 대상 아님), §7 Spotless 의 전체 적용 결과(§7 참조).
+검증하지 못한 것: §3·§4 의 서비스 코드 After (구조 변경을 동반 — examples/ 에 있으며 컴파일 대상 아님), §4.3 Toss 예시 (WIP 클래스 미구현). §7 Spotless 는 사본에서 적용 결과를 계수 (current-state.md §7.3).
 
 ---
 
@@ -35,7 +37,7 @@ Before — 원천이 있는데 `of` (`answer/dto/AnswerResponse.java:30`)
 public static AnswerResponse of(SentenceEntity sentence, String userAnswer, double score) {
 ```
 
-After
+After `[B 전제]` — A′ 이면 `SentenceDetail` 이 `sentence.dto` 패키지에 있을 뿐 시그니처 동일
 
 ```java
 public static AnswerResponse from(SentenceDetail sentence, String userAnswer, double score, Grade grade) {
@@ -43,6 +45,7 @@ public static AnswerResponse from(SentenceDetail sentence, String userAnswer, do
 
 - 유지: `SentenceResponse.from(SentenceEntity)`, `ErrorResponse.of(code, message)` (값 조립) — 이미 규칙에 맞다.
 - 근거: JDK 의 `LocalDate.from(TemporalAccessor)`(변환) / `List.of(...)`(조립) 관례. 출처: https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/time/LocalDate.html#from(java.time.temporal.TemporalAccessor) (접근 미확인 — 관례 설명용, 결정 근거 아님).
+- 이 규칙 자체(from/of 구분)는 구조와 무관하다.
 - 05/06 관계: 06 §5.1 "Response 는 `from(Entity)`" 를 일반화. 06 수정 필요 없음.
 
 ### 1.2 리포지토리 쿼리 메서드 — 조건을 이름에 드러낸다
@@ -60,7 +63,7 @@ Optional<SentenceEntity> findRandomActiveByLevelAndCategory(@Param("level") Leve
 ```
 
 - 이유: 06 §2.1 "모든 조회 메서드에 `AndDeletedAtIsNull` 명시" 의 목적은 soft delete 조건을 **이름으로** 보이게 하는 것. `@Query` 메서드는 파생 규칙이 없으므로 `Active` 로 대신 드러낸다.
-- SpEL `:#{#level.name()}` 은 **유지** — 필요하다 (current-state.md §4.3). 06 §2.3 의 "자동 바인딩" 문구는 삭제 대상 (→ D8).
+- SpEL `:#{#level.name()}` 은 **유지** — **native query** 에서는 필요하다 (current-state.md §4.3; round-2 리뷰가 Spring Data `@Query(nativeQuery = true)` 경유로도 실패를 재현. JPQL 에서는 `:level` 바인딩이 동작). 06 §2.3 의 "자동 바인딩" 문구는 native 한정으로 정정 (→ D8).
 
 ### 1.3 로그 메시지 형식 — `"{대상} {동작}: key=value"`
 
@@ -84,7 +87,7 @@ log.info("Similarity 응답: score={}", score);
 
 | 항목 | 현재 | 판단 |
 |---|---|---|
-| 헝가리안 접두사 `IErrorType`, `ETmiErrorType`, `ELogLevel` | 05 §5.1·99 §2 에 문서화된 팀 결정 | **유지**. Java 관례와 다르지만 변경 시 `src/main` 7파일·33회 참조 수정 (`grep -rhoE "IErrorType|ETmiErrorType|ELogLevel" src/main | wc -l`), 이득은 관례 일치뿐 (→ D10, 낮은 우선순위) |
+| 헝가리안 접두사 `IErrorType`, `ETmiErrorType`, `ELogLevel` | 05 §5.1·99 §2 에 이 이름으로 정착 (접두사를 택한 이유는 문서에 없음) | **유지**. Java 관례와 다르지만 변경 시 `src/main` 7파일·33회 참조 수정 (`grep -rhoE "IErrorType|ETmiErrorType|ELogLevel" src/main | wc -l`), 이득은 관례 일치뿐 (→ D10, 낮은 우선순위) |
 | 엔티티 접미사 `XxxEntity` | 06 §1.1 | 유지. 선택지 B 의 공개 record(`SentenceDetail`)와 이름이 겹치지 않는 장점 |
 | 테스트 메서드 `shouldXxx_whenYyy` + 한국어 `@DisplayName` | 06 §7.2 | 유지 |
 
@@ -160,6 +163,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @Override
     protected ResponseEntity<Object> handleExceptionInternal(
             Exception ex, @Nullable Object body, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        // 상위 구현의 두 동작을 보존: (1) 이미 commit 된 응답엔 쓰지 않음 (2) 500 이면 원인 예외를 요청 속성에 기록
+        if (request instanceof ServletWebRequest swr && swr.getResponse() != null && swr.getResponse().isCommitted()) {
+            return null;
+        }
+        if (status.value() == 500) {
+            request.setAttribute(WebUtils.ERROR_EXCEPTION_ATTRIBUTE, ex, WebRequest.SCOPE_REQUEST);
+        }
         ResponseEntity<ErrorResponse> mapped = switch (ex) {
             case MethodArgumentNotValidException e -> respondValidation(e);
             case MissingServletRequestParameterException e ->
@@ -205,7 +215,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 }
 ```
 
-필요 import: `org.springframework.beans.TypeMismatchException`, `org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler`, `org.springframework.web.context.request.WebRequest`, `org.springframework.http.{HttpHeaders,HttpStatusCode}`, `org.jspecify.annotations.Nullable`, `java.util.Arrays`.
+필요 import: `org.springframework.beans.TypeMismatchException`, `org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler`, `org.springframework.web.context.request.{WebRequest,ServletWebRequest}`, `org.springframework.web.util.WebUtils`, `org.springframework.http.{HttpHeaders,HttpStatusCode}`, `org.jspecify.annotations.Nullable`, `java.util.Arrays`.
+
+- 규칙 2(4xx 는 INFO)는 **§2.3 을 함께 적용해야** 도메인 예외에도 성립한다. §2.2 만 적용하면 `SentenceException.NotFound` 는 여전히 `getLogLevel() == ERROR` (round-1 리뷰 m3 [실행]).
+- 405 등에서는 상위 클래스의 `PageNotFound` 로거가 별도로 `WARN` 한 줄을 남긴다 (round-1 m4 [실행]) → 이중 로깅을 원치 않으면 `logging.level.org.springframework.web.servlet.PageNotFound=ERROR`.
+- `Accept: application/xml` 요청에서 예외가 나면 JSON 에러 응답을 쓸 수 없어 `HttpMediaTypeNotAcceptableException` 이 된다 — AS-IS 와 같은 동작, 개선 대상 아님 (round-1 m11).
 
 검증 결과 (§0 방식, 기존 핸들러 대신 After 핸들러 + §2.1 basename 적용)
 
@@ -238,10 +252,22 @@ public <T extends BaseException> T logLevel(ELogLevel logLevel) { ... }     // �
 public <T extends BaseException> T logMessage(String logMessage) { ... }   // 호출처 0, 읽는 곳도 0
 ```
 
-After
+After — **생성자 4개 모두** 하나의 경로로 위임 (Round 1: 1개만 보여 404 에서 NPE 가 나던 결함 수정, §0 2차 검증)
 
 ```java
-private ELogLevel logLevel;   // 생성자에서 결정
+private ELogLevel logLevel;
+
+protected BaseException(HttpStatus httpStatus, IErrorType errorType) {
+    this(httpStatus, errorType, null, EMPTY_ARGS);
+}
+
+protected BaseException(HttpStatus httpStatus, IErrorType errorType, Throwable cause) {
+    this(httpStatus, errorType, cause, EMPTY_ARGS);
+}
+
+protected BaseException(HttpStatus httpStatus, IErrorType errorType, Object... args) {
+    this(httpStatus, errorType, null, args);
+}
 
 protected BaseException(HttpStatus httpStatus, IErrorType errorType, Throwable cause, Object... args) {
     super(errorType.getErrorCode(), cause);
@@ -253,8 +279,10 @@ protected BaseException(HttpStatus httpStatus, IErrorType errorType, Throwable c
 // logLevel(...) 체이닝은 유지 (명시적 override 용). logMessage 필드·메서드는 삭제.
 ```
 
+- `(HttpStatus, IErrorType, Throwable)` 과 `(HttpStatus, IErrorType, Object...)` 의 오버로드 해석은 AS-IS 와 같다 (Throwable 인자는 전자로).
+
 - 효과: `SentenceException.NotFound`(404)가 `INFO`, `SimilarityException.*`(502/503)는 `ERROR` + 스택트레이스(§2.2 규칙 2).
-- 05/06 관계: 99 §2.6 표의 `logMessage` 행 삭제. 05 §6.6 "`ERROR` — 예외 발생" 을 "`ERROR` — 서버 측 원인(5xx)" 으로 수정 (→ §5.1).
+- 05/06 관계: 99 §2.6 표의 `logMessage` 필드·chaining 행 수정, "기본 logLevel" 서술 추가. 05 §6.6 "`ERROR` — 예외 발생" 을 "`ERROR` — 서버 측 원인(5xx)" 으로 수정 (→ §5.1).
 
 ### 2.4 외부 시스템 예외 변환 — 분류를 `RestClientResponseException` 기준으로
 
@@ -285,8 +313,8 @@ After ([examples/answer-scoring/option-b-modular/similarity/SimilarityScorer.jav
 ```
 
 - 변환 위치: `[B 전제]` 외부 시스템 모듈의 공개 클래스(`SimilarityScorer`) 하나. 선택지 A 이면 서비스의 private 메서드에 둔다.
-- 근거: `UnknownHttpStatusCodeException` 은 `RestClientResponseException` 의 하위이며 `HttpStatusCodeException` 의 하위가 아니다 (Spring `org.springframework.web.client` 예외 계층 — research.md 에 직접 출처 없음, 정적 확인 (estimated)).
-- 05/06 관계: 05 §5.7 예시 코드를 위 After 로 교체.
+- 근거: `UnknownHttpStatusCodeException extends RestClientResponseException` 이며 `HttpStatusCodeException` 의 하위가 아니다 — spring-web 7.0.3 바이트코드(`javap`)로 확인 (round-1 리뷰 m5 [실행·리뷰]).
+- 05/06 관계: 05 §5.7 예시 코드를 위 After 로 교체하고, 마지막 문단("`HttpClientErrorException`/`HttpServerErrorException`/`ResourceAccessException` 던지므로 위 try/catch 그대로 적용")도 수정.
 
 ### 2.5 HTTP Interface 클라이언트 규칙
 
@@ -343,10 +371,10 @@ return ResponseEntity.ok(sentenceService.getRandom(level, category));
 ```
 
 - 이유: (1) `answer` 는 이미 이 방식(`AnswerService.java:32`) — 두 방식 혼재(F5) 해소 (2) 엔티티가 트랜잭션 밖으로 나가지 않아야 OSIV 를 끌 수 있다 (§3.4).
-- 반환 타입: 컨트롤러용 서비스 → **응답 DTO**. `[B 전제]` 다른 모듈용 공개 API → **공개 record** (`SentenceDetail`).
+- 반환 타입: 컨트롤러용 서비스 → **응답 DTO**. 다른 기능용 메서드 → **record** (`SentenceDetail`). `[B 전제]` 위치는 모듈 base package (`sentence.SentenceDetail`, `SentenceReader`); A′ 이면 `sentence.dto.SentenceDetail`, `SentenceService.getActive`.
 - 강제: ArchUnit R5 (`@Service` public 메서드 반환 타입에 `@Entity` 금지).
-- 선택지 A 를 고르면 이 규칙을 "컨트롤러로는 DTO, 서비스 간에는 엔티티 허용" 으로 완화한다 (architecture-proposal.md §2 A).
-- 05/06 관계: 06 §4.3 예시(컨트롤러가 변환)와 §3.3 예시(서비스가 변환) 중 **§3.3 쪽으로 통일**. 06 §4.3 코드 수정.
+- 이 규칙은 A′·B 모두에 적용된다 (architecture-proposal.md §2 — A′ 도 서비스 간에 record 를 쓴다). 따라서 R5 는 어느 선택지에서도 완화하지 않는다. 해제 작업: `FIX-R5`.
+- 05/06 관계: 06 §4.3 예시(컨트롤러가 변환)와 §3.3 예시(서비스가 변환) 중 **§3.3 쪽으로 통일**. 06 §3.2·§4.3 코드 수정 (`getRandom` 반환 타입).
 
 ### 3.2 DTO 는 변환만, 규칙 계산은 도메인·서비스
 
@@ -365,9 +393,9 @@ return AnswerResponse.from(sentence, request.userAnswer(), score, Grade.fromScor
 
 - 02 §4.2 "점수 → 등급 변환은 Service 책임" 과 일치하게 됨. 규칙 자체는 `Grade.fromScore` (domain) 에 그대로.
 
-### 3.3 기능 간 데이터 전달 `[B 전제]`
+### 3.3 기능 간 데이터 전달
 
-- 다른 모듈에 넘기는 값은 모듈 base package 의 **공개 record** 로. 엔티티·내부 DTO 금지.
+- 다른 기능에 넘기는 값은 **record** 로. 엔티티·웹 응답 DTO 재사용 금지. `[B 전제]` 위치는 모듈 base package (A′ 이면 `{기능}/dto/`).
 - 공개 record 는 **호출 측이 실제로 쓰는 필드만** 담는다 (`SentenceDetail(id, englishText, koreanRef)` — level·category 제외).
 - 예시: [examples/answer-scoring/option-b-modular/sentence/](./examples/answer-scoring/option-b-modular/sentence/)
 
@@ -405,7 +433,7 @@ SentenceEntity sentence = loadSentence(request.sentenceId());
 protected SentenceEntity loadSentence(String sentenceId) { ... }
 ```
 
-After — 조회는 소유 모듈의 빈이 트랜잭션을 연다 ([examples/.../option-b-modular/sentence/SentenceReader.java](./examples/answer-scoring/option-b-modular/sentence/SentenceReader.java))
+After `[B 전제]` — 조회는 소유 기능의 빈이 트랜잭션을 연다 ([examples/.../option-b-modular/sentence/SentenceReader.java](./examples/answer-scoring/option-b-modular/sentence/SentenceReader.java)). A′ 이면 `sentenceReader.getActive` 대신 `sentenceService.getActive` — 규칙(다른 빈 경유)은 같다.
 
 ```java
 // AnswerService — @Transactional 없음
@@ -423,7 +451,7 @@ public SentenceDetail getActive(String sentenceId) { ... }
 
 - 사실: `SimpleJpaRepository` 의 `readOnly` 트랜잭션은 **상속 메서드(`findById` 등)에만** 적용되고, 인터페이스에 선언한 파생·`@Query` 메서드에는 없다 (research.md §5 표 5.3, current-state.md §3.4 프로브 [실행]).
 - 규칙: 리포지토리를 호출하는 서비스 메서드는 **반드시** `@Transactional` 또는 `@Transactional(readOnly = true)` 를 가진다. 리포지토리 인터페이스에는 붙이지 않는다 (경계를 한 곳에서 관리).
-- 05/06 관계: 06 §3.1 "메서드별 `@Transactional`" 유지, 위 사실을 §2.3 주의에 추가.
+- 05/06 관계: 06 §3.1 "메서드별 `@Transactional`" 유지, 위 사실을 06 §2.3 주의에 추가.
 
 ### 4.3 외부 호출은 트랜잭션 밖, 오케스트레이터는 트랜잭션 없음
 
@@ -432,23 +460,37 @@ public SentenceDetail getActive(String sentenceId) { ... }
 | 조회 → 외부 호출 → 응답 (답안 채점) | 오케스트레이터(`AnswerService.score`)는 `@Transactional` 없음. 조회 = 다른 빈의 readOnly 메서드 |
 | 외부 호출 → 저장 (Toss 스냅샷, 향후 답안 이력) | 외부 호출은 오케스트레이터에서, 저장은 저장 전용 빈의 `@Transactional` 메서드 |
 
-Toss 스냅샷 적용 예 (설계 문서 `docs/public/toss/01_보유자산스냅샷.md` §3 의 "save 만 트랜잭션" 을 코드로)
+Toss 스냅샷 적용 예 — **트랜잭션 경계와 에러 정책만** 보이는 축약 예시. 이름·정책은 설계 문서 `docs/public/toss/01_보유자산스냅샷.md` §3(시퀀스)·§6(에러 정책)을 따른다.
 
 ```java
-// toss/holdings/service/HoldingsSnapshotJob.java — 트랜잭션 없음
+// toss/holdings/service/HoldingsSnapshotService.java — 트랜잭션 없음 (설계 §3 의 진입점 이름)
 @Scheduled(cron = "${toss.holdings.schedule-cron}", zone = "${toss.holdings.timezone}")
 public void collect() {
+    long accountSeq = properties.defaultAccountSeq();              // 설계 §3 (2) toss.default-account-seq
+    Instant snapshotAt = clock.instant().truncatedTo(ChronoUnit.HOURS);
     try {
-        HoldingsApiResponse response = tossHoldingsClient.get(...);    // 외부 호출: 트랜잭션 밖
-        snapshotWriter.save(accountSeq, snapshotAt, response);       // 다른 빈 → 짧은 쓰기 트랜잭션
+        HoldingsApiResponse response = fetchWithOneRetry(accountSeq);    // 외부 호출: 트랜잭션 밖
+        snapshotWriter.save(accountSeq, snapshotAt, response);           // 다른 빈 → 짧은 쓰기 트랜잭션
+    } catch (HttpClientErrorException e) {
+        log.warn("Toss 보유자산 조회 거부: accountSeq={} status={}", accountSeq, e.getStatusCode());   // 설계 §6: 4xx → WARN, skip
+    } catch (DataIntegrityViolationException e) {
+        log.info("Toss 스냅샷 중복 — 무시: accountSeq={} snapshotAt={}", accountSeq, snapshotAt);       // 설계 §6: UNIQUE 위반 → INFO
     } catch (RuntimeException e) {
-        log.error("Toss 스냅샷 수집 실패: accountSeq={}", accountSeq, e);   // 스케줄러는 예외로 종료 금지 (설계 §6)
+        log.error("Toss 스냅샷 수집 실패: accountSeq={}", accountSeq, e);   // 재시도 후에도 실패. 스케줄러는 예외로 종료 금지 (설계 §6)
+    }
+}
+
+private HoldingsApiResponse fetchWithOneRetry(long accountSeq) {
+    try {
+        return tossHoldingsClient.get(tokenProvider.bearer(), accountSeq);
+    } catch (HttpServerErrorException | ResourceAccessException e) {        // 설계 §6: 5xx·타임아웃 → 재시도 1회
+        return tossHoldingsClient.get(tokenProvider.bearer(), accountSeq);
     }
 }
 ```
 
 - 스케줄러는 `GlobalExceptionHandler` 를 거치지 않으므로 **스케줄러 진입점만** 직접 catch·로깅한다 (§5.1 예외).
-- 이 예시는 WIP 클래스 이름(`TossHoldingsClient`, `HoldingsApiResponse`)을 그대로 썼다 — 미구현이므로 시그니처는 가정.
+- WIP 클래스 이름(`TossHoldingsClient`, `HoldingsApiResponse`)을 그대로 썼다 — 미구현이므로 시그니처(`get(bearer, accountSeq)`, `bearer()`)는 설계 문서 §3·00_인증.md §3 에서 가정. `clock` 주입은 테스트에서 시각 고정용.
 
 ### 4.4 유지하는 규칙
 
@@ -501,11 +543,16 @@ spring.jpa.properties.hibernate.format_sql=true
 After
 
 ```properties
-# application.properties — 기본 off
-# application-local.properties
+# application.properties — 아래 두 줄을 삭제 (기본 off)
+# spring.jpa.show-sql=true
+# spring.jpa.properties.hibernate.format_sql=true
+
+# application-local.properties (신규)
 logging.level.org.hibernate.SQL=DEBUG
 spring.jpa.properties.hibernate.format_sql=true
 ```
+
+- 앱에는 기본 프로필 설정이 없다 — `SPRING_PROFILES_ACTIVE=local` 을 주지 않으면 SQL 로그가 꺼진다 (07 §3 의 `local` 은 환경 변수 표의 예시값일 뿐).
 
 - `show-sql` 은 stdout 직접 출력이라 로그 레벨·포맷 통제를 벗어난다 (estimated — Hibernate 일반 동작). 05 §6.7 "운영 환경 DEBUG 활성화 금지" 와 맞추려면 프로필 분리가 필요.
 - 05/06 관계: 07 §3 의 `SPRING_PROFILES_ACTIVE` (`local`/`prod`) 와 연결. 현재 프로필 파일 없음.
@@ -525,7 +572,7 @@ spring.jpa.properties.hibernate.format_sql=true
 | T1 | `./gradlew test` 는 **외부 DB·Docker·네트워크 없이** 통과해야 한다 | AI 루프·CI 의 기본 신호 (ai-workflow.md §1). 현재 유일한 테스트가 이를 어김 (blockers.md §2) |
 | T2 | 버그 수정은 **실패하는 테스트를 먼저** 커밋 | F1~F3 이 모두 테스트 부재로 잠복 (current-state F8) |
 | T3 | 실 DB 가 필요한 테스트는 `@Tag("integration")` + 별도 Gradle 태스크 | T1 과 양립 |
-| T4 | 테스트 소스셋엔 **Lombok 이 없다** — 쓰려면 `testCompileOnly`/`testAnnotationProcessor` 추가, 아니면 쓰지 않는다 | `build.gradle:33,35` 가 main 에만 선언 (§0 검증 중 컴파일 오류로 확인 [실행]) |
+| T4 | 테스트 소스셋엔 **Lombok 이 없다** — 쓰려면 `testCompileOnly`/`testAnnotationProcessor` 추가, 아니면 쓰지 않는다 | `build.gradle:32,34` (`compileOnly`, `annotationProcessor`) 가 main 에만 선언 (§0 검증 중 컴파일 오류로 확인 [실행]) |
 | T5 | Boot 4 API 사용: `@MockitoBean` (`@MockBean` 제거됨), `org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest` | research.md §6.1 [J], §0 컴파일 확인 [실행] |
 
 ### 6.2 계층별 테스트와 잡는 결함
@@ -595,14 +642,32 @@ class SentenceControllerTest {
 }
 ```
 
-- 깨진 JSON(F3) 테스트는 `@WebMvcTest(AnswerController.class)` 에 둔다 — 슬라이스는 지정한 컨트롤러만 등록하므로 `SentenceController` 슬라이스에서 `POST /answers` 를 부르면 404 가 난다 (검증 중 실제로 겪음 [실행]).
+**웹 슬라이스 — F3 을 잡는 테스트** (FIX-F3 의 verify. §0 2차 검증과 같은 시나리오)
+
+```java
+@WebMvcTest(AnswerController.class)          // 슬라이스는 지정한 컨트롤러만 등록 — SentenceController 슬라이스에선 /answers 가 404
+class AnswerControllerTest {
+
+    @Autowired MockMvc mockMvc;
+    @MockitoBean AnswerService answerService;
+
+    @Test
+    @DisplayName("깨진 JSON 은 400 BAD_REQUEST")
+    void shouldReturn400_whenBodyMalformed() throws Exception {
+        mockMvc.perform(post("/api/v1/answers").contentType(MediaType.APPLICATION_JSON).content("{broken"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("TMI.COMMON.BAD_REQUEST"));
+    }
+}
+```
 
 **도메인 단위 — 경계값**
 
 ```java
 class GradeTest {
     @ParameterizedTest(name = "{0} → {1}")
-    @CsvSource({"0.9, EXCELLENT", "0.8999, GOOD", "0.7, GOOD", "0.5, FAIR", "0.4999, POOR", "0.0, POOR"})
+    @DisplayName("점수 경계값마다 등급이 바뀐다")
+    @CsvSource({"0.9, EXCELLENT", "0.8999, GOOD", "0.7, GOOD", "0.6999, FAIR", "0.5, FAIR", "0.4999, POOR", "0.0, POOR"})
     void shouldMapBoundary_whenFromScore(double score, Grade expected) {
         assertThat(Grade.fromScore(score)).isEqualTo(expected);
     }
@@ -638,18 +703,28 @@ After (두 안 — D3)
 
 ---
 
-## 8. 05/06 문서 수정 목록 (승인 시)
+## 8. 기존 문서 수정 목록 (승인 시 — `DOC-1`)
 
-| 문서 | 절 | 수정 |
-|---|---|---|
-| 05 | §5.7 | 예외 분류 예시를 §2.4 After 로 |
-| 05 | §6.6 | `ERROR` 정의 = 5xx, 4xx = `INFO` |
-| 06 | §2.2·§2.3 | native enum 바인딩: SpEL 필요로 정정 |
-| 06 | §3.3 | 권장 예시를 다른 빈 호출로 교체 (self-invocation 제거) |
-| 06 | §3.5 | "외부 호출 실패 ERROR" 행 삭제 |
-| 06 | §4.3 | 컨트롤러가 서비스의 DTO 를 그대로 반환하는 예시로 |
-| 06 | §4.5 | 415·깨진 JSON 행 추가 |
-| 06 | §5.3 | `@Size(min = 1)` 제거 |
-| 06 | §7 | Boot 4 패키지·`@MockitoBean`, 계층별 표(§6.2), 테스트 소스셋 Lombok 부재 |
-| 99 | §2.3, §2.6, §3 | `RestClient` 빈 표현 정정, `logMessage` 삭제, 메시지 설정 2줄 |
-| 03 | §2.1 | 누락 시 `MISSING_PARAMETER` 로 정정, §1.5 코드 목록 보강 (D6) |
+본문 절과 1:1 로 대조했다. "근거" 열이 이 문서의 절이다.
+
+| 문서 | 절 | 수정 | 근거 |
+|---|---|---|---|
+| 05 | §5.7 | 예외 분류 예시를 `RestClientResponseException` 기준으로, 마지막 문단 정정 | §2.4 |
+| 05 | §6.5 | 예시 `log.error("유사도 서버 호출 실패 …", e)` 를 "throw 직전 로그 금지" 와 맞게 교체 | §5.1 |
+| 05 | §6.6 | `ERROR` = 서버 측 원인(5xx), 4xx = `INFO` | §2.3, §5.1 |
+| 06 | §2.2 | 예시 `findRandomBy` → `findRandomActiveByLevelAndCategory`, native 에선 SpEL 유지 | §1.2 |
+| 06 | §2.3 | "enum 자동 바인딩" 을 native 한정 정정 + "선언 쿼리 메서드엔 기본 트랜잭션 없음" 추가 | §1.2, §4.2 |
+| 06 | §3.2 | 예시 `getRandom` 반환 타입 → `SentenceResponse` | §3.1 |
+| 06 | §3.3 | "권장" 예시를 다른 빈 호출로 교체 (self-invocation 제거) | §4.1 |
+| 06 | §3.5 | "외부 호출 실패 — ERROR" 행 삭제 | §5.1 |
+| 06 | §4.3 | 컨트롤러가 서비스의 DTO 를 그대로 반환하는 예시로 | §3.1 |
+| 06 | §4.5 | 415·깨진 JSON·빈 body 행 추가 | §2.2 |
+| 06 | §5.3 | `@Size(min = 1)` 제거 — `@NotBlank` 와 중복, 빈 문자열 메시지 비결정 | current-state.md §1.2 `SubmitAnswerRequest`, §7.2 P6 |
+| 06 | §7.1 | "Phase 5 WireMock" → HTTP Interface 는 `MockRestServiceServer` 로 충분 | §6.2 |
+| 06 | §7.4 | 예시 `findRandomBy` 이름 변경 | §1.2 |
+| 06 | §7 (신규 항) | Boot 4 패키지·`@MockitoBean`, 계층별 표, 테스트 소스셋 Lombok 부재 | §6.1 T4·T5, §6.2 |
+| 99 | §2.3 | "`RestClient` 빈" → 빈은 클라이언트 인터페이스뿐, 등록 위치는 D1 결과에 따름 | current-state.md §1.6, architecture-proposal.md §0 표 |
+| 99 | §2.6 | 생성자 위임 구조, 기본 logLevel = 상태 코드 기준, `logMessage` 삭제 | §2.3 |
+| 99 | §2.7 | 처리 대상 → "`ResponseEntityExceptionHandler` 상속, MVC 표준 예외 전부" | §2.2 |
+| 99 | §3 | 메시지 설정 2줄 (`basename`, `fallback-to-system-locale`) | §2.1 |
+| 03 | §2.1, §1.5 | 누락 시 `MISSING_PARAMETER` 로 정정, 코드 목록 보강 | §2.2 주의, decisions-needed.md D6 |
