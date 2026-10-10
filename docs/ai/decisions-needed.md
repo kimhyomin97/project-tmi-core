@@ -17,6 +17,7 @@
 | 3 | `FIX-F1T` | read timeout·빈 응답 → 503 (`RestClientException` catch + null 처리) — F1 을 고치는 순간 드러나는 다음 결함 | current-state §3.3(f) [실행·리뷰] | 수 줄 + 테스트 1 |
 | 4 | `FIX-F2` | `spring.messages.basename=messages/messages` + `fallback-to-system-locale=false` — 에러 메시지가 코드 문자열로 나가는 문제 | current-state F2 [실행], conventions §2.1 (검증) | 2줄 |
 | 5 | `FIX-R5` | `SentenceService.getRandom` 이 DTO 반환 (구조 결정과 무관, A′·B 공통) | conventions §3.1, ArchUnit R5 | 2파일 |
+| 6 | `ARCH-A1` | Similarity 빈 설정을 `common/config` 밖(`infra.similarity`)으로 — A′·B 어느 쪽이든 버려지지 않음 | architecture-proposal §4.3 단계 1, ArchUnit R1·R3 | 2파일 + 설정 키 |
 
 ---
 
@@ -52,7 +53,7 @@
 
 - **추천: B.** 근거 — architecture-proposal.md §4.1. 다만 A′ 와의 차이는 좁다: B 의 순이득은 공개 표면의 크기·diff 가시성, 비용은 `infra/` 규칙 변경과 약 4파일 (§3.3 의 질문으로 판단). A′ 를 골라도 손해가 크지 않다.
 - 둘 다 바꾸는 기존 규칙: 99 §2.3 (`common/config` 에서 빈 등록), 02 §4.2 (시퀀스). B 는 추가로 02 §3.2·§5.1·05 §1.3·06 §6.5. 문서 수정은 `DOC-2`.
-- **결정하면 바로 시작**: `ARCH-A1` (Similarity 빈 설정을 `common` 밖으로 — ArchUnit R1·R3 해제, 어느 쪽이든 버려지지 않음). 이어서 B 면 `ARCH-B2`(`git mv infra/similarity → similarity`), A′ 면 `ARCH-A2`.
+- **결정하면 바로 시작**: B 면 `ARCH-B2`(`git mv infra/similarity → similarity`), A′ 면 `ARCH-A2`(계획에 새 경계 규칙 포함). 둘 다 `ARCH-A1`·`FIX-F1T` 이후 — `ARCH-A1` 은 D1 과 무관해 §0 에서 먼저 진행.
 
 ### D3. 테스트 기본 신호 — `CoreApplicationTests` 처리
 
@@ -96,7 +97,7 @@
 | `GET /sentences/meta`, `GET /api/v1/health` 미구현 | 명세에 **"미구현" 표기** 후 별도 항목으로 구현 결정 |
 | 404 메시지 예시가 세 곳에서 다름 | 실제 번들 값(`Sentence not found: {0}`)으로 **통일** |
 
-- **결정하면 바로 시작**: `DOC-1` 의 03 부분.
+- **결정하면 바로 시작**: `DOC-1` 의 03 부분 — 단 `DOC-1` 은 `FIX-F3`(새 코드 `BAD_REQUEST`)·`FIX-F4` 이후다. 03 의 `MISSING_PARAMETER` 정정만 먼저 하려면 H0 에서 `DOC-1` 을 둘로 나눈다.
 
 ### D9. 미커밋 Toss WIP
 
@@ -130,7 +131,7 @@
 ### D12. AI 루프 운영
 
 - 추천 기본값: ai-workflow.md §2.2 — H0(결정·항목 승인), H1(`human_gate: plan` 항목: 계획 파일 검토 후 **사람이 `plan_approved` 기록**), H2(PR 머지), H3(`blocked`).
-- hook: 제안된 `check-feature.sh`(id 별 verify 기록 확인, `stop_hook_active` 존중 — 8개 시나리오 실행 확인)를 추가하고, 이 문서 세트용 `check-done.sh` 는 내린다. 후자는 `/tmp/stop-hook-count` 를 초기화하지 않아 15회 이후 영구히 꺼지는 결함이 있다 (ai-workflow.md §4.6).
+- hook: 제안된 `session-base.sh`(SessionStart) + `check-feature.sh`(Stop — 이번 세션의 id 별 verify 기록, 사람 전용 필드 불변, 사람 판정 항목 차단; 14개 시나리오 실행 확인)를 추가하고, 이 문서 세트용 `check-done.sh` 는 내린다. 후자는 `/tmp/stop-hook-count` 를 초기화하지 않아 15회 이후 영구히 꺼지는 결함이 있다 (ai-workflow.md §4.6).
 - **결정하면 바로 시작**: `feature_list.example.json` 을 `feature_list.json` 으로 복사하고 D1 에 해당하는 `pending_decision` 묶음을 `items` 로 옮긴다 → 첫 세션 `TEST-1`.
 
 ### D13. Similarity 비정상 응답

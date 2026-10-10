@@ -1,5 +1,5 @@
 {
-  "_comment": "예시 — 루프 시작 시 docs/ai/feature_list.json 으로 복사. 에이전트는 passes·blocked 만 수정(blocked 는 이 저장소 확장). plan_approved 는 사람만 기록. pending_decision 은 D1 결정(B 또는 A′)에 해당하는 묶음만 items 로 옮긴다 (ai-workflow.md §4).",
+  "_comment": "예시 — 루프 시작 시 docs/ai/feature_list.json 으로 복사. 에이전트가 바꿀 수 있는 필드는 passes·blocked·awaiting_human 뿐(passes 만 원문 규칙, 나머지 둘은 이 저장소 확장). plan_approved 는 사람만 기록. verify 는 그 항목 PR 시점에만 유효(회귀용 아님). pending_decision 은 D1 결정(B 또는 A′)에 해당하는 묶음만 items 로 옮긴다 (ai-workflow.md §4).",
   "items": [
     {
       "id": "TEST-1",
@@ -13,13 +13,17 @@
       "human_gate": "none",
       "plan_approved": null,
       "verify": [
-        "bash ./gradlew test --tests '*GradeTest' --tests '*SimilarityClientTest' --tests '*SentenceControllerTest'",
-        "grep -rln '\"FIX-F1' src/test && grep -rln '\"FIX-F2' src/test"
+        "bash ./gradlew test --tests '*GradeTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.GradeTest.xml",
+        "bash ./gradlew test --tests '*SimilarityClientTest'",
+        "bash ./gradlew test --tests '*SentenceControllerTest'",
+        "grep -rln '\"FIX-F1 ' src/test && grep -rln '\"FIX-F2 ' src/test"
       ],
-      "acceptance": "GradeTest 통과. SimilarityClientTest·SentenceControllerTest 는 @Disabled 를 지우면 현재 코드에서 실패함을 1회 실행해 progress 에 기록 (실패 테스트 먼저 — conventions T2)",
+      "acceptance": "GradeTest 실행·통과(skip 0). SimilarityClientTest·SentenceControllerTest 는 클래스가 존재하고 @Disabled(\"FIX-F1 …\")/(\"FIX-F2 …\") — 사유는 '<ID> + 공백' 형식. @Disabled 를 지우면 현재 코드에서 실패함을 1회 실행해 progress 에 기록",
       "evidence": "conventions-proposal.md §6.3 (현재 코드로 실패 재현 검증됨)",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [],
+      "awaiting_human": false
     },
     {
       "id": "FIX-F1",
@@ -31,14 +35,17 @@
       "human_gate": "none",
       "plan_approved": null,
       "verify": [
-        "! grep -rn '\"FIX-F1' src/test",
+        "! grep -rn '\"FIX-F1 ' src/test",
         "! grep -rn '\"R7 위반' src/test",
-        "bash ./gradlew test --tests '*SimilarityClientTest' --tests '*ConventionArchitectureTest'"
+        "bash ./gradlew test --tests '*SimilarityClientTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.SimilarityClientTest.xml",
+        "bash ./gradlew test --tests '*ConventionArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml"
       ],
       "acceptance": "SimilarityClientTest·ArchUnit R7 의 @Disabled 제거 후 통과",
       "evidence": "current-state.md F1, §7.2 P8",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [],
+      "awaiting_human": false
     },
     {
       "id": "FIX-F1T",
@@ -50,12 +57,14 @@
       "human_gate": "none",
       "plan_approved": null,
       "verify": [
-        "bash ./gradlew test --tests '*SimilarityTimeoutTest'"
+        "bash ./gradlew test --tests '*SimilarityTimeoutTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.SimilarityTimeoutTest.xml"
       ],
       "acceptance": "SimilarityTimeoutTest: com.sun.net.httpserver 로 3초 지연 응답 서버 + readTimeout 500ms → SimilarityException.Unavailable, 빈 200 응답 → Unavailable. 수정 전 실패(500 경로) 기록. ARCH-B2/A2 에서 SimilarityScorer 로 이동 시 테스트 유지",
       "evidence": "current-state.md §3.3(f), examples-round-1 C1·m4",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [],
+      "awaiting_human": false
     },
     {
       "id": "FIX-F2",
@@ -67,13 +76,15 @@
       "human_gate": "none",
       "plan_approved": null,
       "verify": [
-        "! grep -rn '\"FIX-F2' src/test",
-        "bash ./gradlew test --tests '*SentenceControllerTest'"
+        "! grep -rn '\"FIX-F2 ' src/test",
+        "bash ./gradlew test --tests '*SentenceControllerTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.SentenceControllerTest.xml"
       ],
       "acceptance": "SentenceControllerTest @Disabled 제거 후 통과 (404 message 가 영문 번들 값)",
       "evidence": "current-state.md F2, conventions-proposal.md §2.1",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [],
+      "awaiting_human": false
     },
     {
       "id": "SIG-1",
@@ -88,15 +99,15 @@
       "acceptance": "DB 접속을 막은 상태(SPRING_DATASOURCE_URL 을 닫힌 포트로)에서 ./gradlew test 성공",
       "evidence": "conventions-proposal.md §6.4, decisions-needed D3",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [],
+      "awaiting_human": false
     },
     {
       "id": "SIG-2",
-      "title": "spotlessApply 단독 커밋 + enforceCheck=true (기계적 포맷 — 파일 수·모듈 수 제한 예외)",
+      "title": "spotlessApply 단독 커밋(30파일 — src/main 29 + 테스트 1) + enforceCheck=true (기계적 포맷 — 파일 수·모듈 수 제한 예외). D5=(a) 일 때만 H0 에서 items 에 둔다",
       "module": "*",
-      "depends_on": [
-        "SIG-1"
-      ],
+      "depends_on": [],
       "human_gate": "none",
       "plan_approved": null,
       "verify": [
@@ -106,7 +117,9 @@
       "acceptance": "spotlessCheck 위반 0, build 에 포함",
       "evidence": "decisions-needed D5 (H0 에서 결정되면 남는 일은 기계적)",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [],
+      "awaiting_human": false
     },
     {
       "id": "FIX-F3",
@@ -119,12 +132,16 @@
       "human_gate": "plan",
       "plan_approved": null,
       "verify": [
-        "bash ./gradlew test --tests '*AnswerControllerTest' --tests '*SentenceControllerTest' --tests '*GlobalExceptionHandlerLogTest'"
+        "bash ./gradlew test --tests '*AnswerControllerTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.AnswerControllerTest.xml",
+        "bash ./gradlew test --tests '*SentenceControllerTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.SentenceControllerTest.xml",
+        "bash ./gradlew test --tests '*GlobalExceptionHandlerLogTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.GlobalExceptionHandlerLogTest.xml"
       ],
       "acceptance": "새 테스트: 깨진 JSON 400 BAD_REQUEST, text/plain 415, 405 Allow 헤더 유지. GlobalExceptionHandlerLogTest(OutputCaptureExtension)로 404 는 INFO·스택 없음, 5xx 는 ERROR·스택 포함 확인. 수정 전 실패 기록",
       "evidence": "current-state.md F3, conventions-proposal.md §2.2·§2.3",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [],
+      "awaiting_human": false
     },
     {
       "id": "FIX-R5",
@@ -137,12 +154,14 @@
       "plan_approved": null,
       "verify": [
         "! grep -rn '\"R5 위반' src/test",
-        "bash ./gradlew test --tests '*ConventionArchitectureTest' --tests '*SentenceControllerTest'"
+        "bash ./gradlew test --tests '*ConventionArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml"
       ],
       "acceptance": "ArchUnit R5 @Disabled 제거 후 통과. 구조 결정(D1)과 무관",
       "evidence": "conventions-proposal.md §3.1, decisions-needed D4",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [],
+      "awaiting_human": false
     },
     {
       "id": "FIX-F4",
@@ -156,13 +175,17 @@
       "plan_approved": null,
       "verify": [
         "! grep -rn '\"R6 위반' src/test",
-        "bash ./gradlew test --tests '*ConventionArchitectureTest'",
-        "bash ./gradlew integrationTest --tests '*OsivConnectionIT'"
+        "bash ./gradlew test --tests '*ConventionArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml",
+        "bash ./gradlew integrationTest --tests '*OsivConnectionIT' && grep -q 'skipped=\"0\"' build/test-results/integrationTest/TEST-*.OsivConnectionIT.xml"
       ],
       "acceptance": "R6 @Disabled 제거 후 통과. OsivConnectionIT(Similarity 호출 콜백에서 Hikari 활성 커넥션 측정)가 0 — current-state §3.4 프로브를 테스트로 고정",
       "evidence": "current-state.md F4, §3.4",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [
+        "docker"
+      ],
+      "awaiting_human": false
     },
     {
       "id": "ARCH-A1",
@@ -176,12 +199,14 @@
       "verify": [
         "! grep -rn '\"R1 위반' src/test",
         "! grep -rn '\"R3 위반' src/test",
-        "bash ./gradlew test --tests '*ModuleArchitectureTest'"
+        "bash ./gradlew test --tests '*ModuleArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml"
       ],
       "acceptance": "R1·R3 @Disabled 제거 후 통과",
       "evidence": "architecture-proposal.md §4.3 단계 1",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [],
+      "awaiting_human": false
     },
     {
       "id": "DOC-1",
@@ -199,7 +224,9 @@
       "acceptance": "conventions-proposal.md §8 표의 모든 행 반영을 사람이 확인 — verify 가 'human' 인 항목은 에이전트가 passes=true 로 바꿀 수 없음",
       "evidence": "conventions-proposal.md §8, decisions-needed D8",
       "passes": false,
-      "blocked": null
+      "blocked": null,
+      "requires": [],
+      "awaiting_human": false
     }
   ],
   "pending_decision": {
@@ -221,7 +248,9 @@
         "acceptance": "infra 패키지 소멸, answer 는 similarity 의 base package 만 import",
         "evidence": "architecture-proposal.md §4.3 단계 2",
         "passes": false,
-        "blocked": null
+        "blocked": null,
+        "requires": [],
+        "awaiting_human": false
       },
       {
         "id": "ARCH-B3",
@@ -234,12 +263,14 @@
         "plan_approved": null,
         "verify": [
           "! grep -rn '\"R2 위반' src/test",
-          "bash ./gradlew test --tests '*ModuleArchitectureTest'"
+          "bash ./gradlew test --tests '*ModuleArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml"
         ],
         "acceptance": "R2 @Disabled 제거 후 통과",
         "evidence": "architecture-proposal.md §4.3 단계 2",
         "passes": false,
-        "blocked": null
+        "blocked": null,
+        "requires": [],
+        "awaiting_human": false
       },
       {
         "id": "DOC-2",
@@ -256,7 +287,9 @@
         "acceptance": "architecture-proposal.md §0 표의 해당 열 모든 행 반영을 사람이 확인",
         "evidence": "architecture-proposal.md §0, §3.2",
         "passes": false,
-        "blocked": null
+        "blocked": null,
+        "requires": [],
+        "awaiting_human": false
       }
     ],
     "D1=A'": [
@@ -268,16 +301,18 @@
           "ARCH-A1",
           "FIX-F1T"
         ],
-        "human_gate": "none",
+        "human_gate": "plan",
         "plan_approved": null,
         "verify": [
-          "bash ./gradlew test --tests '*ModuleArchitectureTest'",
+          "bash ./gradlew test --tests '*ModuleArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml",
           "! grep -rn '\"R2 위반' src/test"
         ],
-        "acceptance": "A′ 규칙 통과, AnswerService 가 sentence.repository·domain·exception 을 import 하지 않음",
+        "acceptance": "계획(H1)에 새 A′ 규칙의 ArchUnit 코드를 포함해 사람이 승인. 그 규칙 통과, AnswerService 가 sentence.repository·domain·exception 을 import 하지 않음",
         "evidence": "architecture-proposal.md §2 A′, §4.3 단계 2-A′",
         "passes": false,
-        "blocked": null
+        "blocked": null,
+        "requires": [],
+        "awaiting_human": false
       },
       {
         "id": "DOC-2",
@@ -294,7 +329,9 @@
         "acceptance": "architecture-proposal.md §0 표의 해당 열 모든 행 반영을 사람이 확인",
         "evidence": "architecture-proposal.md §0, §3.2",
         "passes": false,
-        "blocked": null
+        "blocked": null,
+        "requires": [],
+        "awaiting_human": false
       }
     ]
   }
