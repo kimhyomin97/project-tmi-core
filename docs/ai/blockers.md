@@ -11,7 +11,7 @@
 | 현상 | 저장소 수령 시 `src/main` 4개 파일(Java 3 + `application.properties`) + `.gitattributes` 에 미커밋 변경이 있었고, 그중 2개 파일이 **존재하지 않는 클래스**(`toss.holdings.infra.TossHoldingsClient`, `toss.holdings.dto.HoldingsApiResponse`)를 import → 컴파일 불가 |
 | 제약 | 작업 규칙상 `src/main` 수정 금지 → 커밋도, 되돌림도 하지 않음 |
 | 조치 | ① 패치 전문을 [`wip-snapshot.patch`](./wip-snapshot.patch) 로 보존 (`git apply --check` 통과) ② 빌드·테스트 실행 동안 `git stash` 로 치움 ③ 작업 종료 시 **`git apply docs/ai/wip-snapshot.patch`** 로 작업 트리에 복원. `git stash pop` 은 쓰지 않는다 — stash 에 이미 커밋된 `.claude/*`·`docs/ai/TASK.md` 가 섞여 충돌한다 (reviews/current-state-round-1.md M9) |
-| 현재 위치 | 작업 중에는 `git stash`(stash@{0}) + `docs/ai/wip-snapshot.patch` 에만 있고 작업 트리에는 없음. 마지막 커밋·push 직후 패치로 작업 트리에 복원하고 이 행을 갱신한다 |
+| 현재 위치 | 마지막 커밋 직후 `git apply docs/ai/wip-snapshot.patch` 로 **작업 트리에 미커밋 상태로 복원함** (push 는 §4 사유로 불가). `git stash`(stash@{0}) 에도 사본이 남아 있다. 복원 상태에서는 WIP 의 import 때문에 `./gradlew build` 가 컴파일 실패한다 — 빌드하려면 `git stash push -- src/main .gitattributes` 로 다시 치운다 |
 | 사람이 할 일 | WIP 를 이어서 완성할지, 브랜치로 분리할지 결정. Toss 클라이언트 위치는 architecture-proposal.md 결정(D1)에 따름 |
 
 ## 2. `./gradlew build` 환경
@@ -41,3 +41,12 @@ bash ./gradlew build
 ## 3. 웹 리서치 접근
 
 리서치 중 접근이 막힌 URL 은 [research.md](./research.md) 의 "접근 실패" 절에 기록한다.
+
+## 4. push · PR 생성 불가
+
+| 항목 | 내용 |
+|---|---|
+| 현상 | `git push -u origin claude/ai-dev-prep` → `fatal: 'origin' does not appear to be a git repository`. `git remote -v` 가 비어 있다. `gh auth status` → `The token in GH_TOKEN is invalid` |
+| 원인 | 이 클라우드 세션의 clone 에 remote 가 설정되지 않았고, GitHub 토큰도 유효하지 않다. 저장소 owner/name 을 저장소 안에서 확인할 방법이 없다 |
+| 조치 | 모든 단계를 로컬 브랜치 `claude/ai-dev-prep` 에 커밋했다. TASK.md 가 요구한 PR 본문(전체 요약 + 리뷰 라운드별 주요 개선)은 [`pr-body.md`](./pr-body.md) 로 저장했다 |
+| 사람이 할 일 | `git remote add origin <url>` → `git push -u origin claude/ai-dev-prep` → `gh pr create --base main --head claude/ai-dev-prep --title "AI 기반 개발 준비: 현황 분석·제안서·ArchUnit·CLAUDE.md 초안" --body-file docs/ai/pr-body.md` |
