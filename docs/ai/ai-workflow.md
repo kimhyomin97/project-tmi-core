@@ -4,6 +4,7 @@
 > 이 문서는 "이 저장소에서 Claude Code 같은 코딩 에이전트에게 일을 맡기는 방법" 을 정한다. 외부 근거는 [research.md §8](./research.md#8-ai-코딩-에이전트-장시간-작업).
 > 전제: architecture-proposal.md 추천안 B (모듈 경계). A′ 를 고르면 "모듈" 을 "기능 패키지" 로 읽으면 된다.
 > 개정: Round 1 리뷰([reviews/ai-workflow-round-1.md](./reviews/ai-workflow-round-1.md)) 반영 — hook 재설계(C1), "수정 전 실패" verify(C2), `plan_approved` 필드(C3), OSIV 순서·게이트 규칙·init.sh 정정.
+> 개정: Round 3 리뷰([reviews/ai-workflow-round-3.md](./reviews/ai-workflow-round-3.md)) 반영 — ArchUnit verify 를 메서드 단위로(C1: 클래스 단위 skip 검사가 항목 간 교착), base 에 session_id·matcher startup·pull(M1·M3), 반려 후 재제출 상태(M2), 브랜치 규칙(M3), ARCH-B2 의 SIG-1 의존(M4), hook 경미 5건.
 > 개정: Round 2 리뷰([reviews/ai-workflow-round-2.md](./reviews/ai-workflow-round-2.md)) 반영 — hook 이 `stop_hook_active` 로 풀리던 문제·base 비교 우회(C1·M1), `--tests` OR 결합으로 거짓 통과하던 verify(C2), 계획 반려 교착(C3), 사람 판정 항목 종료(M2), Docker 전제(M3), 기록 형식 고정(M4), 계획 작성 우선순위(M5), ARCH-A2 게이트(M6).
 
 ---
@@ -93,8 +94,8 @@ flowchart TD
 | ID | 시점 | 사람이 보는 것 | 소요 (estimated) | 기록 방법 |
 |---|---|---|---|---|
 | **H0** | 루프 시작 전 | decisions-needed.md 결정, `feature_list.json` 항목 승인. D5 가 (a) 가 아니면 `SIG-2` 를 `items` 에서 뺀다 | 30분 | 항목을 `items` 에 넣는 커밋 |
-| **H1** | `human_gate: "plan"` 항목의 구현 전 | `docs/ai/plans/<id>.md` 의 변경 파일 목록·계약 변경 여부 | 항목당 5분 | **사람이** `plan_approved` 에 날짜 또는 커밋 sha (승인) / `"rejected: <사유>"` (반려) |
-| **H2** | PR 머지 | diff, 리뷰 파일, verify 출력. `verify: ["human"]` 항목은 판정 후 **사람이** `passes: true` | PR당 10~20분 | PR 승인 + feature_list 커밋 |
+| **H1** | `human_gate: "plan"` 항목의 구현 전 | `docs/ai/plans/<id>.md` 의 변경 파일 목록·계약 변경 여부 | 항목당 5분 | **사람이** `plan_approved` 에 날짜 또는 커밋 sha (승인) / `"rejected: <사유>"` (반려 — 재반려 시 계획 파일의 `Status: revised` 줄 삭제) |
+| **H2** | PR 머지 | diff, 리뷰 파일, verify 출력. `verify: ["human"]` 항목은 판정 후 **사람이** `passes: true` (변경 요청이면 `awaiting_human: false`) | PR당 10~20분 | PR 승인 + feature_list 커밋 |
 | **H3** | `blocked` 발생 시 | blockers.md 의 원인·시도 내역 | 수시 | `blocked` 를 `null` 로 되돌리거나 항목 수정 |
 
 `human_gate: "plan"` 규칙 — 실제 배정(feature_list.example.json)과 1:1:
@@ -139,6 +140,7 @@ flowchart TD
 | 11 | `src/main` 변경 파일 ≤ 5 (§1.1 예외 제외) | 수동 (`git diff --stat origin/main...HEAD -- src/main`) |
 | 12 | 컨트롤러·서비스·리포지토리 레이어 방향, domain 독립 | ✓ (R4, R4b) |
 | 13 | feature_list 의 사람 전용 필드를 바꾸지 않았다 | ✓ (§4.6 hook — base 대비 비교) |
+| 14 | 새 파일이 `.gitignore` 에 걸려 빠지지 않았다 (`out/` 규칙이 `adapter/out/`·`port/out/` 도 무시 — examples 에서 실제로 4파일이 빠졌다) | 수동 (`git status --short --ignored docs/ai src`) |
 
 ---
 
@@ -154,7 +156,7 @@ flowchart TD
 | `docs/ai/plans/<id>.md` | gate=plan 항목의 계획 | 에이전트 작성, 사람 검토 |
 | `docs/ai/claude-progress.md` | 세션별 진행 로그 (append-only). 원문은 `claude-progress.txt` — 표·코드 블록을 쓰기 위해 `.md` | 에이전트 (`session-base` 줄은 hook) |
 | `scripts/init.sh` | 기동 + 기본 검증 (§4.3) | 사람 승인 후 추가 (이번 작업 범위 밖이라 미생성) |
-| `.claude/hooks/session-base.sh` | SessionStart hook — 세션 시작 커밋을 `.git/claude-session-base` 에 기록 (§4.6) | 사람 승인 후 추가 |
+| `.claude/hooks/session-base.sh` | SessionStart hook (matcher `startup`) — `git pull --ff-only` 후 세션 시작 커밋·session_id 를 `$(git rev-parse --git-dir)/claude-session-base` 에 기록 (§4.6) | 사람 승인 후 추가 |
 | `.claude/hooks/check-feature.sh` | Stop hook 게이트 (§4.6) | 사람 승인 후 추가 |
 | `.claude/hooks/check-done.sh` | 이 문서 세트 작성용 게이트 (`checklist.json`) — **feature 루프 시작 시 settings.json 에서 내린다** | 사람 |
 | `CLAUDE.md` | 세션 시작 시 자동 로드되는 규칙 요약 | 사람 승인 |
@@ -177,7 +179,7 @@ flowchart TD
     "! grep -rn '\"FIX-F1 ' src/test",
     "! grep -rn '\"R7 위반' src/test",
     "bash ./gradlew test --tests '*SimilarityClientTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.SimilarityClientTest.xml",
-    "bash ./gradlew test --tests '*ConventionArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml"
+    "bash ./gradlew test --tests '*ConventionArchitectureTest.r7_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml"
   ],
   "acceptance": "SimilarityClientTest·ArchUnit R7 의 @Disabled 제거 후 통과",
   "evidence": "current-state.md F1, §7.2 P8",
@@ -194,7 +196,8 @@ flowchart TD
 | 대상 규칙이 `@Disabled` 라 skip 되어 통과 | `--tests '*ArchitectureTest*'` 는 지금도 `BUILD SUCCESSFUL` (8개 중 6개 skip) | `! grep -rn '"R7 위반' src/test` 로 **`@Disabled` 사유 문자열이 사라졌는지** 확인 — palantir 포맷이 `@Disabled(` 와 사유를 다른 줄로 나누므로 어노테이션 이름이 아니라 사유로 grep |
 | **`--tests` 를 여러 개 주면 OR** — 하나만 매칭돼도 통과 | 한 명령에 3클래스를 주면 2개가 없어도 통과 (round-2 C2 [실행·리뷰]) | **클래스마다 명령 1개**. 단일 필터는 매칭 0이면 `No tests found` 로 실패 |
 | 클래스가 있어도 전부 `@Disabled` 면 skip 된 채 통과 | `TEST-1` | 실행돼야 하는 클래스는 `grep -q 'skipped="0"' build/test-results/test/TEST-*.<Class>.xml` 을 덧붙임 |
-| 환경에 DB 가 있어 통과 | `SIG-1` 의 `./gradlew test` | `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:1/none bash ./gradlew test` — DB 를 막고 실행 |
+| **클래스 단위 skip 검사 + 같은 클래스의 다른 `@Disabled` 규칙** → 항목 간 교착 | `FIX-F1` 을 끝내도 `ConventionArchitectureTest` 는 R5·R6 때문에 `skipped="2"` → 실패. `FIX-R5`↔`FIX-F4`, `ARCH-A1`↔`ARCH-B3` 도 같은 구조 (round-3 C1 [실행·리뷰]) | ArchUnit 은 **메서드 단위 필터** `--tests '*ConventionArchitectureTest.r7_*'` — 필터된 XML 에는 그 메서드만 남아 `skipped="0"` 검사가 그 규칙만 본다 |
+| 환경에 DB 가 있어 통과 | `SIG-1` 의 `./gradlew test` | `SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:1/none bash ./gradlew test` — DB 를 막고 실행. `CoreApplicationTests` 를 지우거나 exclude 만 해서 통과하는 것을 막으려고 `@Tag("integration")`·`integrationTest` 태스크 존재도 확인 |
 | 사유 접두사 충돌 | `"FIX-F1` 은 `"FIX-F1T` 도 잡음 | 사유 형식을 **`<ID>` + 공백** 으로 고정하고 grep 도 `'"FIX-F1 '` |
 | 사람만 판정 가능 | `DOC-1`, `DOC-2` | `"verify": ["human"]` — 에이전트는 `awaiting_human: true` 까지만 (hook 이 차단) |
 
@@ -213,7 +216,7 @@ flowchart TD
 | 9 | `FIX-F4` | self-invocation 제거 + OSIV off (`OsivConnectionIT`) | plan | **FIX-R5**, SIG-1 | **docker** |
 | 10 | `ARCH-A1` | Similarity 빈 설정을 `common` 밖으로 (R1·R3) | none | FIX-F1 | — |
 | 11 | `DOC-1` | 05/06/99/03 수정 (구조 무관분) | plan | FIX-F3, FIX-F4 | — |
-| 보류 | `ARCH-B2` → `ARCH-B3` → `DOC-2` / `ARCH-A2` → `DOC-2` | `pending_decision["D1=B"]` / `["D1=A'"]` | B2·A2·DOC-2 plan | ARCH-A1, FIX-F1T | — |
+| 보류 | `ARCH-B2` → `ARCH-B3` → `DOC-2` / `ARCH-A2` → `DOC-2` | `pending_decision["D1=B"]` / `["D1=A'"]` | B2·A2·DOC-2 plan | ARCH-A1, FIX-F1T (+ B2 는 SIG-1 — 전체 test 를 DB 없이) | — |
 
 - `FIX-F4` 가 `FIX-R5` 에 의존: OSIV 를 끄기 전에 엔티티가 트랜잭션 밖으로 나가지 않아야 한다 (conventions-proposal.md §3.4, decisions-needed.md D4).
 - `SIG-2` 를 `FIX-F3` 앞에 둠: `GlobalExceptionHandler` 를 크게 고치기 전에 포맷 소음을 없앤다. `SIG-2` 자체는 `SIG-1` 에 의존하지 않는다 (round-2 m9 — 근거 없는 의존 제거).
@@ -238,8 +241,11 @@ else
   bash ./gradlew compileTestJava --console=plain \
     && summary+=("compile: OK (SIG-1 전 — 전체 test 는 DB 필요)") || summary+=("compile: FAIL")
 fi
-bash ./gradlew spotlessCheck --console=plain >/dev/null 2>&1 \
-  && summary+=("spotless: OK") || summary+=("spotless: 위반 있음 (SIG-2 전에는 정보용)")
+if jq -e '.items[] | select(.id=="SIG-2") | .passes' docs/ai/feature_list.json >/dev/null; then
+  bash ./gradlew spotlessCheck --console=plain >/dev/null 2>&1 && summary+=("spotless: OK") || summary+=("spotless: FAIL")
+else
+  bash ./gradlew spotlessCheck --console=plain >/dev/null 2>&1 && summary+=("spotless: OK") || summary+=("spotless: 위반 있음 (SIG-2 전 — 정보용)")
+fi
 # 스모크 (SIG-1 이후, DB 가 있는 환경에서만): bootRun 후 출제 API 1회 호출 — 원문의 "기본 end-to-end 확인" [F]
 printf '%s\n' "${summary[@]}"
 printf '%s\n' "${summary[@]}" | grep -q 'FAIL' && exit 1 || exit 0
@@ -255,7 +261,7 @@ printf '%s\n' "${summary[@]}" | grep -q 'FAIL' && exit 1 || exit 0
 **기록 형식 (이 형식만 인정 — hook 이 문자 그대로 비교)**
 
 ```text
-session-base: <40자 sha>          ← SessionStart hook 이 자동으로 씀. 직접 쓰지 않는다
+session-base: <40자 sha> <session_id>   ← SessionStart hook 이 자동으로 씀. 직접 쓰지 않는다
 verify: <ID> OK                   ← 줄 전체가 정확히 이 형태. 목록 기호(-)·백틱·다른 문구 금지
 ```
 
@@ -264,10 +270,12 @@ verify: <ID> OK                   ← 줄 전체가 정확히 이 형태. 목록
 1. `git log --oneline -20` → `docs/ai/claude-progress.md` 마지막 블록 → `docs/ai/feature_list.json`
 2. `bash scripts/init.sh`. **실패하면 새 항목을 시작하지 않고** 깨진 원인부터 (직전 세션이 남긴 문제일 가능성)
 3. 항목 선택 — 아래 우선순위대로 배열 순서상 첫 번째 1개. 공통 제외 조건: `passes: true`, `blocked` 가 null 아님, `awaiting_human: true`, `requires` 를 이 환경이 충족하지 않음(예: Docker 없음 — init.sh 요약), `depends_on` 미충족
-   1. `plan_approved` 가 `"rejected: …"` 인 항목 → **계획을 고치고 세션 종료** (H1 재요청)
+   1. `plan_approved` 가 `"rejected: …"` 이고 계획 파일 첫 줄이 `Status: revised` **가 아닌** 항목 → 계획을 고치고 첫 줄에 `Status: revised <날짜>` 를 쓰고 세션 종료 (H1 재요청). 첫 줄이 이미 `Status: revised` 면 사람 검토 대기 → 건너뜀. 사람은 다시 반려할 때 이 줄을 지운다
    2. `human_gate: plan` + `plan_approved: null` + `docs/ai/plans/<id>.md` 없음 → **계획만 작성하고 세션 종료** (H1 대기가 뒤로 밀리지 않게 구현보다 우선)
    3. `human_gate: none`, 또는 `plan_approved` 에 날짜·sha 가 있는 항목 → 구현
    4. 해당 없음 → progress 에 "대기 중: <id 목록과 이유>" 를 쓰고 종료
+
+**브랜치·PR** — 항목마다 브랜치 `ai/<id>` 를 `main` 에서 만든다. 원격에 `ai/<id>` 가 이미 있으면(PR 머지 대기) 그 항목은 건너뛴다. 세션 시작 시 SessionStart hook 이 `git pull --ff-only` 로 사람의 `plan_approved`·`passes` 변경을 먼저 받으므로 세션 중 pull 은 하지 않는다 (하면 hook 이 사람 전용 필드 변경으로 막는다).
 
 **진행**
 
@@ -276,7 +284,7 @@ verify: <ID> OK                   ← 줄 전체가 정확히 이 형태. 목록
 
 **종료**
 
-6. 일반 항목: `passes: true`. 사람 판정 항목(`verify: ["human"]`): `awaiting_human: true` — 사람이 H2 에서 `passes: true` 로 바꾼다. 커밋
+6. 일반 항목: `passes: true`. 사람 판정 항목(`verify: ["human"]`): `awaiting_human: true` — 사람이 H2 에서 `passes: true` 로 바꾸거나, 변경을 요청하면 `awaiting_human: false` 로 되돌린다. 커밋
 7. 실패로 끝나면 `blocked: "<원인 한 줄>"` + blockers.md 에 상세
 8. progress 에 "다음 세션이 알아야 할 것" 3줄 이내
 
@@ -295,49 +303,71 @@ verify: <ID> OK                   ← 줄 전체가 정확히 이 형태. 목록
 
 근거: [F] https://code.claude.com/docs/en/hooks — Stop hook 의 exit 2 는 "Prevents Claude from stopping, continues the conversation". `stop_hook_active` 는 "to avoid blocking on a condition that will never resolve" 용도이며, Claude Code 는 연속 8회 continuation 상한을 두고 도구 호출 시 초기화한다.
 
-**설계 판단**: 이 hook 이 막는 조건(기록 누락, 사람 전용 필드 변경, 사람 판정 항목의 `passes`)은 **모두 에이전트가 되돌리거나 verify 를 실행하면 해소된다** — "never resolve" 조건이 아니다. 그래서 `stop_hook_active` 로 빠져나가지 않고(Round 1 판의 결함 — 두 번째 종료 시도에서 풀렸다), 무한 차단은 내장 8회 상한에 맡긴다. 포기하는 것: 8회 연속 막힌 뒤의 종료는 hook 이 통제하지 못한다 → 그 경우 다음 세션 init.sh·H2 에서 드러난다.
+settings.json 등록 (제안):
+
+```json
+{ "hooks": {
+  "SessionStart": [ { "matcher": "startup", "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-base.sh" } ] } ],
+  "Stop":         [ { "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-feature.sh" } ] } ]
+} }
+```
+
+- `matcher: "startup"` — resume·compact 때 SessionStart 가 다시 돌아 base 가 바뀌는 것을 막는다 (hooks 문서의 SessionStart matcher 값: startup·resume·clear·compact [F]).
+
+**설계 판단**: 이 hook 이 막는 조건(기록 누락, 사람 전용 필드 변경, 사람 판정 항목의 `passes`)은 **모두 에이전트가 되돌리거나 verify 를 실행하면 해소된다** — "never resolve" 조건이 아니다. 그래서 `stop_hook_active` 로 빠져나가지 않고(Round 1 판의 결함 — 두 번째 종료 시도에서 풀렸다), 무한 차단은 내장 8회 상한에 맡긴다. 포기하는 것: 8회 연속 막힌 뒤의 종료는 hook 이 통제하지 못한다 → 다음 세션 init.sh·H2 에서 드러난다. 또 상한은 도구 호출 시 초기화되므로, 에이전트가 해소할 수 **없는** 조건(base 파일 없음 — SessionStart 미등록 등)에서는 막힘이 끝나지 않을 수 있다 → 등록 확인은 H0 체크 항목. 남는 위험: 에이전트가 `$(git rev-parse --git-dir)/claude-session-base` 를 직접 다시 쓰는 것은 막지 못한다 (협조적 에이전트 전제 — H2 리뷰에서 progress 의 `session-base` 줄과 브랜치 시작 커밋을 대조).
 
 ```bash
 #!/bin/bash
-# 제안: .claude/hooks/session-base.sh — SessionStart hook. 세션 시작 커밋을 기록하고 progress 에 표식을 남긴다.
+# 제안: .claude/hooks/session-base.sh — SessionStart hook (settings.json matcher: "startup" — resume·compact 에서는 다시 쓰지 않음)
+# 사람의 변경(plan_approved 등)을 먼저 받고, 세션 시작 커밋 + session_id 를 기록한다.
 [ "$CLAUDE_CODE_REMOTE" = "true" ] || exit 0
 cd "$CLAUDE_PROJECT_DIR" || exit 0
-git rev-parse HEAD > .git/claude-session-base
-printf '\nsession-base: %s\n' "$(cat .git/claude-session-base)" >> docs/ai/claude-progress.md
+sid=$(jq -r '.session_id // "unknown"')
+git pull --ff-only --quiet 2>/dev/null || echo "session-base: git pull 실패 — 로컬 기준으로 진행" >&2
+gd=$(git rev-parse --git-dir)                                  # worktree 에서는 .git 이 파일이므로
+printf '%s %s\n' "$(git rev-parse HEAD)" "$sid" > "$gd/claude-session-base"
+printf '\nsession-base: %s\n' "$(cat "$gd/claude-session-base")" >> docs/ai/claude-progress.md
 ```
 
 ```bash
 #!/bin/bash
 # 제안: .claude/hooks/check-feature.sh — Stop hook
 # 이번 세션에서 passes=true 가 된 항목마다 progress 에 그 세션의 verify 기록이 있어야 하고,
-# 사람 전용 필드·판정 기준은 세션 시작 시점(base)에서 바뀌면 안 된다.
+# 사람 전용 필드는 세션 시작 시점(base)에서 바뀌면 안 된다.
 [ "$CLAUDE_CODE_REMOTE" = "true" ] || exit 0
 cd "$CLAUDE_PROJECT_DIR" || exit 0
 f=docs/ai/feature_list.json; p=docs/ai/claude-progress.md
-[ -f "$f" ] || exit 0
 block() { echo "$1" >&2; exit 2; }
 # stop_hook_active 로 빠져나가지 않는다 — 막는 조건은 모두 에이전트가 해소할 수 있고,
-# 무한 차단은 Claude Code 내장 상한(연속 8회)이 끊는다 (ai-workflow.md §4.6).
+# 연속 차단은 Claude Code 내장 상한(연속 8회, 도구 호출 시 초기화)에 맡긴다 (ai-workflow.md §4.6).
 
-base=$(cat .git/claude-session-base 2>/dev/null)          # SessionStart hook 이 기록 (아래)
+gd=$(git rev-parse --git-dir)
+read -r base sid < "$gd/claude-session-base" 2>/dev/null
 [ -n "$base" ] || block "세션 base 가 없음 — SessionStart hook(.claude/hooks/session-base.sh) 확인."
+old=$(git show "$base:$f" 2>/dev/null)
+if [ ! -f "$f" ]; then
+  [ -z "$old" ] && exit 0                                      # 루프 미사용 저장소
+  block "feature_list.json 이 삭제됨 — 복구할 것."
+fi
 jq -e . "$f" >/dev/null 2>&1 || block "feature_list.json 이 올바른 JSON 이 아님."
+[ -n "$old" ] || exit 0                                        # 이번 세션에 처음 등록(사람의 H0 커밋)
 all='(.items + ([.pending_decision // {} | .[]] | add // []))'
 jq -e "[$all[] | (.passes | type == \"boolean\")] | all" "$f" >/dev/null || block "passes 는 true/false(boolean)만 허용."
-old=$(git show "$base:$f" 2>/dev/null) || exit 0          # base 에 파일이 없으면(첫 등록) 검사 생략
+jq -e "[$all[] | select(.awaiting_human == true) | .verify == [\"human\"]] | all" "$f" >/dev/null \
+  || block "awaiting_human=true 는 verify 가 [\"human\"] 인 항목에만."
 
-# 1) 사람 전용 필드 불변: id 목록, verify, acceptance, human_gate, plan_approved, depends_on, requires (pending_decision 포함)
-fixed="[$all[] | {id, verify, acceptance, human_gate, plan_approved, depends_on, requires}] | sort_by(.id)"
-[ "$(jq -S "$fixed" <<<"$old")" = "$(jq -S "$fixed" "$f")" ] \
-  || block "사람 전용 필드(id·verify·acceptance·human_gate·plan_approved·depends_on·requires)가 세션 중 바뀜 — 되돌릴 것."
+# 1) 사람 전용 필드 불변 — 에이전트가 바꿀 수 있는 것은 passes·blocked·awaiting_human 뿐
+human="[$all[] | del(.passes, .blocked, .awaiting_human)] | sort_by(.id)"
+[ "$(jq -S "$human" <<<"$old")" = "$(jq -S "$human" "$f")" ] \
+  || block "passes·blocked·awaiting_human 외의 필드(id 목록 포함)가 세션 중 바뀜 — 되돌릴 것."
 
-# 2) 새로 passes=true 가 된 항목 (passes 는 boolean true 만 인정)
+# 2) 새로 passes=true 가 된 항목
 ids() { jq -r "[$all[] | select(.passes == true) | .id] | .[]" | sort; }
 newly=$(comm -13 <(ids <<<"$old") <(ids < "$f"))
-# 이번 세션 기록만: progress 의 "session-base: <base>" 줄 이후
-records=$(awk -v b="session-base: $base" 'found{print} $0==b{found=1}' "$p" 2>/dev/null)
+# 이번 세션 기록만: progress 의 "session-base: <base> <session_id>" 줄 이후
+records=$(awk -v b="session-base: $base $sid" 'found{print} $0==b{found=1}' "$p" 2>/dev/null)
 for id in $newly; do
-  if jq -e --arg id "$id" '.items[] | select(.id==$id) | .verify == ["human"]' "$f" >/dev/null; then
+  if jq -e --arg id "$id" "$all[] | select(.id==\$id) | .verify == [\"human\"]" "$f" >/dev/null; then
     block "$id 는 사람 판정 항목 — 에이전트는 awaiting_human=true 까지만 (§4.4)."
   fi
   grep -qx "verify: $id OK" <<<"$records" || block "$id: 이번 세션 progress 에 'verify: $id OK' 줄 없음."
@@ -345,7 +375,7 @@ done
 exit 0
 ```
 
-임시 git 저장소에서 **직접 실행**한 시나리오 [실행] (Round 1 의 5개 + Round 2 리뷰의 우회 N1~N11):
+임시 git 저장소에서 **직접 실행**한 시나리오 [실행] (Round 1 의 5개 + Round 2 리뷰의 우회 N1~N11 + Round 3 의 X4~X7·세션 구분 — 모두 이 판으로 재실행):
 
 | 시나리오 | Round 1 판 | Round 2 판 (`stop_hook_active` 탈출) | 이 판 |
 |---|---|---|---|
@@ -363,6 +393,12 @@ exit 0
 | 문자열 `"true"` (N11) | — | 미검사 | **차단** — boolean 만 허용 |
 | true → false 되돌림 | 차단 (결함) | 통과 | **통과** (정상) |
 | 기록 후 커밋 추가 | 통과 (결함) | 검사 유지 | **통과** (정상 — 기록 있음) |
+| (Round 3) `feature_list.json` 삭제 (X4) | — | — | **차단** |
+| (Round 3) 일반 항목에 `awaiting_human: true` (X5) | — | — | **차단** |
+| (Round 3) `title` 등 기타 필드 변경 (X7) | — | — | **차단** — passes·blocked·awaiting_human 외 전부 비교 |
+| (Round 3) `pending_decision` 안 사람 판정 항목 `passes: true` (X6) | — | — | **차단** |
+| (Round 3) 같은 base 커밋, 다른 세션의 기록만 있음 | — | — | **차단** — base 줄에 session_id 포함 |
+| (Round 3) 사람 판정 항목에 `awaiting_human: true` | — | — | 통과 (정상) |
 
 **기존 `check-done.sh` 의 결함** (이 문서 세트 작성용 hook, 수정은 범위 밖): 카운터 `/tmp/stop-hook-count` 를 초기화하지 않아 세션이 바뀌어도 누적 → 15회 이후 그 머신에서 게이트가 영구히 꺼진다. 위 hook 은 카운터 대신 내장 8회 상한을 쓴다. feature 루프 시작 시 `check-done.sh` 는 settings.json 에서 내린다 (decisions-needed.md D12).
 

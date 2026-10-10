@@ -4,6 +4,7 @@
 > 각 파일 첫 줄 주석에 **실제로 놓일 경로**와 **AS-IS 대비 변경점**을 적었다.
 > 관련 문서: [architecture-proposal.md](../../architecture-proposal.md) §2 · [conventions-proposal.md](../../conventions-proposal.md)
 > 개정: Round 1 리뷰([reviews/examples-round-1.md](../../reviews/examples-round-1.md)) 반영 — A 를 A′ 로 재작성(C2), 세 선택지에 같은 예외 분류(catch 3개)·빈 응답·점수 범위 정책(C1, M3, m4), 누락된 마이그레이션 단계(M1), C 의 세 번째 배치(M2).
+> 개정: Round 3 리뷰([reviews/examples-round-3.md](../../reviews/examples-round-3.md)) 반영 — NaN 이 점수 검사를 통과하던 결함(M1), 점수 정책의 소유 항목·로그 전제(M2), A′ 규칙 (b) 재작성 전파(M3), 수치·절차 경미 8건.
 > 개정: Round 2 리뷰([reviews/examples-round-2.md](../../reviews/examples-round-2.md)) 반영 — `.gitignore` 의 `out/` 에 걸려 빠졌던 C 4파일 커밋(C1), **C 예시를 순환 없는 표준형으로 교체**(M1), 점수 보정을 허용 오차로 제한(M2), A′ 의 클라이언트 우회 가능성(M3).
 
 ## 0. 실행 검증
@@ -11,8 +12,8 @@
 | 선택지 | 방법 | 결과 |
 |---|---|---|
 | A′ | 전용 worktree 의 `src/main` 에 `option-a-layered/` 파일을 실제 경로로 복사, `common/config/RestClientConfig.java` 삭제, `similarity.*` 키 변경 → `./gradlew build` | **BUILD SUCCESSFUL** (컴파일 + `CoreApplicationTests`). ArchUnit: R1·R3·R4·R4b·R6·R7 통과, R5 1건(`getRandom` — `FIX-R5` 미적용분), R2 11건(B 전용 규칙 — A′ 에서는 교체 대상) |
-| B | Round 1·2 리뷰어가 같은 방식으로 적용 | 컴파일·기존 테스트·R1·R2·R3·R4·R4b·R6·R7 통과 (R5 1건만 — `FIX-R5` 미적용분). 가짜 Similarity 서버로 3초 지연·빈 200/204 → 503 확인 (examples-round-2 [실행·리뷰]). 이후 점수 보정을 허용 오차 방식으로 변경 — 재실행 전 |
-| C | worktree 에 포트·유스케이스·서비스·`AnswerException`·`SentencePersistenceAdapter`(JPA 리포지토리 이름만 AS-IS 로) 적용, 대체되는 AS-IS `AnswerService`·컨트롤러·`AnswerResponse` 삭제 → `compileJava` | **컴파일 성공**. ArchUnit R1: `answer ↔ sentence` 순환 **없음** (AS-IS `common ↔ infra` 1건만). R2: `sentence.adapter → answer.application.port.out` 3건 — 헥사고날의 정상 방향이므로 C 를 고르면 "포트 패키지만 모듈 간 교차 허용" 규칙으로 R2 를 교체 |
+| B | Round 1·2 리뷰어가 같은 방식으로 적용 | 컴파일·기존 테스트·R1·R2·R3·R4·R4b·R6·R7 통과 (R5 1건만 — `FIX-R5` 미적용분). 가짜 Similarity 서버로 3초 지연·빈 200/204 → 503 확인 (examples-round-2 [실행·리뷰]). Round 3 리뷰어 재실행: `build`·`contextLoads` 성공, R1·R2·R3·R4·R4b·R6·R7 통과, R5 1건, 3초 지연·빈 200 → 503, 1.0000001 → 1.0, 1.5 → 503. 이후 NaN 처리 수정(§2) — 판정식만 바뀌어 로컬 단위 확인: NaN·1.5·-0.2·Infinity·1e308 → 503, 1.0000001 → 1.0, -1e-7 → 0.0 [실행] |
+| C | worktree 에 포트·유스케이스·서비스·`AnswerException`·`SentencePersistenceAdapter`(JPA 리포지토리 이름만 AS-IS 로) 적용, 대체되는 AS-IS `AnswerService`·`AnswerController`·`AnswerApi`·`AnswerResponse` 삭제 → `compileJava` | **컴파일 성공**. ArchUnit R1: `answer ↔ sentence` 순환 **없음** (AS-IS `common ↔ infra` 1건만). R2: `sentence.adapter → answer.application.port.out` 3건 — 헥사고날의 정상 방향이므로 C 를 고르면 "포트 패키지만 모듈 간 교차 허용" 규칙으로 R2 를 교체. R4 도 어댑터 레이어를 정의한 C 용으로 교체 (지금은 어댑터가 어느 레이어에도 속하지 않아 통과할 뿐) |
 
 ## 1. 왜 이 기능인가
 
@@ -38,7 +39,7 @@
 | F1 | HTTP Interface 파라미터에 `@RequestBody` | current-state §7.2 P8 |
 | 외부 예외 분류 | `RestClientResponseException`(4xx→`RequestInvalid`, 5xx→`Unavailable`) / `ResourceAccessException`(연결 오류→`Unavailable`) / **`RestClientException`(→`Unavailable`)** | `SimpleClientHttpRequestFactory` 에서 **본문 있는 요청(POST)의 read timeout 은 `RestClientException`** 으로 온다 (본문 없는 요청은 `ResourceAccessException` — conventions §2.4 표) — 세 번째 catch 가 없으면 타임아웃이 500 (examples-round-1 C1 실행: 3초 지연에 catch 2개 = 500, 3개 = 503) |
 | 빈 응답 | 200/204 빈 본문 → HTTP Interface 가 `null` 반환 → `Unavailable` | examples-round-1 m4 실행 (없으면 NPE → 500). 회귀 테스트는 feature_list `FIX-F1T` (`SimilarityTimeoutTest`) |
-| 점수 범위 | 허용 오차(1e-6) 안의 범위 밖 값만 `[0, 1]` 로 보정, 그 밖(1.5, -0.2 등)은 계약(03 §5.1) 위반 → `Unavailable` (원래 값은 예외 메시지에) | examples-round-1 M3, round-2 M2 — 관대한 clamp 는 서버 결함을 "만점" 으로 바꿨다. 정책 자체는 decisions-needed.md D13 |
+| 점수 범위 | 판정식 `!(raw >= -1e-6 && raw <= 1 + 1e-6)` → `Unavailable`, 통과한 값만 `Math.clamp` 로 `[0, 1]` 보정. 1.5·-0.2·Infinity·**NaN**(문자열 `"NaN"` 응답이 Jackson 으로 NaN 이 됨) → 503. 원래 값은 예외 cause 메시지 — 로그에 찍히는 것은 `FIX-F3` 이후. 소유 항목: `FIX-F1T` | examples-round-1 M3, round-2 M2 — 관대한 clamp 는 서버 결함을 "만점" 으로 바꿨다. 정책 자체는 decisions-needed.md D13 |
 | 등급 계산 위치 | DTO 밖 (`AnswerService` 가 `Grade.fromScore` 호출) | conventions §3.2 |
 | 기능 간 전달 | 엔티티 대신 record — A′·B 는 `SentenceDetail(id, englishText, koreanRef)`, C 는 포트 소유 `SentenceForScoring` (같은 필드) | conventions §3.1·§3.3, R5 |
 | 설정 | `@Value` → `@ConfigurationProperties` record + `@DefaultValue`. `RestClient.builder()` 정적 호출 유지 (Builder 빈 없음) | current-state §4.6 |
@@ -109,19 +110,19 @@
 | 프로젝트 내부 import 수 (`import com.tmi.*`) | 9 | 6 | 6 | 6 |
 | `@Transactional` | self-invocation (무효) | 없음 — `SentenceService.getActive` 가 담당 | 없음 — `SentenceReader.getActive` 가 담당 | 없음 — 어댑터가 담당 |
 
-**`AnswerService` 기준으로 A′ 와 B 의 코드 차이는 import 경로뿐이다** (그 밖의 차이: A′ 의 `SentenceDetail.from` 은 `public`, 조회 메서드가 기존 `SentenceService` 에 추가 vs 신규 `SentenceReader`, Similarity dto 분리 vs 중첩). 차이는 공개 표면의 크기에 있다: A′ 에서는 `answer` 가 `sentence.service`·`sentence.dto` 의 **어떤 타입이든** 쓸 수 있다(웹 응답 DTO `SentenceResponse` 포함). B 에서는 base package 에 골라 둔 타입만 쓸 수 있고, 넓히려면 파일을 옮기는 diff 가 생긴다. 경계 규칙은 둘 다 ArchUnit 조건 1개다 (architecture-proposal.md §2 A′).
+**`AnswerService` 기준으로 A′ 와 B 의 코드 차이는 import 경로뿐이다** (그 밖의 차이: A′ 의 `SentenceDetail.from` 은 `public`, 조회 메서드가 기존 `SentenceService` 에 추가 vs 신규 `SentenceReader`, Similarity dto 분리 vs 중첩). 차이는 공개 표면의 크기에 있다: A′ 에서는 `answer` 가 `sentence.service`·`sentence.dto` 의 **어떤 타입이든** 쓸 수 있다(웹 응답 DTO `SentenceResponse` 포함). B 에서는 base package 에 골라 둔 타입만 쓸 수 있고, 넓히려면 파일을 옮기는 diff 가 생긴다. 경계 규칙은 A′ 가 2개((a) 기능 간 + (b) infra 진입점), B 가 1개(R2 — 모듈 internal 이 둘 다 커버)다 (architecture-proposal.md §2 A′).
 
 ## 5. 예시가 드러내는 각 선택지의 약점
 
 | 선택지 | 약점 | 예시 위치 |
 |---|---|---|
 | A′ | `sentence.service`·`sentence.dto` 전체가 암묵적으로 공개 — `answer` 가 `SentenceResponse`(웹 응답)를 재사용해도 규칙 위반이 아니다 | `option-a-layered/answer/AnswerService.java` 10-11행 import |
-| A′ | `infra.similarity.SimilarityClient` 를 다른 기능이 직접 주입해 `SimilarityScorer`(예외 변환·빈 응답·점수 범위)를 **우회**할 수 있다 → timeout 500 회귀. 막으려면 "`infra/{시스템}` 은 `*Scorer` 외 타입 접근 금지" 규칙이 추가로 필요 | architecture-proposal.md §2 A′ |
+| A′ | `infra.similarity.SimilarityClient` 를 다른 기능이 직접 주입해 `SimilarityScorer`(예외 변환·빈 응답·점수 범위)를 **우회**할 수 있다 → timeout 500 회귀. 막으려면 A′ 규칙 (b) "`infra/{시스템}` 의 클라이언트·dto·config 는 그 패키지 안에서만, 밖에서는 진입점(`SimilarityScorer`, Toss 는 `TossHoldingsFetcher`·`TossTokenProvider`)만" 이 추가로 필요 → **A′ 는 경계 규칙 2개** | architecture-proposal.md §2 A′ |
 | B | `SentenceDetail` 이 엔티티 필드 일부를 복제 (A′ 도 동일) | `option-b-modular/sentence/SentenceDetail.java` |
 | B | `SentenceReader` 가 internal 예외(`SentenceException.NotFound`)를 경계 밖으로 던짐 — 호출 측은 catch 하지 않는 전제 | `option-b-modular/sentence/SentenceReader.java` javadoc |
 | B | `infra/` 해체 → 02 §3.2·05 §1.3 규칙 변경 | architecture-proposal.md §0 표 |
 | C | 포트가 sentence 의 도메인 타입을 반환하면 **`answer ↔ sentence` 순환**이 된다 (Round 1 예시가 그랬다 — R1 위반 실행 확인). 이 예시는 포트가 answer 소유 record 를 반환해 순환이 없다(§0). 대신 모듈 간 교차를 "포트 패키지만 허용" 하는 C 전용 경계 규칙이 필요 | `option-c-hexagonal/application/port/out/LoadSentencePort.java` |
-| C | 한 흐름에 신규 8 + 표시 생략 이동 다수 — AS-IS `answer` 전체가 7파일 | §3 C 표 |
+| C | 한 흐름에 신규 7 + 수정 1 + 표시 생략 이동 다수 — AS-IS `answer` 전체가 7파일 | §3 C 표 |
 
 **C 의 다른 배치**: sentence 가 answer 의 포트를 아는 것(sentence → answer)조차 피하고 싶으면, 어댑터를 `answer/adapter/out/sentence/` 에 두고 sentence 의 인바운드 포트(유스케이스)를 호출한다. 이 경우 비용은 어댑터 1 + sentence 인바운드 포트·구현 2 가 추가된다. 어느 배치든 C 는 R2 대신 C 전용 경계 규칙이 필요하다 — 다른 선택지의 경계에 의존하지 않는다.
 

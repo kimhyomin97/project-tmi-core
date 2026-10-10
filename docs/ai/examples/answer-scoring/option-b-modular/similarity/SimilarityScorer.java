@@ -34,7 +34,7 @@ public class SimilarityScorer {
             throw e.getStatusCode().is4xxClientError()
                     ? new SimilarityException.RequestInvalid(e)
                     : new SimilarityException.Unavailable(e);
-        } catch (ResourceAccessException e) {            // I/O 오류: 연결 거부, 본문 없는 요청의 read timeout
+        } catch (ResourceAccessException e) {            // I/O 오류: 연결 거부, 본문 없는 요청(GET 등)의 read timeout
             throw new SimilarityException.Unavailable(e);
         } catch (RestClientException e) {
             // SimpleClientHttpRequestFactory 에서 본문 있는 요청(POST)의 **read timeout 이 여기로 온다** ("Error while extracting response"
@@ -47,12 +47,14 @@ public class SimilarityScorer {
         }
         // 점수 범위 정책 (세 선택지 공통, README §2, decisions-needed D13):
         // 허용 오차(1e-6) 안의 범위 밖 값만 [0, 1] 로 보정하고, 그 밖은 계약(03 §5.1 score 0.0~1.0) 위반으로 Unavailable.
-        // 원래 값은 예외 메시지로 남긴다 — 핸들러가 5xx 로 ERROR + 스택 기록 (throw 직전 로그 금지, conventions §5.1).
+        // 원래 값은 예외 cause 메시지로 남긴다. 로그에 실제로 찍히는 것은 FIX-F3(핸들러가 5xx 에 Throwable 전달) 이후 —
+        // 그 전 AS-IS 핸들러는 오류 코드 한 줄만 남긴다 (examples-round-3 M2). throw 직전 로그 금지 (conventions §5.1).
         double raw = response.score();
-        double score = Math.clamp(raw, 0.0, 1.0);
-        if (Math.abs(raw - score) > SCORE_TOLERANCE) {
+        // NaN 은 모든 비교가 false 라 "범위 안" 형태로 검사해야 걸러진다 (examples-round-3 M1 — "NaN" 문자열 응답이 200 으로 새던 결함)
+        if (!(raw >= -SCORE_TOLERANCE && raw <= 1.0 + SCORE_TOLERANCE)) {
             throw new SimilarityException.Unavailable(new IllegalStateException("similarity score out of range: " + raw));
         }
+        double score = Math.clamp(raw, 0.0, 1.0);
         log.info("Similarity 응답: score={}", score);
         return score;
     }

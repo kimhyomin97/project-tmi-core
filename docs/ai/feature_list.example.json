@@ -38,7 +38,7 @@
         "! grep -rn '\"FIX-F1 ' src/test",
         "! grep -rn '\"R7 위반' src/test",
         "bash ./gradlew test --tests '*SimilarityClientTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.SimilarityClientTest.xml",
-        "bash ./gradlew test --tests '*ConventionArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml"
+        "bash ./gradlew test --tests '*ConventionArchitectureTest.r7_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml"
       ],
       "acceptance": "SimilarityClientTest·ArchUnit R7 의 @Disabled 제거 후 통과",
       "evidence": "current-state.md F1, §7.2 P8",
@@ -49,7 +49,7 @@
     },
     {
       "id": "FIX-F1T",
-      "title": "Similarity read timeout·빈 응답을 503 으로 — AnswerService 에 RestClientException catch + null 처리 (F1 수정 직후 표면화)",
+      "title": "Similarity 비정상 응답을 503 으로 — AnswerService 에 RestClientException catch + 빈 응답(null) + 점수 범위 정책(D13 (b))",
       "module": "answer",
       "depends_on": [
         "FIX-F1"
@@ -59,7 +59,7 @@
       "verify": [
         "bash ./gradlew test --tests '*SimilarityTimeoutTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.SimilarityTimeoutTest.xml"
       ],
-      "acceptance": "SimilarityTimeoutTest: com.sun.net.httpserver 로 3초 지연 응답 서버 + readTimeout 500ms → SimilarityException.Unavailable, 빈 200 응답 → Unavailable. 수정 전 실패(500 경로) 기록. ARCH-B2/A2 에서 SimilarityScorer 로 이동 시 테스트 유지",
+      "acceptance": "SimilarityTimeoutTest(JDK HttpServer): 3초 지연 + readTimeout 500ms → Unavailable, 빈 200 → Unavailable, score 1.0000001 → 1.0, 1.5 → Unavailable, \"NaN\" → Unavailable. 수정 전 실패(500 경로) 기록. 원래 값의 로그 기록은 FIX-F3 이후 (핸들러가 Throwable 전달). ARCH-B2/A2 에서 SimilarityScorer 로 이동 시 테스트 유지",
       "evidence": "current-state.md §3.3(f), examples-round-1 C1·m4",
       "passes": false,
       "blocked": null,
@@ -94,9 +94,11 @@
       "human_gate": "plan",
       "plan_approved": null,
       "verify": [
-        "SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:1/none bash ./gradlew test"
+        "SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:1/none bash ./gradlew test",
+        "grep -q '@Tag(\"integration\")' src/test/java/com/tmi/core/CoreApplicationTests.java",
+        "bash ./gradlew tasks --all | grep -q '^integrationTest'"
       ],
-      "acceptance": "DB 접속을 막은 상태(SPRING_DATASOURCE_URL 을 닫힌 포트로)에서 ./gradlew test 성공",
+      "acceptance": "DB 접속을 막은 상태에서 ./gradlew test 성공 + CoreApplicationTests 에 @Tag(\"integration\") + integrationTest 태스크 존재 (지우거나 exclude 만 해서 통과하는 것을 막음)",
       "evidence": "conventions-proposal.md §6.4, decisions-needed D3",
       "passes": false,
       "blocked": null,
@@ -154,7 +156,7 @@
       "plan_approved": null,
       "verify": [
         "! grep -rn '\"R5 위반' src/test",
-        "bash ./gradlew test --tests '*ConventionArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml"
+        "bash ./gradlew test --tests '*ConventionArchitectureTest.r5_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml"
       ],
       "acceptance": "ArchUnit R5 @Disabled 제거 후 통과. 구조 결정(D1)과 무관",
       "evidence": "conventions-proposal.md §3.1, decisions-needed D4",
@@ -175,7 +177,7 @@
       "plan_approved": null,
       "verify": [
         "! grep -rn '\"R6 위반' src/test",
-        "bash ./gradlew test --tests '*ConventionArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml",
+        "bash ./gradlew test --tests '*ConventionArchitectureTest.r6_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml",
         "bash ./gradlew integrationTest --tests '*OsivConnectionIT' && grep -q 'skipped=\"0\"' build/test-results/integrationTest/TEST-*.OsivConnectionIT.xml"
       ],
       "acceptance": "R6 @Disabled 제거 후 통과. OsivConnectionIT(Similarity 호출 콜백에서 Hikari 활성 커넥션 측정)가 0 — current-state §3.4 프로브를 테스트로 고정",
@@ -199,7 +201,8 @@
       "verify": [
         "! grep -rn '\"R1 위반' src/test",
         "! grep -rn '\"R3 위반' src/test",
-        "bash ./gradlew test --tests '*ModuleArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml"
+        "bash ./gradlew test --tests '*ModuleArchitectureTest.r1_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml",
+        "bash ./gradlew test --tests '*ModuleArchitectureTest.r3_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml"
       ],
       "acceptance": "R1·R3 @Disabled 제거 후 통과",
       "evidence": "architecture-proposal.md §4.3 단계 1",
@@ -237,12 +240,13 @@
         "module": "similarity",
         "depends_on": [
           "ARCH-A1",
-          "FIX-F1T"
+          "FIX-F1T",
+          "SIG-1"
         ],
         "human_gate": "plan",
         "plan_approved": null,
         "verify": [
-          "bash ./gradlew test",
+          "SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:1/none bash ./gradlew test",
           "! grep -rn 'com.tmi.core.infra' src/main"
         ],
         "acceptance": "infra 패키지 소멸, answer 는 similarity 의 base package 만 import",
@@ -263,7 +267,7 @@
         "plan_approved": null,
         "verify": [
           "! grep -rn '\"R2 위반' src/test",
-          "bash ./gradlew test --tests '*ModuleArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml"
+          "bash ./gradlew test --tests '*ModuleArchitectureTest.r2_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml"
         ],
         "acceptance": "R2 @Disabled 제거 후 통과",
         "evidence": "architecture-proposal.md §4.3 단계 2",
@@ -284,7 +288,7 @@
         "verify": [
           "human"
         ],
-        "acceptance": "architecture-proposal.md §0 표의 해당 열 모든 행 반영을 사람이 확인",
+        "acceptance": "architecture-proposal.md §0 표와 §3.2 '기존 문서 수정' 목록의 해당 선택지 행을 모두 반영했는지 사람이 확인",
         "evidence": "architecture-proposal.md §0, §3.2",
         "passes": false,
         "blocked": null,
@@ -295,7 +299,7 @@
     "D1=A'": [
       {
         "id": "ARCH-A2",
-        "title": "A′: SentenceService.getActive → sentence.dto.SentenceDetail, infra.similarity.SimilarityScorer 도입, R2 를 '타 기능 repository·domain 접근 금지' 규칙으로 교체",
+        "title": "A′: SentenceService.getActive → sentence.dto.SentenceDetail, infra.similarity.SimilarityScorer 도입, R2 를 A′ 규칙 (a) 타 기능 repository·domain·exception 접근 금지 (b) infra/{시스템} 클라이언트·dto·config 는 그 패키지 안에서만 — 로 교체",
         "module": "answer",
         "depends_on": [
           "ARCH-A1",
@@ -304,10 +308,10 @@
         "human_gate": "plan",
         "plan_approved": null,
         "verify": [
-          "bash ./gradlew test --tests '*ModuleArchitectureTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml",
+          "bash ./gradlew test --tests '*ModuleArchitectureTest.r2_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml",
           "! grep -rn '\"R2 위반' src/test"
         ],
-        "acceptance": "계획(H1)에 새 A′ 규칙의 ArchUnit 코드를 포함해 사람이 승인. 그 규칙 통과, AnswerService 가 sentence.repository·domain·exception 을 import 하지 않음",
+        "acceptance": "계획(H1)에 새 규칙 (a)(b) 의 ArchUnit 코드를 포함해 사람이 승인. 두 규칙 통과, AnswerService 가 sentence.repository·domain·exception 과 infra.similarity.SimilarityClient 를 import 하지 않음",
         "evidence": "architecture-proposal.md §2 A′, §4.3 단계 2-A′",
         "passes": false,
         "blocked": null,
@@ -326,7 +330,7 @@
         "verify": [
           "human"
         ],
-        "acceptance": "architecture-proposal.md §0 표의 해당 열 모든 행 반영을 사람이 확인",
+        "acceptance": "architecture-proposal.md §0 표와 §3.2 '기존 문서 수정' 목록의 해당 선택지 행을 모두 반영했는지 사람이 확인",
         "evidence": "architecture-proposal.md §0, §3.2",
         "passes": false,
         "blocked": null,

@@ -316,7 +316,7 @@ After ([examples/answer-scoring/option-b-modular/similarity/SimilarityScorer.jav
 } catch (RestClientException e) {                // 본문 있는 요청(POST)의 read timeout, 응답 본문 수신 중 정지·역직렬화 실패
     throw new SimilarityException.Unavailable(e);  // 이 catch 를 지우면 Similarity(POST) 타임아웃이 503 → 500 으로 회귀
 }
-// + 빈 응답(null) → Unavailable, 점수는 Math.clamp(score, 0.0, 1.0) — examples/answer-scoring/README.md §2
+// + 빈 응답(null) → Unavailable, 점수는 허용 오차(1e-6) 밖·NaN 이면 Unavailable, 통과 값만 clamp — examples/answer-scoring/README.md §2, decisions-needed D13
 ```
 
 - 변환 위치: 외부 시스템 쪽 클래스 하나(`SimilarityScorer`). `[B 전제]` 위치는 `similarity` 모듈의 base package, A′ 이면 `infra.similarity.SimilarityScorer` — 규칙(변환 클래스 1개)은 같다 (architecture-proposal.md §2).
