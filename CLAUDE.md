@@ -22,9 +22,9 @@ bash ./gradlew spotlessApply         # 포맷 자동 수정 — 사람 승인 �
 
 - **`./gradlew test` 는 PostgreSQL 이 필요하다** (`CoreApplicationTests` 가 `localhost:15432/tmi_word` 접속, `ddl-auto=validate`).
   DB 없으면 `PSQLException: Connection refused` 로 실패 — 코드 문제가 아니다. 기동 방법: [docs/public/README.md](docs/public/README.md) §시작하기 또는 [docs/ai/blockers.md](docs/ai/blockers.md) §2.
+  스키마: `psql -h localhost -p 15432 -U postgres -d tmi_word -f docs/public/init.sql`
   단 `--tests` 로 아키텍처·단위 테스트만 돌리면 `CoreApplicationTests` 가 실행되지 않아 DB 불필요.
 - 루트 `README.md` 의 패키지 표는 **폐기된 헥사고날 구조**다 — 따르지 말 것 (현재 구조: 05 개발컨벤션 §1.3).
-  스키마: `psql -h localhost -p 15432 -U postgres -d tmi_word -f docs/public/init.sql`
 - 아키텍처 테스트 중 `@Disabled` 는 **알려진 위반** (사유 주석에 해소 작업 ID). 위반을 고쳤으면 `@Disabled` 를 지워 통과를 확인한다. 새 위반을 `@Disabled` 로 숨기지 말 것.
 - 테스트 소스셋에는 **Lombok 이 없다** (main 에만 선언). 테스트 코드는 Lombok 없이 작성.
 - Gradle `--tests` 를 여러 개 주면 **OR** 다 — 특정 테스트들이 실제로 돌았는지 확인하려면 클래스마다 따로 실행.

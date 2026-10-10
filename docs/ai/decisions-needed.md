@@ -26,7 +26,7 @@
 | 순위 | ID | 질문 | 추천 | 막고 있는 작업 |
 |---|---|---|---|---|
 | 1 | D1 | 구조를 A′·B·C 중 무엇으로? | **B** (기능 모듈 + 공개 API). 차이가 작으므로 A′ 도 합리적 | `ARCH-B2`·`B3` 또는 `ARCH-A2`, Toss WIP 배치 — B2 는 D3(`SIG-1`)도 필요 |
-| 2 | D3 | `./gradlew test` 를 DB 없이 돌게 할 방법은? | **Testcontainers + `integration` 태그 분리** | `SIG-1` → `FIX-F4`, 루프 init.sh |
+| 2 | D3 | `./gradlew test` 를 DB 없이 돌게 할 방법은? | **Testcontainers + `integration` 태그 분리** | `SIG-1` → `FIX-F4`·`ARCH-B2`(D1=B), 루프 init.sh |
 | 3 | D4 | OSIV 를 끌까? | **예** — `FIX-R5`(서비스 DTO 반환) 후 `FIX-F4` 에서 | `FIX-F4` — D3(`SIG-1`) + **Docker 가 있는 환경**도 필요 |
 | 4 | D2 | 에러 응답 형식을 RFC 9457 로 바꿀까? | **아니오** — 형식 유지, 핸들러만 `ResponseEntityExceptionHandler` 상속 | `FIX-F3` — D5 도 함께 (`SIG-2` 의존, D5≠(a) 면 의존 삭제) |
 | 5 | D6 | 03 명세와 코드가 다른 곳은 어느 쪽을 고칠까? | **03 을 코드에 맞춤** | `DOC-1` 일부 |
@@ -97,7 +97,7 @@
 | `GET /sentences/meta`, `GET /api/v1/health` 미구현 | 명세에 **"미구현" 표기** 후 별도 항목으로 구현 결정 |
 | 404 메시지 예시가 세 곳에서 다름 | 실제 번들 값(`Sentence not found: {0}`)으로 **통일** |
 
-- **결정하면 바로 시작**: `DOC-1` 의 03 부분 — 단 `DOC-1` 은 `FIX-F3`(새 코드 `BAD_REQUEST`)·`FIX-F4` 이후다. 03 의 `MISSING_PARAMETER` 정정만 먼저 하려면 H0 에서 `DOC-1` 을 둘로 나눈다.
+- **결정하면 바로 시작**: `DOC-1` 의 03 부분 — 단 `DOC-1` 은 `FIX-F3`(새 코드 `BAD_REQUEST`)·`FIX-F4` 이후다. 03 의 `MISSING_PARAMETER` 정정만 먼저 하려면 H0 에서 `DOC-1` 을 둘로 나눈다. **추가로 필요**: `FIX-F4` 는 D3 + Docker(`requires`)라 `DOC-1` 도 간접적으로 Docker 환경을 기다린다.
 
 ### D9. 미커밋 Toss WIP
 
@@ -127,13 +127,13 @@
 
 - 06 §3.3 "권장" 예시가 self-invocation(§3.4 위반), 06 §2.3 "enum 자동 바인딩" 이 native 에서 틀림 (current-state F10). 가이드를 따른 코드가 결함이 됐다.
 - 선택지: (a) 관련 FIX 와 같은 PR (b) **`DOC-1` 로 `FIX-F3`·`FIX-F4` 직후 별도 PR**. 추천 (b) — ai-workflow §1.1 "항목 1개 = PR 1개" 와 맞고, 수정 근거(통과한 테스트)가 먼저 머지된 뒤 문서를 고친다. 그 사이 CLAUDE.md 가 "06 §2.3 은 틀렸다" 를 이미 경고한다.
-- **결정하면 바로 시작**: `DOC-1` (conventions §8 표 23행).
+- **결정하면 바로 시작**: `DOC-1` (conventions §8 표 23행). **추가로 필요**: `DOC-1` 은 `FIX-F4`(D3·D4·D5 + Docker) 이후라 (b) 를 고르면 문서 수정 전체가 Docker 있는 환경에서 F4 가 끝날 때까지 밀린다. 먼저 하려면 D6 처럼 `DOC-1` 을 F3 분 / F4 분으로 나눈다.
 
 ### D12. AI 루프 운영
 
 - 추천 기본값: ai-workflow.md §2.2 — H0(결정·항목 승인), H1(`human_gate: plan` 항목: 계획 파일 검토 후 **사람이 `plan_approved` 기록**), H2(PR 머지), H3(`blocked`).
 - hook: 제안된 `session-base.sh`(SessionStart) + `check-feature.sh`(Stop — 이번 세션의 id 별 verify 기록, 사람 전용 필드 불변, 사람 판정 항목 차단; 20개 시나리오 실행 확인)를 추가하고, 이 문서 세트용 `check-done.sh` 는 내린다. 후자는 `/tmp/stop-hook-count` 를 초기화하지 않아 15회 이후 영구히 꺼지는 결함이 있다 (ai-workflow.md §4.6).
-- **결정하면 바로 시작**: `feature_list.example.json` 을 `feature_list.json` 으로 복사하고 D1 에 해당하는 `pending_decision` 묶음을 `items` 로 옮긴다 → 첫 세션 `TEST-1`.
+- **결정하면 바로 시작**: `feature_list.example.json` 을 `feature_list.json` 으로 복사하고 D1 에 해당하는 `pending_decision` 묶음(D13=(b) 면 그 묶음도)을 `items` 로 옮긴다 → 첫 세션 `TEST-1`. `FIX-F1S` 의 `module` 은 D1=B 후라면 `similarity` 로 H0 에서 고친다.
 
 ### D13. Similarity 비정상 응답
 

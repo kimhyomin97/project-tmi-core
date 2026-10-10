@@ -215,8 +215,8 @@ flowchart TD
 | 8 | `FIX-R5` | `SentenceService` DTO 반환 (R5) | none | TEST-1 | — |
 | 9 | `FIX-F4` | self-invocation 제거 + OSIV off (`OsivConnectionIT`) | plan | **FIX-R5**, SIG-1 | **docker** |
 | 10 | `ARCH-A1` | Similarity 빈 설정을 `common` 밖으로 (R1·R3) | none | FIX-F1 | — |
-| 11 | `DOC-1` | 05/06/99/03 수정 (구조 무관분) | plan | FIX-F3, FIX-F4 | — |
-| 보류 | `ARCH-B2` → `ARCH-B3` → `DOC-2` / `ARCH-A2` → `DOC-2` / `FIX-F1S` | `pending_decision["D1=B"]` / `["D1=A'"]` / `["D13=(b)"]` | B2·A2·DOC-2 plan | ARCH-A1, FIX-F1T (+ B2 는 SIG-1 — 전체 test 를 DB 없이) | — |
+| 11 | `DOC-1` | 05/06/99/03·루트 README 수정 (구조 무관분) | plan | FIX-F3, FIX-F4 | — |
+| 보류 | `ARCH-B2` → `ARCH-B3` → `DOC-2` / `ARCH-A2` → `DOC-2` / `FIX-F1S` | `pending_decision["D1=B"]` / `["D1=A'"]` / `["D13=(b)"]` | B2·A2·DOC-2 plan | B2·A2: ARCH-A1 (+ B2 는 SIG-1 — 전체 test 를 DB 없이) / F1S: FIX-F1T | — |
 
 - `FIX-F4` 가 `FIX-R5` 에 의존: OSIV 를 끄기 전에 엔티티가 트랜잭션 밖으로 나가지 않아야 한다 (conventions-proposal.md §3.4, decisions-needed.md D4).
 - `SIG-2` 를 `FIX-F3` 앞에 둠: `GlobalExceptionHandler` 를 크게 고치기 전에 포맷 소음을 없앤다. `SIG-2` 자체는 `SIG-1` 에 의존하지 않는다 (round-2 m9 — 근거 없는 의존 제거).

@@ -106,8 +106,8 @@ class ConventionArchitectureTest {
 
     // 한계: 메서드 레벨 @Transactional 만 본다. 클래스 레벨 @Transactional 클래스 안의 self-invocation 은
     // 바깥 메서드도 같은 트랜잭션 설정을 받으므로 대부분 무해하다고 보고 검사하지 않는다.
-    // 또 org.springframework.transaction.annotation.Transactional 만 본다 — jakarta.transaction.Transactional 은 미검사 (현재 사용처
-    // 0).
+    // 또 org.springframework.transaction.annotation.Transactional 만 본다 — jakarta.transaction.Transactional 은 미검사
+    // (현재 사용처 0).
     private static ArchCondition<JavaClass> notSelfInvokeTransactionalMethods() {
         return new ArchCondition<>("not call own @Transactional methods") {
             @Override

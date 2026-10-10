@@ -15,13 +15,13 @@
 | **[S]** | 검색 결과 스니펫으로만 확인 — 본문 미열람 | 중간 |
 | (미검증) | 2차 출처만 있거나 확인 못 함 | 약함 — 결정 근거로 쓰지 말 것 |
 
-버전은 2026-10-10 기준 Maven Central `maven-metadata.xml` / Gradle Plugin Portal 값이다. **[J] 근거는 Boot 4.0.8 / Framework 7.0.8 소스 jar** 기준이며 프로젝트(Boot 4.0.2)와의 차이는 개별 확인하지 않았다 — 결정에 쓰인 [J] 주장은 대부분 이 저장소 실행([R])으로 교차 확인됐다. URL 이 생략된 [J] 는 같은 그룹의 Maven Central 경로(`https://repo1.maven.org/maven2/org/springframework/...`)다.
+버전은 2026-10-10 기준 Maven Central `maven-metadata.xml` / Gradle Plugin Portal 값이다. **[J] 근거는 Boot 4.0.8 / Framework 7.0.8 소스 jar** 기준이며 프로젝트(Boot 4.0.2)와의 차이는 개별 확인하지 않았다 — 결정에 쓰인 [J] 주장은 대부분 이 저장소 실행([R])으로 교차 확인됐다. URL 이 생략된 [J] 는 해당 artifact 의 Maven Central `maven-metadata.xml` 경로다 (예: Checkstyle 은 `https://repo1.maven.org/maven2/com/puppycrawl/tools/checkstyle/maven-metadata.xml`).
 
 | 항목 | 최신 안정 | 이 프로젝트에 맞는 선택 | 출처 |
 |---|---|---|---|
 | Spring Boot | 4.1.1 (4.0.x 최신 4.0.8) | 현행 4.0.2 유지 — 업그레이드는 별도 결정 | [J] https://repo1.maven.org/maven2/org/springframework/boot/spring-boot/maven-metadata.xml |
 | Spring Modulith | 2.1.1 (Boot 4.1), 2.0.8 (Boot 4.0) | **2.0.x** | [J] https://repo1.maven.org/maven2/org/springframework/modulith/spring-modulith-bom/maven-metadata.xml |
-| ArchUnit | 1.5.1 | core `com.tngtech.archunit:archunit:1.5.1` — JUnit 엔진 없이 일반 `@Test` 에서 `check()` (§6.3, current-state §6.3) | [J] https://repo1.maven.org/maven2/com/tngtech/archunit/archunit-junit5/maven-metadata.xml |
+| ArchUnit | 1.5.1 | core `com.tngtech.archunit:archunit:1.5.1` — JUnit 엔진 없이 일반 `@Test` 에서 `check()` (§6.3, current-state §6.3) | [J] https://repo1.maven.org/maven2/com/tngtech/archunit/archunit/maven-metadata.xml |
 | Testcontainers | 2.0.5 (Postgres 모듈명 `testcontainers-postgresql`) | Boot BOM 관리 버전 사용 | [J] https://repo1.maven.org/maven2/org/testcontainers/testcontainers-postgresql/maven-metadata.xml |
 | Spotless Gradle | 8.10.4 (configuration cache ✓) | 8.10.4 | [F] https://plugins.gradle.org/plugin/com.diffplug.spotless |
 | palantir-java-format | 2.102.0 | — | [J] https://repo1.maven.org/maven2/com/palantir/javaformat/palantir-java-format/maven-metadata.xml |
@@ -92,7 +92,7 @@
 
 **적합성**
 
-- (a) 를 유지하되 **(b) 의 "내장 예외 전부 처리" 이점만 흡수**하는 방법이 있다: `GlobalExceptionHandler extends ResponseEntityExceptionHandler` 로 바꾸고 `handleExceptionInternal` 을 오버라이드해 body 를 기존 `ErrorResponse` 로 만든다. 그러면 current-state F3 의 `HttpMessageNotReadableException` → 500 문제가 개별 핸들러 추가 없이 해소된다 — **[R] 실행 확인**: conventions-proposal.md §0 의 2차 검증에서 After 코드를 그대로 적용해 깨진 JSON 400·415·405 등 8개 시나리오가 의도대로 동작.
+- (a) 를 유지하되 **(b) 의 "내장 예외 전부 처리" 이점만 흡수**하는 방법이 있다: `GlobalExceptionHandler extends ResponseEntityExceptionHandler` 로 바꾸고 `handleExceptionInternal` 을 오버라이드해 body 를 기존 `ErrorResponse` 로 만든다. 그러면 current-state F3 의 `HttpMessageNotReadableException` → 500 문제가 개별 핸들러 추가 없이 해소된다 — **[R] 실행 확인**: conventions-proposal.md §0 의 2차 검증에서 After 코드를 그대로 적용해 깨진 JSON 400·415·405 등 5개 시나리오(404·503·깨진 JSON 400·415·405)가 의도대로 동작 (재실행 8개 시나리오: reviews/conventions-proposal-round-4.md).
 - 응답 형식을 RFC 9457 로 바꾸는 것(b·c·d)은 **외부 계약 변경**(03 API 명세 §1.4) 이므로 사람 결정 사항 → decisions-needed.md.
 
 ### 3.2 MessageSource 자동 구성 — 현재 결함의 근거
@@ -138,7 +138,7 @@
 | 5.3 | `SimpleJpaRepository` 는 클래스 레벨 `@Transactional(readOnly = true)`. 단 **인터페이스에 선언한 쿼리 메서드(파생·`@Query`)는 기본 트랜잭션 없음** | [S] https://docs.spring.io/spring-data/jpa/reference/jpa/transactions.html , [J] spring-data-jpa 4.0.7 sources, **[R] current-state.md §3.4 프로브** |
 | 5.4 | `readOnly` 는 하위 계층에 전달되는 힌트이며 쓰기 차단 보장이 아님 | [S] 5.3 과 같은 문서 |
 | 5.5 | 프로그래매틱 경계: `TransactionTemplate` | [S] https://docs.spring.io/spring-framework/reference/data-access/transaction/programmatic.html |
-| 5.6 | "원격 호출은 트랜잭션 밖" — 커넥션 점유·롤백 불가 부작용. **공식 문서 문구는 찾지 못함** (미검증, 일반 실무 원칙) | — |
+| 5.6 | "원격 호출은 트랜잭션 밖" — 커넥션 점유·롤백 불가 부작용. **공식 문서 문구는 찾지 못함** (원칙 자체는 미검증). 다만 이 저장소에서 효과는 [R] 확인 — 외부 호출 중 커넥션 점유 1 → 0 (current-state.md §3.4) | — |
 
 **적합성**
 

@@ -15,9 +15,15 @@
     {
       "id": "research",
       "artifact": "docs/ai/research.md",
-      "done": false,
-      "review_rounds": 0,
-      "rubric_scores": {}
+      "done": true,
+      "review_rounds": 2,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      },
+      "review_note": "final-consistency 리뷰(round-1·2)에서 함께 평가"
     },
     {
       "id": "architecture-proposal",
@@ -70,23 +76,41 @@
     {
       "id": "archunit",
       "artifact": "src/test/java/com/tmi/core/architecture/",
-      "done": false,
-      "review_rounds": 0,
-      "rubric_scores": {}
+      "done": true,
+      "review_rounds": 2,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      },
+      "review_note": "final-consistency 리뷰(round-1·2)에서 함께 평가"
     },
     {
       "id": "claude-md",
       "artifact": "CLAUDE.md",
-      "done": false,
-      "review_rounds": 0,
-      "rubric_scores": {}
+      "done": true,
+      "review_rounds": 2,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      },
+      "review_note": "final-consistency 리뷰(round-1·2)에서 함께 평가"
     },
     {
       "id": "decisions-needed",
       "artifact": "docs/ai/decisions-needed.md",
-      "done": false,
-      "review_rounds": 0,
-      "rubric_scores": {}
+      "done": true,
+      "review_rounds": 2,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      },
+      "review_note": "final-consistency 리뷰(round-1·2)에서 함께 평가"
     }
   ]
 }
