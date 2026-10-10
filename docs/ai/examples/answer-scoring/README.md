@@ -26,7 +26,7 @@
 - F1 수정: HTTP Interface 파라미터에 `@RequestBody`
 - 외부 예외 분류: `HttpStatusCodeException` → `RestClientResponseException` (비표준 상태 코드 포함) + 연결 오류 `ResourceAccessException`
 - 등급 계산은 DTO 밖에서 (`Grade.fromScore` 를 서비스/도메인이 호출)
-- 설정: `@Value` → `@ConfigurationProperties` record, `RestClient.builder()` → 주입된 `RestClient.Builder`
+- 설정: `@Value` → `@ConfigurationProperties` record. `RestClient.builder()` 정적 호출은 유지 — Boot 4 + 현재 의존성에는 `RestClient.Builder` 빈이 없다 (current-state.md §4.6)
 - 외부 호출 직전 `log.error` 제거 — 예외 로그는 `GlobalExceptionHandler` 단일 지점 (conventions-proposal.md §5)
 - 생략: `@Schema` 등 Swagger 어노테이션, `AnswerApi`, `SubmitAnswerRequest`, 예외 클래스 본문 (AS-IS 와 동일)
 

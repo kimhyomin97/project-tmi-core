@@ -23,11 +23,12 @@ class SimilarityClientConfig {
     record SimilarityProperties(String baseUrl, Duration connectTimeout, Duration readTimeout) {}
 
     @Bean
-    SimilarityClient similarityClient(RestClient.Builder builder, SimilarityProperties props) {
+    SimilarityClient similarityClient(SimilarityProperties props) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(props.connectTimeout());
         factory.setReadTimeout(props.readTimeout());
-        RestClient restClient = builder.baseUrl(props.baseUrl()).requestFactory(factory).build();
+        // RestClient.Builder 빈 부재 — option-a-layered/SimilarityClientConfig.java 주석 참조
+        RestClient restClient = RestClient.builder().baseUrl(props.baseUrl()).requestFactory(factory).build();
         return HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))
                 .build()
                 .createClient(SimilarityClient.class);

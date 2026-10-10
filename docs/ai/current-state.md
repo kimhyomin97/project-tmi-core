@@ -22,7 +22,7 @@
 | F3 | 깨진 JSON 등 클라이언트 오류가 500 + ERROR 로 처리, 500 로그에 스택트레이스 없음, 404 가 ERROR 레벨 | `GlobalExceptionHandler.java:68-78`, `BaseException.java:15`, §7.2 P5 | [실행] |
 | F4 | `@Transactional` self-invocation — 어노테이션이 무효이고, 파생 쿼리라 리포지토리 기본 트랜잭션도 없어 **조회가 트랜잭션 없이 실행**. 여기에 OSIV(기본 `true`)가 겹쳐 **Similarity 외부 호출 동안 DB 커넥션 1개를 점유** — 06 §3.3 이 막으려던 안티패턴이 이미 발생 중. 원인의 일부는 06 §3.3 의 "권장" 예시 자체가 self-invocation 패턴이라는 점 | `AnswerService.java:28,35`, §3.4 | [실행] |
 | F5 | DTO 변환 위치가 기능마다 다름 (컨트롤러 vs 서비스), 응답 DTO 가 타 기능 엔티티에 의존 | `SentenceController.java:26`, `AnswerResponse.java:30` | [정적] |
-| F6 | 기능 간 직접 의존 (`answer → sentence.repository/exception/domain`), `common.config → infra` 역방향으로 **`common ↔ infra` 패키지 순환** 1건 (WIP 적용 시 `common ↔ toss` 추가) | §2 | [정적] → ArchUnit 실행 결과 §6 |
+| F6 | 기능 간 직접 의존 (`answer → sentence.repository/exception/domain`), `common.config → infra` 역방향으로 **`common ↔ infra` 패키지 순환** 1건 (WIP 적용 시 `common ↔ toss` 추가) | §2, §6 | [실행] (ArchUnit R1·R2·R3) |
 | F7 | 외부 클라이언트 배치 규칙 분열 (`infra/similarity` vs WIP `toss/holdings/infra`) | §3.6 | [정적] |
 | F8 | 테스트 1개(실 DB 필요) — F1~F4 가 모두 테스트 부재로 잠복 | `src/test` | [실행] |
 | F9 | 외부 API 계약(03)과 실제 동작 불일치 — 파라미터 누락 시 03 은 `INVALID_REQUEST`, 실제는 `MISSING_PARAMETER`. 03 의 `GET /sentences/meta`, `GET /api/v1/health` 미구현 | §3.7 | [실행·리뷰] |
@@ -414,7 +414,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 
 ### 4.5 테스트 자산
 
-- `src/test` 에는 `CoreApplicationTests` 1개. 단위·슬라이스·통합 테스트 0개.
+- HEAD 의 `src/test` 에는 `CoreApplicationTests` 1개. 단위·슬라이스·통합 테스트 0개. (이 작업이 ArchUnit 테스트 3개 클래스·8개 규칙을 추가 — §6)
 - `build.gradle` 에 슬라이스 테스트 스타터(`spring-boot-starter-webmvc-test`, `spring-boot-starter-data-jpa-test`)는 이미 선언되어 있으나 사용처 0.
 
 ### 4.6 `RestClient.Builder` 미사용
@@ -450,11 +450,50 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 
 ## 6. ArchUnit 위반 목록
 
-> 6단계에서 추가. 아래 표는 추천안(architecture-proposal.md 의 선택지 B) 규칙을 실제 바이트코드에 적용한 결과다.
+> 6단계 산출물. 추천안(architecture-proposal.md 선택지 B)의 규칙 R1~R7 을 `src/test/java/com/tmi/core/architecture/` 에 구현하고 **HEAD 의 `src/main` 바이트코드에 실행한 결과**다 [실행].
+> 실행: `bash ./gradlew test --tests 'com.tmi.core.architecture.*'`. 위반이 있는 규칙은 지시대로 `@Disabled` + 사유 주석 처리 → `./gradlew build` 는 통과한다. `@Disabled` 를 무시하고 전부 실행한 결과가 아래 표다 (`junit.jupiter.conditions.deactivate=org.junit.*DisabledCondition` 를 임시 `junit-platform.properties` 로 주고 실행 후 삭제).
 
-(6단계에서 채움)
+### 6.1 규칙별 결과
 
----
+| 규칙 | 테스트 | 결과 | 위반 수 | 해제 조건 (feature_list.example.json) |
+|---|---|---|---|---|
+| R1 모듈 간 순환 금지 | `ModuleArchitectureTest.r1_…` | **위반** → `@Disabled` | 1 사이클 | `ARCH-A1` |
+| R2 타 모듈은 base package 로만 | `ModuleArchitectureTest.r2_…` | **위반** → `@Disabled` | 19 의존 (2 클래스) | `ARCH-B2`, `ARCH-B3` |
+| R3 `common` → 기능 모듈 금지 | `ModuleArchitectureTest.r3_…` | **위반** → `@Disabled` | 2 의존 (1 메서드) | `ARCH-A1` |
+| R4 controller → service → repository | `LayerArchitectureTest.r4_…` | 통과 | 0 | — |
+| R4b domain → 바깥 레이어 금지 | `LayerArchitectureTest.r4b_…` | 통과 | 0 (WIP 적용 시 1 예상 — `HoldingsSnapshotEntity → toss.holdings.dto`) | — |
+| R5 `@Service` public 메서드의 `@Entity` 반환 금지 | `ConventionArchitectureTest.r5_…` | **위반** → `@Disabled` | 1 | conventions §3.1 적용 |
+| R6 `@Transactional` self-invocation 금지 | `ConventionArchitectureTest.r6_…` | **위반** → `@Disabled` | 1 | `FIX-F4` |
+| R7 HTTP Interface 파라미터 바인딩 필수 | `ConventionArchitectureTest.r7_…` | **위반** → `@Disabled` | 1 | `FIX-F1` |
+
+### 6.2 최종 위반 목록
+
+| 규칙 | 위반 (ArchUnit 보고 원문 요약) | current-state 연결 |
+|---|---|---|
+| R1 | `common → infra`: `RestClientConfig.similarityClient()` 반환 타입·클래스 참조 `infra.similarity.SimilarityClient` / `infra → common`: `SimilarityException$RequestInvalid`·`$Unavailable` 가 `common.exception.BaseException` 상속, `ETmiErrorType.SIMILARITY_*` 참조 | §2 순환 행, F6 |
+| R2 | `AnswerService` 생성자 파라미터·필드 `sentence.repository.SentenceRepository` | §3.5 |
+| R2 | `AnswerService` 생성자 파라미터·필드 `infra.similarity.SimilarityClient` | §3.6 |
+| R2 | `AnswerService.loadSentence` → `SentenceRepository.findByIdAndDeletedAtIsNull`, `SentenceException$NotFound` 생성, 반환 타입 `sentence.domain.SentenceEntity` | §3.5 |
+| R2 | `AnswerService.score` → `SentenceEntity.getKoreanRef()` | §3.5 |
+| R2 | `AnswerService.callSimilarity` → `SimilarityRequest` 생성, `SimilarityClient.score`, `SimilarityResponse.score()` ×2, `SimilarityException$RequestInvalid`·`$Unavailable` 생성 ×3 | §3.3(f) |
+| R2 | `AnswerResponse.of` 파라미터 `SentenceEntity`, `getId()`·`getEnglishText()`·`getKoreanRef()` 호출 | §1.2, F5 |
+| R3 | `RestClientConfig.similarityClient()` 반환 타입 `SimilarityClient`, `SimilarityClient.class` 참조 (`RestClientConfig.java:38`) | §1.6 |
+| R5 | `SentenceService.getRandom(Level, Category)` returns `SentenceEntity` | §3.2, F5 |
+| R6 | `AnswerService.score` calls `AnswerService.loadSentence` (`AnswerService.java:28`) | §3.4, F4 |
+| R7 | `SimilarityClient.score(SimilarityRequest)` parameter[0] has no binding annotation | §7.2 P7, F1 |
+
+### 6.3 오탐 점검과 규칙 조정
+
+| 점검 | 방법 | 결과 |
+|---|---|---|
+| 중복 보고 | 1차 실행에서 R2 가 `common.config → infra` 2건을 R3 와 **중복** 보고 (R2 21건) | R2 에서 `common` 출발 의존 제외 → 19건. 실제 위반은 R3 가 계속 보고 |
+| 추천 구조에서의 오탐 (양성 대조) | 임시 픽스처 패키지에 선택지 B 형태(`sentence.SentenceReader` 가 `sentence.repository` 사용, `answer.service` 가 `sentence.SentenceReader`·`SentenceDetail` 만 사용)를 만들고 R2·R5 조건을 같은 로직으로 실행 | **위반 0** — 모듈 내부의 공개 API → 리포지토리 접근, 공개 record 사용을 위반으로 보지 않음 |
+| 탐지력 (음성 대조) | 같은 픽스처에 `answer.service` 가 `sentence.repository` 를 직접 쓰고 `@Entity` 를 반환하는 클래스 추가 | R2 위반 4건, R5 위반 1건 탐지 |
+| R4 의 공개 API 처리 | 선택지 B 의 `SentenceReader`(모듈 base package, `@Service`)가 repository 를 쓰면 "Repository 는 Service 만 접근" 에 걸릴 수 있음 | Service 레이어 정의를 `..service..` **또는 `@Service`** 로 → 픽스처에서 통과 |
+| R7 특수 타입 | HTTP Interface 가 어노테이션 없이 받는 `URI`, `HttpMethod`, `UriBuilderFactory` 는 허용 목록 | 현재 코드에 해당 타입 없음 — 허용 목록 자체는 미검증 (estimated) |
+
+- 임시 픽스처 테스트는 실행 후 삭제했다 (`src/test` 변경 허용 범위가 ArchUnit 테스트 자체이므로 픽스처는 커밋하지 않음).
+- ArchUnit 은 JUnit 엔진(`archunit-junit5`) 대신 **core(`com.tngtech.archunit:archunit:1.5.1`)** 만 쓰고 일반 `@Test` 에서 `rule.check()` 를 호출한다. 이유: (1) TASK 지시의 `@Disabled` 가 그대로 동작 (2) Boot 4 BOM 의 JUnit 6 과 `archunit-junit5` 엔진 호환성 미검증 (research.md §6.3) 을 피함.
 
 ## 7. 빌드·실행 검증 결과
 
@@ -463,7 +502,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | 조건 | 결과 |
 |---|---|
 | `claude/ai-dev-prep`, PostgreSQL **없음** | `:test` 실패 — `CoreApplicationTests.contextLoads` 가 `PSQLException: Connection refused` (`ddl-auto=validate` 가 기동 시 DB 접속) |
-| `claude/ai-dev-prep`, 로컬 PostgreSQL 16 (`localhost:15432/tmi_word`, `docs/public/init.sql` 적용) | `BUILD SUCCESSFUL` |
+| `claude/ai-dev-prep`, 로컬 PostgreSQL 16 (`localhost:15432/tmi_word`, `docs/public/init.sql` 적용) | `BUILD SUCCESSFUL` — 테스트 9개: `CoreApplicationTests` 1 통과, ArchUnit 8 중 2 통과·6 `@Disabled` (§6) |
 | WIP 포함 작업 트리 | 컴파일 실패 (§5, 없는 클래스 import) [실행·리뷰] |
 
 환경 구성 절차는 [blockers.md](./blockers.md) §2.
@@ -510,3 +549,18 @@ ERROR ... GlobalExceptionHandler : [TMI.COMMON.INTERNAL_ERROR] TMI.COMMON.INTERN
 | 404(`SENTENCE.NOT_FOUND`)가 **ERROR** 레벨로 기록 | `ERROR ... [TMI.SENTENCE.NOT_FOUND] TMI.SENTENCE.NOT_FOUND - TMI.SENTENCE.NOT_FOUND` | `BaseException.logLevel` 기본값 `ERROR` (`BaseException.java:15`). 정상적인 "없음" 응답이 장애 알람 대상이 됨 |
 | 예외 `args`(`level=LEVEL_5, category=TECH`) 가 로그에 남지 않음 | 위와 동일 — 세 칸 모두 코드 문자열 | `e.getMessage()` 는 `errorCode` (`BaseException.java:19`), 메시지 번들도 미해결 → **원인 추적 정보 소실** |
 | 500 에 스택트레이스 없음 | P5·P7 로그가 한 줄 | §3.3(a) 확인 |
+
+### 7.3 포맷 검사 (Spotless)
+
+`build.gradle` 에 Spotless 8.10.4 + palantir-java-format 2.102.0 을 `enforceCheck = false` 로 추가했다 (conventions-proposal.md §7) [실행].
+
+| 항목 | 결과 |
+|---|---|
+| Gradle 9.3.0 + JDK 21 에서 플러그인 동작 | ✓ (`spotlessCheck`, `spotlessApply` 정상 실행) |
+| `./gradlew build` 에 영향 | 없음 (`check` 에 미연결) |
+| `src/main` 위반 | **34 파일 중 29 파일** (+178 / −214 줄). 사본에서 `spotlessApply` 후 `git diff --stat` 로 계수 |
+| 변경 성격 (표본: `AnswerController.java`) | `implements AnswerApi{` → `implements AnswerApi {` 같은 공백, import 정리, 줄바꿈 — 의미 변경 없음 |
+| 이 작업이 추가한 ArchUnit 테스트 | palantir 포맷 적용 완료 (위반 0) |
+| 기존 `CoreApplicationTests` | 위반 (탭 들여쓰기) — 작업 범위 밖이라 미수정 |
+
+→ `spotlessApply` 단독 커밋 1개로 기존 위반을 일괄 해소할 수 있다. 이 커밋은 `src/main` 29파일을 건드리므로 사람 승인 사항 (decisions-needed.md D5).
