@@ -1,5 +1,5 @@
 {
-  "_comment": "예시 — 루프 시작 시 docs/ai/feature_list.json 으로 복사. 에이전트는 passes·blocked 만 수정(blocked 는 이 저장소 확장). plan_approved 는 사람만 기록. pending_decision 의 항목은 decisions-needed D1=B 결정 후 items 로 옮긴다 (ai-workflow.md §4).",
+  "_comment": "예시 — 루프 시작 시 docs/ai/feature_list.json 으로 복사. 에이전트는 passes·blocked 만 수정(blocked 는 이 저장소 확장). plan_approved 는 사람만 기록. pending_decision 은 D1 결정(B 또는 A′)에 해당하는 묶음만 items 로 옮긴다 (ai-workflow.md §4).",
   "items": [
     {
       "id": "TEST-1",
@@ -220,6 +220,26 @@
         ],
         "acceptance": "R2 @Disabled 제거 후 통과",
         "evidence": "architecture-proposal.md §4.3 단계 2",
+        "passes": false,
+        "blocked": null
+      }
+    ],
+    "D1=A'": [
+      {
+        "id": "ARCH-A2",
+        "title": "A′: SentenceService.getActive → sentence.dto.SentenceDetail, infra.similarity.SimilarityScorer 도입, R2 를 '타 기능 repository·domain 접근 금지' 규칙으로 교체",
+        "module": "answer",
+        "depends_on": [
+          "ARCH-A1"
+        ],
+        "human_gate": "none",
+        "plan_approved": null,
+        "verify": [
+          "bash ./gradlew test --tests '*ModuleArchitectureTest'",
+          "! grep -rn '\"R2 위반' src/test"
+        ],
+        "acceptance": "A′ 규칙 통과, AnswerService 가 sentence.repository·domain·exception 을 import 하지 않음",
+        "evidence": "architecture-proposal.md §2 A′, §4.3 단계 2-A′",
         "passes": false,
         "blocked": null
       }

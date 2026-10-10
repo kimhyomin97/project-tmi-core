@@ -51,8 +51,7 @@ class ConventionArchitectureTest {
 
     // 위반 1건: sentence.service.SentenceService.getRandom(Level, Category) 가 SentenceEntity 반환.
     // 해소 작업: 서비스가 응답 DTO 반환 (conventions-proposal.md §3.1, feature_list FIX-R5 — 구조 결정과 무관).
-    @Disabled(
-            "R5 위반 1건(SentenceService.getRandom → SentenceEntity) — FIX-R5 완료 시 해제. docs/ai/current-state.md §6")
+    @Disabled("R5 위반 1건(SentenceService.getRandom → SentenceEntity) — FIX-R5 완료 시 해제. docs/ai/current-state.md §6")
     @Test
     @DisplayName("R5 @Service 의 public 메서드는 @Entity 를 반환하지 않는다")
     void r5_servicesDoNotReturnEntities() {
@@ -93,19 +92,20 @@ class ConventionArchitectureTest {
     }
 
     private static ArchCondition<JavaMethod> notReturnEntity() {
-        return new ArchCondition<>("not return an @Entity type") {
+        return new ArchCondition<>("not return an @Entity type (including generic arguments)") {
             @Override
             public void check(JavaMethod method, ConditionEvents events) {
-                if (method.getRawReturnType().isAnnotatedWith(Entity.class)) {
-                    events.add(SimpleConditionEvent.violated(
-                            method,
-                            method.getFullName() + " returns @Entity "
-                                    + method.getRawReturnType().getSimpleName()));
-                }
+                // Optional<Entity>, List<Entity>, Page<Entity> 의 제네릭 인자까지 검사
+                method.getReturnType().getAllInvolvedRawTypes().stream()
+                        .filter(type -> type.isAnnotatedWith(Entity.class))
+                        .forEach(type -> events.add(SimpleConditionEvent.violated(
+                                method, method.getFullName() + " returns @Entity " + type.getSimpleName())));
             }
         };
     }
 
+    // 한계: 메서드 레벨 @Transactional 만 본다. 클래스 레벨 @Transactional 클래스 안의 self-invocation 은
+    // 바깥 메서드도 같은 트랜잭션 설정을 받으므로 대부분 무해하다고 보고 검사하지 않는다.
     private static ArchCondition<JavaClass> notSelfInvokeTransactionalMethods() {
         return new ArchCondition<>("not call own @Transactional methods") {
             @Override

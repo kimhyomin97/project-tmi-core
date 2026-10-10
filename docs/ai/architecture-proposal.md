@@ -2,68 +2,83 @@
 
 > 상태: **제안 — 미확정**. 결정은 [decisions-needed.md](./decisions-needed.md) **D1**.
 > 입력: [current-state.md](./current-state.md) (사실), [research.md](./research.md) (외부 근거).
-> 비교용 예시 코드: [examples/answer-scoring/](./examples/answer-scoring/README.md) — 같은 "답안 채점" 기능을 세 선택지로 재구성.
+> 비교용 예시 코드: [examples/answer-scoring/](./examples/answer-scoring/README.md) — 같은 "답안 채점" 기능을 선택지별로 재구성.
+> 개정: Round 1 리뷰([reviews/architecture-proposal-round-1.md](./reviews/architecture-proposal-round-1.md)) 반영 — 단계 계획을 feature_list 와 1:1 로(C1), 기존 문서 규칙 중 무엇을 바꾸는지 명시(C2), A 를 공정하게 재정의(M2), Modulith 주장 정정(M1).
 
 ---
 
 ## 0. 한 줄 결론
 
-**선택지 B (기능 모듈 + 공개 API, 모듈 내부는 기존 레이어드)** 를 추천한다. 기존 팀 결정(02 §2.2 "헥사고날 → 레이어드")을 뒤집지 않으면서, 현재 결함 F5·F6·F7 을 구조로 막고, AI 에이전트에게 "이 모듈만 수정" 이라는 작업 단위를 줄 수 있는 가장 싼 방법이기 때문이다.
+**선택지 B (기능 모듈 + 공개 API, 모듈 내부는 기존 레이어드)** 를 추천한다. 단, 공정하게 정의한 A(**A′**, §2)와의 차이는 "모듈 출입구를 패키지 규칙 하나로 고정하느냐" 와 "`infra/` 를 해체하느냐" 두 가지로 좁고, 비용 차이도 약 4파일이다. 결정 기준은 §3.3.
+
+바꾸는 기존 규칙 (D1 결정 범위에 포함):
+
+| 기존 결정 | A′ | B | C |
+|---|---|---|---|
+| 02 §2.2 레이어드 유지 (헥사고날에서 전환) | 유지 | 유지 | **뒤집음** |
+| 02 §3.2 · 05 §1.3 외부 클라이언트는 `infra/{시스템}/` | 유지 | **변경** — 외부 시스템 = 모듈 또는 소유 모듈의 internal | 변경 (`adapter/out`) |
+| 99 §2.3 클라이언트 빈은 `common/config/RestClientConfig` 에서 등록 | **변경** | **변경** | 변경 |
+| 05 §1.3 기능 간 의존 규칙 (명시 없음) | 신설 — 타 기능의 `repository`·`domain` 접근 금지 | 신설 — 타 모듈은 base package 로만 | 신설 — 포트로만 |
 
 ---
 
 ## 1. 결정해야 하는 문제
 
-현재 코드에서 구조 때문에 생긴 문제만 추렸다 (기능 버그 F1~F3 은 구조와 무관 — conventions-proposal.md 에서 다룸).
-
 | # | 문제 | 근거 (current-state.md) | 구조로 풀어야 하는 이유 |
 |---|---|---|---|
-| P1 | 기능 간 경계가 없다 — `answer` 가 `sentence` 의 리포지토리·엔티티·예외를 직접 사용 | §2, §3.5, `AnswerService.java:24,37-38` | 규칙만으로는 재발. 도메인이 늘면 (Toss, 향후 이력·사용자) 결합이 기하급수로 증가 |
-| P2 | 외부 시스템 클라이언트 배치 규칙이 둘 | §3.6 (`infra/similarity` vs WIP `toss/holdings/infra`) | Toss 구현이 진행 중 — **지금 정하지 않으면 두 규칙이 굳는다** |
-| P3 | `common` 이 구체 기능(`infra.similarity`)에 의존 | §2, `RestClientConfig.java:3` | 외부 시스템 추가마다 `common` 수정 → 공통 모듈이 변경 허브가 됨 |
-| P4 | DTO 변환·트랜잭션 경계의 위치가 기능마다 다름 | §3.2, §3.4 | 경계가 정의돼야 "어디서 변환하고 어디서 트랜잭션을 여는가" 가 정해짐 |
-| P5 | AI 에이전트 작업 단위를 정의할 구조적 단위가 없음 | ai-workflow.md §1 | "sentence 모듈만 수정" 같은 범위 지정은 모듈 경계가 있어야 검증 가능 |
+| P1 | 기능 간 경계가 없다 — `answer` 가 `sentence` 의 리포지토리·엔티티·예외를 직접 사용 | §2, §3.5, ArchUnit R2 위반 19건 (§6) | 규칙만으로는 재발. 기능이 늘면(Toss, 향후 이력·사용자) 결합이 증가 |
+| P2 | 외부 시스템 클라이언트 배치 규칙이 둘 | §3.6 (`infra/similarity` vs WIP `toss/holdings/infra`) | Toss 구현이 진행 중 — 지금 정하지 않으면 두 규칙이 굳는다 |
+| P3 | `common` 이 구체 기능에 의존 → `common ↔ infra` 순환 | §2, ArchUnit R1·R3 | 99 §2.3 설계의 직접 결과. 외부 시스템 추가마다 `common` 수정 |
+| P4 | 기능 간 데이터 전달에 엔티티 사용 | §3.2, F5 일부 (`AnswerResponse → SentenceEntity`) | 엔티티 컬럼 변경이 다른 기능의 API 계약으로 전파 |
+| P5 | AI 에이전트 작업 단위를 정의할 구조적 단위가 없음 | ai-workflow.md §1 | 범위 지정("이 모듈만")을 기계 검증하려면 경계 규칙이 필요 |
+
+**구조와 무관한 것** (conventions-proposal.md 에서 다룸): F1~F3 (기능 결함), F4 (self-invocation — R6 로 막고 FIX-F4 로 수정. B 에서는 조회가 다른 빈으로 가서 자연히 사라지지만, 어느 선택지에서도 같은 수정으로 해결된다), F5 중 "컨트롤러 vs 서비스 변환 위치 혼재" (R5, conventions §3.1).
 
 ---
 
 ## 2. 선택지
 
-### 선택지 A — 현행 레이어드 유지 + 규칙 정비
+세 선택지 모두 **같은 컨벤션**(conventions-proposal.md: 서비스는 엔티티를 반환하지 않음 R5, 외부 예외 변환 클래스 1개, `@RequestBody` 등)을 적용한다고 가정한다. 차이는 구조뿐이다.
+
+### 선택지 A′ — 레이어드 + 기능 간 접근 규칙
 
 **구조**: 지금과 같다. `{기능}/{controller,service,repository,domain,dto,exception}` + `infra/{외부시스템}` + `common`.
-**바뀌는 규칙**: 기능 간 호출은 **상대 기능의 Service 를 통해서만** (리포지토리 직접 접근 금지). 클라이언트 빈 등록은 `infra/{시스템}/` 안의 설정 클래스로 이동.
+**바뀌는 규칙**: (1) 다른 기능의 `repository`·`domain` 패키지 접근 금지 — 타 기능은 그 기능의 `service` 와 `dto` 만 사용 (2) 클라이언트 빈 등록은 `infra/{시스템}/` 안의 설정 클래스로 (3) 외부 예외 변환은 `infra/{시스템}/` 의 클래스 1개 (`SimilarityScorer`).
 
 ```
 com.tmi.core
 ├── sentence/{controller,service,repository,domain,dto,exception}
+│      service/SentenceService.getActive(id) → dto/SentenceDetail (record)
 ├── answer/{controller,service,domain,dto}
 ├── infra/
-│   ├── similarity/{SimilarityClient, SimilarityClientConfig, dto/, exception/}
-│   └── toss/{TossHoldingsClient, TossClientConfig, dto/}        ← WIP 위치 변경
-├── toss/holdings/{service,repository,domain}                      ← 스케줄러·저장
+│   ├── similarity/{SimilarityClient, SimilarityScorer, SimilarityClientConfig, dto/, exception/}
+│   └── toss/{TossHoldingsClient, TossClientConfig, dto/}          ← WIP 위치 변경
+├── toss/holdings/{service,repository,domain}
 └── common/{config,domain,exception}
 ```
 
+- 강제 규칙 (ArchUnit, 미구현 — A′ 선택 시 추가): `noClasses().that().resideInAPackage("com.tmi.core.(X)..").should().dependOnClassesThat().resideInAnyPackage("com.tmi.core.(Y).repository..", "..(Y).domain..")` 를 기능 쌍마다. 현재 구현된 R2(base package 만 허용)는 A′ 에서 **이 규칙으로 교체**한다.
 - 예시: [examples/answer-scoring/option-a-layered/](./examples/answer-scoring/option-a-layered/)
-- `AnswerService` 는 `SentenceService.getActive(id)` 를 호출. 반환 타입은 여전히 `SentenceEntity` (기능 간 엔티티 공유 허용).
 
 ### 선택지 B — 기능 모듈 + 공개 API (추천)
 
-**구조**: `com.tmi.core` 직속 패키지 하나 = 모듈 하나. 모듈의 **base package 에 있는 타입만 공개 API**, 하위 패키지는 모듈 내부(internal). 모듈 내부는 기존 레이어드 그대로. Spring Modulith 의 기본 규칙과 같은 모양이다 (research.md §1.2) — 단 Modulith 의존성 없이 ArchUnit 으로 강제한다.
+**구조**: `com.tmi.core` 직속 패키지 하나 = 모듈 하나. 모듈의 **base package 에 있는 타입만 공개 API**, 하위 패키지는 internal. 모듈 내부는 기존 레이어드 그대로. `infra/` 는 해체한다.
+
+**외부 시스템 클라이언트 배치 규칙** (P2 해법): 클라이언트는 **그것을 쓰는 모듈의 internal** 에 둔다. 쓰는 모듈이 2개 이상이 될 가능성이 있거나 별도 개념(유사도 채점)이면 **독립 모듈**로 둔다. → Similarity = 독립 모듈 `similarity`, Toss = `toss` 모듈의 internal (`toss.holdings.client`).
 
 ```
 com.tmi.core
 ├── sentence/
-│   ├── SentenceReader            ← 공개 API (타 모듈용 조회)
+│   ├── SentenceReader            ← 공개 API
 │   ├── SentenceDetail            ← 공개 record (엔티티 대신 노출)
 │   └── controller/ service/ repository/ domain/ dto/ exception/   ← internal
 ├── answer/
 │   └── controller/ service/ domain/ dto/                           ← internal (공개 API 없음)
 ├── similarity/                   ← 기존 infra.similarity 를 모듈로 승격
 │   ├── SimilarityScorer          ← 공개 API (예외 변환 포함)
-│   └── client/ config/           ← internal (HTTP Interface, 요청·응답 record, 빈 등록)
+│   └── client/ config/ exception/   ← internal
 ├── toss/
-│   └── holdings/{client,service,repository,domain,dto}             ← internal (공개 API 없음)
+│   └── holdings/{client,service,repository,domain,dto}             ← internal
 └── common/{config,domain,exception}                                 ← 공유 커널 (모든 모듈이 사용 가능)
 ```
 
@@ -93,28 +108,31 @@ flowchart LR
     classDef api fill:#dff,stroke:#088
 ```
 
+- 모듈 간 화살표는 **공개 API(청록색)로만** 들어간다. 강제: ArchUnit R2 (구현됨, §5).
+- `common` = 공유 커널: 모든 모듈이 의존 가능, `common` 은 어떤 모듈에도 의존 불가 (R3).
 - 예시: [examples/answer-scoring/option-b-modular/](./examples/answer-scoring/option-b-modular/)
-- 모듈 간 화살표는 **공개 API(청록색)로만** 들어간다. `answer → sentence.repository` 같은 화살표는 ArchUnit 이 빌드에서 막는다 (§5).
-- `common` 은 "공유 커널": 모든 모듈이 의존 가능, `common` 은 어떤 모듈에도 의존 불가.
 
 ### 선택지 C — 기능별 헥사고날 (Ports & Adapters)
 
-**구조**: 기능마다 `domain/model`(순수 Java), `application/port/{in,out}`, `application/service`, `adapter/{in/web, out/persistence, out/similarity}`. JPA 엔티티와 도메인 모델 분리 + 매퍼.
+**구조**: 기능마다 `domain/model`(순수 Java), `application/port/{in,out}`, `application/service`, `adapter/{in/web, out/...}`. JPA 엔티티와 도메인 모델 분리 + 매퍼. 배치는 examples 와 같다:
 
 ```
 com.tmi.core.answer
-├── domain/          AnswerScore, Grade                      (프레임워크 의존 0)
+├── domain/          AnswerScore, Grade
 ├── application/
-│   ├── port/in/     ScoreAnswerUseCase, ScoreAnswerCommand
-│   ├── port/out/    LoadSentencePort, ScoreSimilarityPort
+│   ├── port/in/     ScoreAnswerUseCase
+│   ├── port/out/    LoadSentencePort, ScoreSimilarityPort        ← answer 가 필요한 것을 answer 가 정의
 │   └── service/     ScoreAnswerService
 └── adapter/
-    ├── in/web/      AnswerController, AnswerApi, 요청·응답 DTO
-    └── out/
-        ├── persistence/  SentencePersistenceAdapter, SentenceJpaEntity, SentenceMapper
-        └── similarity/   SimilarityHttpAdapter, SimilarityClient, dto
+    ├── in/web/      AnswerController, 웹 DTO
+    └── out/similarity/  SimilarityHttpAdapter, SimilarityClient
+com.tmi.core.sentence
+├── domain/          Sentence (순수 모델)
+└── adapter/out/persistence/  SentencePersistenceAdapter implements answer 의 LoadSentencePort,
+                              SentenceJpaEntity, SentenceJpaRepository
 ```
 
+- 이 배치는 **`sentence → answer` 역방향 의존**을 만든다 (sentence 의 어댑터가 answer 의 포트를 구현). 피하려면 포트를 공유 패키지로 빼거나 `answer` 쪽에 어댑터를 둬야 하는데, 후자는 `answer` 가 `sentence` 의 JPA 리포지토리를 다시 알게 된다 (examples README §5).
 - 예시: [examples/answer-scoring/option-c-hexagonal/](./examples/answer-scoring/option-c-hexagonal/)
 - 02 §2.2 에서 **이미 한 번 도입했다가 되돌린** 구조다.
 
@@ -124,44 +142,42 @@ com.tmi.core.answer
 
 ### 3.1 장단점
 
-| 기준 | A. 레이어드 정비 | B. 기능 모듈 + 공개 API | C. 헥사고날 |
+| 기준 | A′ 레이어드 + 접근 규칙 | B 기능 모듈 + 공개 API | C 헥사고날 |
 |---|---|---|---|
-| P1 기능 간 결합 | 부분 해결 — 리포지토리 접근은 막지만 **엔티티 공유는 남음** | **해결** — 공개 record 만 공유 | 해결 — 포트로만 접근 |
-| P2 외부 클라이언트 배치 | 해결 (`infra/` 일원화) | 해결 (외부 시스템 = 모듈, 클라이언트는 internal) | 해결 (`adapter/out`) |
+| P1 기능 간 결합 | 해결 — repository·domain 차단. 단 타 기능의 **모든** service·dto 가 노출 (웹 응답 DTO 도 재사용 가능) | 해결 — base package 의 지정 타입만 노출 | 해결 — 포트로만 |
+| P2 외부 클라이언트 배치 | 해결 (`infra/` 일원화, 02 §3.2 유지) | 해결 (§2 B 배치 규칙 — 02 §3.2 변경) | 해결 (`adapter/out`) |
 | P3 `common` 역방향 의존 | 해결 | 해결 | 해결 |
-| P4 DTO·트랜잭션 경계 | 규칙으로만 (위반 감지 일부) | 공개 API = 경계 → **타 모듈엔 엔티티가 못 나감** | 포트 = 경계 |
-| P5 AI 작업 단위 | 기능 패키지 단위, 경계 검증 약함 | **모듈 단위**, ArchUnit 이 경계 위반을 빌드 실패로 알림 | 유스케이스 단위 (가장 세밀) |
-| 도메인 순수성 | 낮음 (엔티티 = 도메인) | 낮음 (동일) | **높음** (도메인 모델이 JPA 무관) |
-| 파일 수 증가 | +2 (설정 클래스 분리) | +4~6 (공개 API·record·scorer) | +2~3배 (research.md §2, 02 §2.2) |
-| 팀 기존 결정과의 정합 | 완전 일치 | 일치 (내부는 레이어드) | **충돌** — 되돌린 결정의 재도입 |
-| Spring Modulith 로의 확장 | 패키지 재배치 필요 | **그대로 `verify()` 가능** (estimated) | 무관 |
-| 학습 비용 | 없음 | "base package = 공개" 규칙 1개 | 포트·어댑터·매핑 전략 |
+| P4 기능 간 엔티티 전달 | 해결 (R5 + `sentence.dto.SentenceDetail`) | 해결 (공개 record) | 해결 (도메인 모델) |
+| P5 AI 작업 단위 | 기능 패키지. 경계 규칙이 **기능 쌍마다** 선언 필요 | 모듈. 경계 규칙 **1개**가 모든 모듈에 일반화 (R2) | 유스케이스 (가장 세밀) |
+| 공개 범위의 명시성 | 암묵 — "service 와 dto 는 공개" | 명시 — 파일 위치가 곧 공개 여부 | 명시 — 포트 |
+| 포트 소유·어댑터 위치 문제 | 없음 | 없음 | **있음** — `sentence → answer` 역방향 (§2 C) |
+| 도메인 순수성 | 낮음 (엔티티 = 도메인) | 낮음 | **높음** |
+| 파일 수 (§3.2) | 약 8 | 약 12 | 약 22 수정 + 20 이상 신규 |
+| 팀 기존 결정 (§0 표) | 99 §2.3 만 변경 | 02 §3.2·05 §1.3·99 §2.3 변경 | 02 §2.2 포함 전부 변경 |
+| Spring Modulith 로의 확장 | 패키지 재배치 필요 | `common` 을 OPEN 모듈로 선언하면 같은 규칙 (§4.1-5) | 무관 |
 
 ### 3.2 마이그레이션 비용
 
-비용은 이 저장소 기준 **파일 단위 실측 목록**이며, 시간은 AI 에이전트 + 사람 리뷰 기준 추정이다 (estimated).
+**계수 기준**: `src/main` 파일 단위, 신규·수정·이동·삭제를 각 1로 센다. F1(`@RequestBody`) 등 구조와 무관한 수정은 제외. 시간은 "파일당 구현 15~20분 + PR 리뷰 1회" 기준의 AI 에이전트 작업 추정 (estimated).
 
-| 작업 | A | B | C |
+| 선택지 | 파일 목록 | 합계 | 소요 (estimated) |
 |---|---|---|---|
-| `RestClientConfig` 의 Similarity 빈을 외부 시스템 쪽 설정으로 이동 | 1파일 신규, 1파일 수정 | 동일 | 동일 (`adapter/out/similarity`) |
-| `AnswerService` 의 타 기능 리포지토리 의존 제거 | `SentenceService` 에 메서드 1개 추가 | `SentenceReader` + `SentenceDetail` 2파일 신규 | `LoadSentencePort` + 어댑터 + 매퍼 + JPA 엔티티 분리 |
-| `AnswerResponse.of(SentenceEntity, …)` 의 엔티티 의존 제거 | 유지 (엔티티 공유 허용) | `SentenceDetail` 로 시그니처 변경 | 도메인 모델로 변경 |
-| `infra.similarity` 패키지 이동 | 없음 | 6개 타입 패키지 이동 (`SimilarityClient`, 요청·응답 record, 예외 3) + `SimilarityScorer` 신규 | `adapter/out/similarity` 로 이동 |
-| Toss WIP 배치 | `infra/toss/` 로 | `toss/holdings/client/` 로 | `toss/.../adapter/out/toss/` 로 |
-| `sentence` 엔티티·도메인 분리 | 없음 | 없음 | `Sentence`(도메인) + `SentenceJpaEntity` + 매퍼 3파일, `Level`/`Category` 위치 재검토 |
-| 기존 문서 수정 (02, 05, 06, 99) | 05 §1.3 소폭 | 05 §1.3, 02 §3, 99 §1 | 02·05·06 전면 |
-| ArchUnit 규칙 | 레이어 규칙 4개 | 레이어 4 + 모듈 경계 2 | 헥사고날 규칙 (`onionArchitecture`) |
-| **변경 파일 수 (테스트 제외)** | 약 5 | 약 12 | 약 30+ (`src/main` 34파일 대부분) |
-| **소요 (estimated)** | 0.5일 | 1~1.5일 | 3~5일 |
-| 되돌리기 비용 | 낮음 | 낮음 (패키지 이동 위주) | 높음 |
+| A′ | 신규 `infra/similarity/SimilarityClientConfig`, `infra/similarity/SimilarityScorer`, `sentence/dto/SentenceDetail` · 수정 `common/config/RestClientConfig`(→삭제), `sentence/service/SentenceService`(`getActive` 추가), `answer/service/AnswerService`, `answer/dto/AnswerResponse`, `application.properties`(`similarity.*` 키) | **8** | 0.5일 |
+| B | 신규 `sentence/SentenceReader`, `sentence/SentenceDetail`, `similarity/SimilarityScorer`, `similarity/config/SimilarityClientConfig` · 이동 `SimilarityClient`→`similarity/client/`(dto 2개 흡수 → `SimilarityRequest`·`SimilarityResponse` 삭제 2), `SimilarityException`→`similarity/exception/` · 삭제 `common/config/RestClientConfig` · 수정 `AnswerService`, `AnswerResponse`, `application.properties` | **12** | 1~1.5일 |
+| C | 기존 수정·이동 최대 22 (`common` 11 + `CoreApplication` 제외한 전부) + 신규: `answer` 포트 3·서비스 1·도메인 1, `sentence` 도메인 모델 1·어댑터 1·매퍼 1, 웹 DTO 이동, Similarity 어댑터 1 … (examples C 기준 `answer` 한 흐름에만 신규 9) | **약 22 + 20 이상** | 3~5일 |
 
-### 3.3 이 프로젝트에서 각 선택지가 맞는 조건
+- B 의 `SimilarityRequest`·`SimilarityResponse` 는 `SimilarityClient` 에 중첩 record 로 흡수하는 예시를 따랐다 — 흡수하면 이 두 파일은 `git mv` 로 blame 을 유지할 수 없다. 별도 파일로 이동만 하면 합계는 같고 blame 은 유지된다.
+- 파일 목록 상세: [examples/answer-scoring/README.md §3](./examples/answer-scoring/README.md#3-파일-목록과-비교).
+- 공통 문서 수정: A′ = 99 §2.3, 05 §1.3 (기능 간 규칙 신설). B = 위 + 02 §3.2, 02 §3.1 트리. C = 02·05·06 전면.
 
-| 선택지 | 이런 조건이면 고른다 |
+### 3.3 무엇으로 고를까
+
+| 이 질문에 | "예" 이면 |
 |---|---|
-| A | 기능이 `sentence`·`answer` 2개에서 더 늘지 않고, Toss 가 실험성 부가 기능으로 끝날 때 |
-| **B** | Toss 처럼 **성격이 다른 기능이 계속 추가**되고(현재 진행 중), AI 에이전트에게 모듈 단위로 일을 맡기고 싶을 때 |
-| C | 외부 시스템 교체가 실제로 예정돼 있거나(예: Similarity 를 다른 엔진으로), 도메인 규칙이 JPA 와 무관하게 복잡해질 때 — **현재 근거 없음** |
+| `answer` 같은 다른 기능이 `sentence` 의 웹 응답 DTO·서비스 전체를 써도 괜찮은가? | A′ 로 충분 |
+| 기능이 3개 이상으로 늘고(Toss 진행 중, 01 기획 §4.2 의 이력·사용자), 모듈마다 "여기만 공개" 를 파일 위치로 강제하고 싶은가? | **B** |
+| `infra/` 를 유지하는 기존 규칙(02 §3.2)을 바꾸고 싶지 않은가? | A′ |
+| Similarity·Toss 를 다른 구현으로 갈아끼울 계획이 실제로 있는가? | C 검토 — 현재 문서(01 기획, toss 설계)에 그런 계획 없음 |
 
 ---
 
@@ -169,50 +185,56 @@ com.tmi.core.answer
 
 ### 4.1 근거
 
-1. **현재 구조와 거리가 가장 짧다.** 모듈 내부 레이어드는 그대로이고, 바뀌는 것은 "모듈 간 출입구" 뿐이다. 변경 파일 약 12개 (§3.2).
-2. **진행 중인 Toss 작업의 배치 문제(P2)를 지금 결정한다.** WIP 의 `toss.holdings.infra.TossHoldingsClient` 는 B 에서 `toss.holdings.client` 로 거의 그대로 들어간다 — 이미 "외부 클라이언트를 소유 기능 안에 둔다" 는 B 의 방향으로 가고 있다 (`docs/ai/wip-snapshot.patch`).
-3. **결합 문제(P1)를 규칙이 아니라 빌드로 막는다.** A 는 "엔티티 공유 허용" 이라 `AnswerResponse → SentenceEntity` 결합(`AnswerResponse.java:30`)이 남고, 엔티티 컬럼 변경이 `answer` API 계약에 새어 나간다.
-4. **헥사고날의 이득 중 이 프로젝트에 필요한 것(외부 HTTP 경계 격리)만 가져온다.** `SimilarityScorer` 는 사실상 포트 + 어댑터 한 쌍이지만 인터페이스·매퍼 없이 클래스 하나다 (research.md §2 적합성).
-5. **Spring Modulith 로 이어갈 수 있다.** B 의 패키지 규칙은 Modulith 기본 탐지 규칙(직속 하위 패키지 = 모듈, 하위 = internal)과 같다 (research.md §1.2). 나중에 이벤트 발행·모듈 문서화가 필요해지면 의존성만 추가하면 된다 (estimated — 실제 `verify()` 미실행).
+1. **공개 범위를 규칙 1개로 강제한다.** A′ 도 결합을 막지만 "타 기능의 service·dto 는 전부 공개" 라는 암묵 규칙이다. `sentence.dto.SentenceResponse`(웹 응답)를 `answer` 가 재사용하는 순간 웹 계약과 기능 간 계약이 묶인다. B 는 공개 타입이 base package 에 있어야 하므로 이것이 생길 수 없다. 규칙도 기능 쌍마다가 아니라 R2 하나다.
+2. **Toss 배치 문제(P2)를 지금 결정한다.** WIP 의 `toss.holdings.infra.TossHoldingsClient` 는 B 의 `toss.holdings.client` 로 거의 그대로 간다 (`docs/ai/wip-snapshot.patch`). 단 WIP 는 그 빈을 `common/config/RestClientConfig` 에 등록하므로 R3 와 반대 방향이기도 하다 — WIP 가 B 를 "지지" 하는 근거는 절반이다.
+3. **비용 차이가 작다.** A′ 대비 약 4파일 (주로 `infra.similarity` 패키지 이동). 이동은 `git mv` 단독 커밋으로 분리 가능.
+4. **헥사고날의 이득 중 필요한 것(외부 HTTP 경계 격리)만 가져온다.** `SimilarityScorer` 는 포트 + 어댑터 한 쌍의 역할을 클래스 하나로 한다. 이건 A′ 에도 있다 — B 만의 이득은 아니다.
+5. **Spring Modulith 와 규칙이 같다 — `common` 처리만 다르다.** Modulith 2.0.8 소스 확인 [J] (round-1 리뷰 M1): 직속 하위 패키지 = 모듈(`directSubPackage`), base package = 공개(unnamed named-interface 가 하위 패키지 제외). 다만 Modulith 에는 "공유 커널" 예외가 없어, 지금 상태로는 `common.exception.BaseException` 등을 쓰는 모든 모듈이 위반이 된다. `common` 에 `@ApplicationModule(type = Type.OPEN)` (`package-info.java` 1파일)을 두면 같은 규칙이 된다. 그 외 차이(이벤트, 문서화 등)는 미검증.
 
 ### 4.2 추천안의 약점 (승인 전 알아야 할 것)
 
 | 약점 | 영향 | 완화 |
 |---|---|---|
-| `SentenceDetail` 같은 공개 record 가 **엔티티와 필드가 거의 같아** 중복처럼 보인다 | 파일 +1, 매핑 코드 몇 줄 | 공개 record 는 타 모듈이 실제로 쓰는 필드만 담는다 (answer 는 `id`, `englishText`, `koreanRef` 3개) |
-| 모듈 내부 예외(`SentenceException.NotFound`)가 공개 API 를 통해 밖으로 던져진다 | 예외 타입이 internal 인데 경계를 넘음 | 호출 측은 catch 하지 않고 `GlobalExceptionHandler` 가 `BaseException` 으로 처리 — 타입 의존 없음. 필요해지면 공개 패키지로 이동 |
-| 패키지 이동으로 git blame 이 끊긴다 | `infra.similarity` 6개 타입 | `git mv` 단독 커밋으로 분리 (`git log --follow` 유지) |
-| ArchUnit 규칙이 패키지 이름 규칙에 의존 | 규칙을 모르는 사람이 base package 에 아무 클래스나 두면 공개됨 | CLAUDE.md 에 규칙 명시 + 리뷰 체크리스트 (ai-workflow.md §3) |
-| Modulith 실행 검증 안 됨 | "그대로 verify 가능" 은 추정 | Modulith 도입 시점에 별도 검증. 지금은 ArchUnit 으로 같은 규칙 실행 (§5) |
+| 02 §3.2·05 §1.3 의 `infra/` 규칙을 뒤집는다 | 기존 문서 2곳 + 99 §2.3 수정 | `DOC-1` 에 포함 |
+| `SentenceDetail` 이 엔티티 필드 일부를 복제 | 파일 +1, 매핑 몇 줄 | 호출 측이 쓰는 필드만 (`id`, `englishText`, `koreanRef`). A′ 도 같은 record 가 필요 |
+| internal 예외(`SentenceException.NotFound`)가 공개 API 를 통해 밖으로 던져짐 | 예외 타입이 경계를 넘음 | 호출 측은 catch 하지 않고 `GlobalExceptionHandler` 가 `BaseException` 으로 처리 (`GlobalExceptionHandler.java:25`) |
+| 패키지 이동으로 git blame 이 끊길 수 있음 | `infra.similarity` 4파일 (6타입) | `git mv` 단독 커밋, dto 는 흡수 대신 이동 선택 가능 (§3.2) |
+| base package 에 아무 클래스나 두면 공개됨 | 규칙을 모르는 사람이 공개 범위를 넓힘 | CLAUDE.md 명시 + 리뷰 체크리스트 (ai-workflow.md §3) |
 
-### 4.3 단계적 실행 계획
+### 4.3 단계적 실행 계획 (feature_list.example.json 과 1:1)
 
-B 는 A 를 포함한다. 그래서 **A 의 작업을 먼저 하고 B 로 넘어가는** 2단계로 나누면 중간에 멈춰도 손해가 없다.
+| 단계 | 항목 id | 내용 | 완료 신호 | depends_on |
+|---|---|---|---|---|
+| 0 (구조 무관) | `TEST-1` → `FIX-F1`, `FIX-F2` | DB 없는 테스트 + F1·F2 | 각 테스트의 `@Disabled` 제거 후 통과, R7 해제 | — / TEST-1 |
+| 0 | `SIG-1`, `SIG-2` | 테스트 기본 신호, 포맷 | DB 차단 상태에서 `test` 통과 / `spotlessCheck` 0 | — / SIG-1 |
+| 0 | `FIX-F3` | 예외 핸들러 | 깨진 JSON 400 등 테스트 | FIX-F2, SIG-2 |
+| 0 | `FIX-R5` → `FIX-F4` | 서비스 DTO 반환 → self-invocation 제거 + OSIV off | **R5 해제 → R6 해제**, `OsivConnectionIT` | TEST-1 / FIX-R5, SIG-1 |
+| 1 (A′·B 공통) | `ARCH-A1` | Similarity 빈 설정을 `common` 밖(`infra.similarity`)으로 | **R1·R3 해제** (round-1 리뷰가 실제 이동 후 통과를 실행 확인) | FIX-F1 |
+| 2-B (D1=B) | `ARCH-B2` → `ARCH-B3` | `similarity` 모듈 승격 → `SentenceReader`/`SentenceDetail` | `infra` 패키지 소멸 → **R2 해제** | ARCH-A1 / ARCH-B2 |
+| 2-A′ (D1=A′) | `ARCH-A2` | `SentenceService.getActive → SentenceDetail`, `SimilarityScorer` 도입, R2 를 A′ 규칙으로 교체 | A′ 규칙 통과 | ARCH-A1 |
+| 3 | (D9 결정 후 등록) | Toss WIP 를 선택된 배치로 완성 | ArchUnit 전체 통과 | 2 |
 
-| 단계 | 작업 | 완료 신호 | 의존 |
-|---|---|---|---|
-| 0 | 기능 결함 수정 F1 (`@RequestBody`), F2 (basename), F3 (핸들러) + 각각 테스트 | conventions-proposal.md 의 해당 테스트 통과 | 없음 — **구조 결정과 무관하게 먼저** |
-| 1 (= A) | `SimilarityClientConfig` 분리, `AnswerService → SentenceService` 경유 | ArchUnit R3·R4 통과 | 0 |
-| 2 (= B) | `infra.similarity` → `similarity` 모듈 이동 + `SimilarityScorer`, `SentenceReader`/`SentenceDetail` 도입 | ArchUnit R1·R2 통과 → `@Disabled` 해제 | 1 |
-| 3 | Toss WIP 를 `toss.holdings.client` 에 배치해 완성 | ArchUnit 전체 통과 | 2 |
+- 단계 1 까지는 어느 선택지든 **버려지는 작업이 없다** (`ARCH-A1` 의 `SimilarityClientConfig` 는 B 에서 `git mv` 로 이동만).
+- 2-B 와 2-A′ 는 `feature_list.example.json` 의 `pending_decision` 에 있다 — D1 결정 후 하나만 `items` 로 옮긴다.
 
 ---
 
 ## 5. 추천안의 검증 규칙 (ArchUnit)
 
-6단계에서 `src/test/java/com/tmi/core/architecture/` 에 구현하고 실행했다. 결과(위반 목록)는 [current-state.md §6](./current-state.md#6-archunit-위반-목록).
+`src/test/java/com/tmi/core/architecture/` 에 구현하고 실행했다. 결과(위반 목록·오탐 점검)는 [current-state.md §6](./current-state.md#6-archunit-위반-목록).
 
-| ID | 규칙 | 막는 문제 |
-|---|---|---|
-| R1 | 모듈(직속 패키지) 사이 순환 의존 금지 | 구조 붕괴 |
-| R2 | 다른 모듈의 **하위 패키지** 접근 금지 (base package 만 허용, `common` 예외) | P1 |
-| R3 | `common` 은 어떤 기능 모듈에도 의존 금지 | P3 |
-| R4 | 모듈 내부 레이어: controller → service → repository, 역방향·건너뛰기 금지 | 레이어 붕괴 |
-| R5 | `@Service` 의 public 메서드는 `@Entity` 타입을 반환하지 않는다 | P4 (OSIV 의존) |
-| R6 | `@Transactional` 메서드를 같은 클래스 안에서 호출 금지 | F4 재발 |
-| R7 | HTTP Interface(`@HttpExchange` 계열) 메서드의 복합 타입 파라미터는 `@RequestBody` 등 바인딩 어노테이션 필수 | F1 재발 |
+| ID | 규칙 | 구현 범위·한계 | 막는 문제 | 현재 |
+|---|---|---|---|---|
+| R1 | 모듈(직속 패키지) 사이 순환 의존 금지 | `slices().matching("com.tmi.core.(*)..")` | P3 | 위반 1 → `ARCH-A1` |
+| R2 | 다른 모듈의 하위 패키지 접근 금지 (base package 만, `common` 예외) | `common` 출발 의존은 R3 가 담당 | P1 | 위반 19 → `ARCH-B3` (A′ 면 규칙 교체) |
+| R3 | `common` 은 기능 모듈에 의존 금지 | | P3 | 위반 2 → `ARCH-A1` |
+| R4 | 모듈 내부 레이어: controller → service → repository | Service 레이어 = `..service..` 또는 `@Service` (B 의 공개 API 포함) | 레이어 붕괴 | 통과 |
+| R4b | `domain` → controller·service·repository·dto 금지 | | WIP 의 `domain → dto` (D9) | 통과 |
+| R5 | `@Service` public 메서드는 `@Entity` 를 반환하지 않는다 | 제네릭 인자까지 검사 (`Optional<E>`, `List<E>`) | P4, OSIV 의존 | 위반 1 → `FIX-R5` |
+| R6 | `@Transactional` 메서드를 같은 클래스 안에서 호출 금지 | 메서드 레벨 어노테이션만. 클래스 레벨 `@Transactional` 클래스 내부 호출은 미검사 | F4 재발 | 위반 1 → `FIX-F4` |
+| R7 | HTTP Interface 메서드의 **모든** 파라미터에 바인딩 어노테이션 | 예외 타입 `URI`·`HttpMethod`·`UriBuilderFactory` (estimated) | F1 재발 | 위반 1 → `FIX-F1` |
 
-R5~R7 은 컨벤션 성격이지만 기계 검증이 가능해서 함께 둔다 (conventions-proposal.md 와 연결).
+R5~R7 은 컨벤션 성격이지만 기계 검증이 가능해서 함께 둔다 (conventions-proposal.md 와 연결). 오탐 점검: 선택지 B 형태의 임시 픽스처로 R2·R5 위반 0, 위반 형태로 탐지 확인 (current-state.md §6.3).
 
 ---
 
@@ -220,5 +242,5 @@ R5~R7 은 컨벤션 성격이지만 기계 검증이 가능해서 함께 둔다 
 
 | 결정 지연 | 결과 |
 |---|---|
-| 아무것도 정하지 않음 | Toss WIP 가 `toss.holdings.infra` 로 커밋 → 외부 클라이언트 규칙 2개 고착 (P2). `answer` 처럼 타 기능 리포지토리 직접 사용이 Toss 에도 복제될 위험 |
-| A 만 선택 | 0.5일로 P2·P3 해결. P1 은 엔티티 공유로 남음 — 기능이 3개 이상이 되는 시점에 B 로 재이동 비용 발생 (패키지 이동은 그때도 비슷한 비용, estimated) |
+| 아무것도 정하지 않음 | Toss WIP 가 `toss.holdings.infra` + `common/config` 등록으로 커밋 → 외부 클라이언트 규칙 2개 고착 (P2), `common ↔ toss` 순환 추가 |
+| 단계 1(`ARCH-A1`)까지만 | P3 해결. P1·P4 는 남지만 이후 A′·B 어느 쪽으로도 갈 수 있다 |
