@@ -1,66 +1,41 @@
 {
-  "_comment": "예시 — 실제 루프 시작 시 docs/ai/feature_list.json 으로 복사. 에이전트는 passes·blocked 필드만 수정한다 (ai-workflow.md §4).",
+  "_comment": "예시 — 루프 시작 시 docs/ai/feature_list.json 으로 복사. 에이전트는 passes·blocked 만 수정(blocked 는 이 저장소 확장). plan_approved 는 사람만 기록. pending_decision 의 항목은 decisions-needed D1=B 결정 후 items 로 옮긴다 (ai-workflow.md §4).",
   "items": [
     {
-      "id": "SIG-1",
-      "title": "CoreApplicationTests 를 integration 태그로 분리 — ./gradlew test 가 DB 없이 통과",
-      "module": "common",
-      "depends_on": [],
-      "human_gate": "plan",
-      "verify": [
-        "bash ./gradlew test"
-      ],
-      "acceptance": "PostgreSQL 미기동 상태에서 ./gradlew test 성공. integrationTest 태스크는 Docker 환경에서 별도 실행",
-      "evidence": "conventions-proposal.md §6.4, blockers.md §2 #3",
-      "passes": false,
-      "blocked": null
-    },
-    {
-      "id": "SIG-2",
-      "title": "spotlessApply 단독 커밋 후 enforceCheck=true 전환",
-      "module": "common",
-      "depends_on": [
-        "SIG-1"
-      ],
-      "human_gate": "plan",
-      "verify": [
-        "bash ./gradlew spotlessCheck",
-        "bash ./gradlew build"
-      ],
-      "acceptance": "spotlessCheck 위반 0, build 에 spotlessCheck 포함",
-      "evidence": "conventions-proposal.md §7, current-state.md §7.3",
-      "passes": false,
-      "blocked": null
-    },
-    {
       "id": "TEST-1",
-      "title": "GradeTest·SimilarityClientTest·SentenceControllerTest·AnswerControllerTest 추가 (현재 실패하는 테스트는 @Disabled(\"FIX-F*\") 로 표시)",
-      "module": "answer",
-      "depends_on": [
-        "SIG-1"
+      "title": "DB 없이 도는 테스트 3종 추가: GradeTest, SimilarityClientTest, SentenceControllerTest (현재 실패하는 2개는 @Disabled(\"FIX-F1 ...\")/(\"FIX-F2 ...\"))",
+      "module": [
+        "answer",
+        "infra.similarity",
+        "sentence"
       ],
+      "depends_on": [],
       "human_gate": "none",
+      "plan_approved": null,
       "verify": [
-        "bash ./gradlew test"
+        "bash ./gradlew test --tests '*GradeTest' --tests '*SimilarityClientTest' --tests '*SentenceControllerTest'",
+        "grep -rln '\"FIX-F1' src/test && grep -rln '\"FIX-F2' src/test"
       ],
-      "acceptance": "추가한 테스트 중 @Disabled 아닌 것은 모두 통과. @Disabled 사유에 해당 FIX 항목 id",
-      "evidence": "conventions-proposal.md §6.3",
+      "acceptance": "GradeTest 통과. SimilarityClientTest·SentenceControllerTest 는 @Disabled 를 지우면 현재 코드에서 실패함을 1회 실행해 progress 에 기록 (실패 테스트 먼저 — conventions T2)",
+      "evidence": "conventions-proposal.md §6.3 (현재 코드로 실패 재현 검증됨)",
       "passes": false,
       "blocked": null
     },
     {
       "id": "FIX-F1",
-      "title": "SimilarityClient.score 에 @RequestBody 추가 — 채점 API 500 해소",
+      "title": "SimilarityClient.score 에 @RequestBody — 채점 API 항상 500 해소",
       "module": "infra.similarity",
       "depends_on": [
         "TEST-1"
       ],
       "human_gate": "none",
+      "plan_approved": null,
       "verify": [
-        "bash ./gradlew test --tests '*SimilarityClientTest'",
-        "bash ./gradlew test --tests '*ArchitectureTest*'"
+        "! grep -rn '\"FIX-F1' src/test",
+        "! grep -rn '\"R7 위반' src/test",
+        "bash ./gradlew test --tests '*SimilarityClientTest' --tests '*ConventionArchitectureTest'"
       ],
-      "acceptance": "SimilarityClientTest @Disabled 해제 후 통과, ArchUnit R7 @Disabled 해제 후 통과",
+      "acceptance": "SimilarityClientTest·ArchUnit R7 의 @Disabled 제거 후 통과",
       "evidence": "current-state.md F1, §7.2 P7",
       "passes": false,
       "blocked": null
@@ -73,27 +48,82 @@
         "TEST-1"
       ],
       "human_gate": "none",
+      "plan_approved": null,
       "verify": [
+        "! grep -rn '\"FIX-F2' src/test",
         "bash ./gradlew test --tests '*SentenceControllerTest'"
       ],
-      "acceptance": "404 응답 message 가 영문 번들 값, Accept-Language: ko 에서 한글",
+      "acceptance": "SentenceControllerTest @Disabled 제거 후 통과 (404 message 가 영문 번들 값)",
       "evidence": "current-state.md F2, conventions-proposal.md §2.1",
       "passes": false,
       "blocked": null
     },
     {
+      "id": "SIG-1",
+      "title": "CoreApplicationTests 를 @Tag(\"integration\") + Testcontainers 로 분리, test 는 태그 제외, integrationTest 태스크 신설",
+      "module": "*",
+      "depends_on": [],
+      "human_gate": "plan",
+      "plan_approved": null,
+      "verify": [
+        "SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:1/none bash ./gradlew test"
+      ],
+      "acceptance": "DB 접속을 막은 상태(SPRING_DATASOURCE_URL 을 닫힌 포트로)에서 ./gradlew test 성공",
+      "evidence": "conventions-proposal.md §6.4, decisions-needed D3",
+      "passes": false,
+      "blocked": null
+    },
+    {
+      "id": "SIG-2",
+      "title": "spotlessApply 단독 커밋 + enforceCheck=true (기계적 포맷 — 파일 수·모듈 수 제한 예외)",
+      "module": "*",
+      "depends_on": [
+        "SIG-1"
+      ],
+      "human_gate": "none",
+      "plan_approved": null,
+      "verify": [
+        "bash ./gradlew spotlessCheck",
+        "grep -n 'enforceCheck = true' build.gradle"
+      ],
+      "acceptance": "spotlessCheck 위반 0, build 에 포함",
+      "evidence": "decisions-needed D5 (H0 에서 결정되면 남는 일은 기계적)",
+      "passes": false,
+      "blocked": null
+    },
+    {
       "id": "FIX-F3",
-      "title": "GlobalExceptionHandler 가 ResponseEntityExceptionHandler 상속, BaseException 기본 로그 레벨을 상태 코드로",
+      "title": "GlobalExceptionHandler 가 ResponseEntityExceptionHandler 상속 + BaseException 기본 로그 레벨을 상태 코드로",
       "module": "common",
       "depends_on": [
-        "FIX-F2"
+        "FIX-F2",
+        "SIG-2"
       ],
       "human_gate": "plan",
+      "plan_approved": null,
       "verify": [
-        "bash ./gradlew test --tests '*ControllerTest'"
+        "bash ./gradlew test --tests '*AnswerControllerTest' --tests '*SentenceControllerTest' --tests '*GlobalExceptionHandlerLogTest'"
       ],
-      "acceptance": "깨진 JSON 400, text/plain 415, 404 는 INFO 로그, 5xx 는 스택트레이스 포함",
+      "acceptance": "새 테스트: 깨진 JSON 400 BAD_REQUEST, text/plain 415, 405 Allow 헤더 유지. GlobalExceptionHandlerLogTest(OutputCaptureExtension)로 404 는 INFO·스택 없음, 5xx 는 ERROR·스택 포함 확인. 수정 전 실패 기록",
       "evidence": "current-state.md F3, conventions-proposal.md §2.2·§2.3",
+      "passes": false,
+      "blocked": null
+    },
+    {
+      "id": "FIX-R5",
+      "title": "SentenceService.getRandom 이 SentenceResponse 반환 (서비스는 엔티티를 반환하지 않음)",
+      "module": "sentence",
+      "depends_on": [
+        "TEST-1"
+      ],
+      "human_gate": "none",
+      "plan_approved": null,
+      "verify": [
+        "! grep -rn '\"R5 위반' src/test",
+        "bash ./gradlew test --tests '*ConventionArchitectureTest' --tests '*SentenceControllerTest'"
+      ],
+      "acceptance": "ArchUnit R5 @Disabled 제거 후 통과. 구조 결정(D1)과 무관",
+      "evidence": "conventions-proposal.md §3.1, decisions-needed D4",
       "passes": false,
       "blocked": null
     },
@@ -102,13 +132,17 @@
       "title": "AnswerService self-invocation 제거 + spring.jpa.open-in-view=false",
       "module": "answer",
       "depends_on": [
-        "TEST-1"
+        "FIX-R5",
+        "SIG-1"
       ],
       "human_gate": "plan",
+      "plan_approved": null,
       "verify": [
-        "bash ./gradlew test --tests '*ArchitectureTest*'"
+        "! grep -rn '\"R6 위반' src/test",
+        "bash ./gradlew test --tests '*ConventionArchitectureTest'",
+        "bash ./gradlew integrationTest --tests '*OsivConnectionIT'"
       ],
-      "acceptance": "ArchUnit R6 @Disabled 해제 후 통과, 외부 호출 중 활성 커넥션 0 (통합 테스트)",
+      "acceptance": "R6 @Disabled 제거 후 통과. OsivConnectionIT(Similarity 호출 콜백에서 Hikari 활성 커넥션 측정)가 0 — current-state §3.4 프로브를 테스트로 고정",
       "evidence": "current-state.md F4, §3.4",
       "passes": false,
       "blocked": null
@@ -121,60 +155,74 @@
         "FIX-F1"
       ],
       "human_gate": "none",
+      "plan_approved": null,
       "verify": [
-        "bash ./gradlew test --tests '*ArchitectureTest*'"
+        "! grep -rn '\"R1 위반' src/test",
+        "! grep -rn '\"R3 위반' src/test",
+        "bash ./gradlew test --tests '*ModuleArchitectureTest'"
       ],
-      "acceptance": "ArchUnit R1(순환)·R3(common 독립) 통과",
+      "acceptance": "R1·R3 @Disabled 제거 후 통과",
       "evidence": "architecture-proposal.md §4.3 단계 1",
       "passes": false,
       "blocked": null
     },
     {
-      "id": "ARCH-B2",
-      "title": "infra.similarity → similarity 모듈 승격 + SimilarityScorer 도입 (git mv 커밋 분리)",
-      "module": "similarity",
-      "depends_on": [
-        "ARCH-A1"
-      ],
-      "human_gate": "plan",
-      "verify": [
-        "bash ./gradlew test"
-      ],
-      "acceptance": "answer 가 similarity 의 base package 만 import",
-      "evidence": "architecture-proposal.md §4.3 단계 2 — D1=B 결정 후 등록",
-      "passes": false,
-      "blocked": null
-    },
-    {
-      "id": "ARCH-B3",
-      "title": "SentenceReader/SentenceDetail 도입, AnswerService·AnswerResponse 의 sentence 내부 의존 제거",
-      "module": "sentence",
-      "depends_on": [
-        "ARCH-B2"
-      ],
-      "human_gate": "plan",
-      "verify": [
-        "bash ./gradlew test --tests '*ArchitectureTest*'"
-      ],
-      "acceptance": "ArchUnit R2·R5 @Disabled 해제 후 통과",
-      "evidence": "architecture-proposal.md §4.3 단계 2",
-      "passes": false,
-      "blocked": null
-    },
-    {
       "id": "DOC-1",
-      "title": "05/06/99/03 문서 수정 목록 반영",
+      "title": "05/06/99/03 문서 수정 목록 반영 (사람 판정 항목)",
       "module": "docs",
       "depends_on": [
         "FIX-F3",
         "FIX-F4"
       ],
       "human_gate": "plan",
-      "verify": [],
-      "acceptance": "conventions-proposal.md §8 표의 모든 행 반영",
-      "evidence": "conventions-proposal.md §8",
+      "plan_approved": null,
+      "verify": [
+        "human"
+      ],
+      "acceptance": "conventions-proposal.md §8 표의 모든 행 반영을 사람이 확인 — verify 가 'human' 인 항목은 에이전트가 passes=true 로 바꿀 수 없음",
+      "evidence": "conventions-proposal.md §8, decisions-needed D8",
       "passes": false,
       "blocked": null
     }
-  ]
+  ],
+  "pending_decision": {
+    "D1=B": [
+      {
+        "id": "ARCH-B2",
+        "title": "infra.similarity → similarity 모듈 승격 + SimilarityScorer (git mv 커밋 분리)",
+        "module": "similarity",
+        "depends_on": [
+          "ARCH-A1"
+        ],
+        "human_gate": "plan",
+        "plan_approved": null,
+        "verify": [
+          "bash ./gradlew test",
+          "! grep -rn 'com.tmi.core.infra' src/main"
+        ],
+        "acceptance": "infra 패키지 소멸, answer 는 similarity 의 base package 만 import",
+        "evidence": "architecture-proposal.md §4.3 단계 2",
+        "passes": false,
+        "blocked": null
+      },
+      {
+        "id": "ARCH-B3",
+        "title": "SentenceReader/SentenceDetail 도입, AnswerService·AnswerResponse 의 sentence 내부 의존 제거",
+        "module": "sentence",
+        "depends_on": [
+          "ARCH-B2"
+        ],
+        "human_gate": "none",
+        "plan_approved": null,
+        "verify": [
+          "! grep -rn '\"R2 위반' src/test",
+          "bash ./gradlew test --tests '*ModuleArchitectureTest'"
+        ],
+        "acceptance": "R2 @Disabled 제거 후 통과",
+        "evidence": "architecture-proposal.md §4.3 단계 2",
+        "passes": false,
+        "blocked": null
+      }
+    ]
+  }
 }

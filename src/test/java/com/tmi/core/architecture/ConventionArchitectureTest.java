@@ -50,9 +50,9 @@ class ConventionArchitectureTest {
             List.of(URI.class, HttpMethod.class, UriBuilderFactory.class);
 
     // 위반 1건: sentence.service.SentenceService.getRandom(Level, Category) 가 SentenceEntity 반환.
-    // 해소 작업: 서비스가 응답 DTO 반환 (conventions-proposal.md §3.1, feature_list FIX-F4 이후 ARCH-B3 와 함께).
+    // 해소 작업: 서비스가 응답 DTO 반환 (conventions-proposal.md §3.1, feature_list FIX-R5 — 구조 결정과 무관).
     @Disabled(
-            "R5 위반 1건(SentenceService.getRandom → SentenceEntity) — conventions §3.1 적용 시 해제. docs/ai/current-state.md §6")
+            "R5 위반 1건(SentenceService.getRandom → SentenceEntity) — FIX-R5 완료 시 해제. docs/ai/current-state.md §6")
     @Test
     @DisplayName("R5 @Service 의 public 메서드는 @Entity 를 반환하지 않는다")
     void r5_servicesDoNotReturnEntities() {
