@@ -375,6 +375,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | 99 §1 | `common/exception` 목록 | `ELogLevel` 누락 |
 | 99 §2.3 | "`RestClient` 빈" 등록 | `RestClient` 는 지역 변수, 빈은 `SimilarityClient` 뿐 |
 | 04 §4.5, §5.2 | 테스트 `create-drop`, `db/seed.sql` | 둘 다 미적용 |
+| 루트 `README.md` | `domain.model`/`domain.port.in`/`adapter.out.persistence` 패키지 표 (헥사고날) | **폐기된 구조** — 02 §2.2 에서 레이어드로 전환했는데 루트 README 만 남음. 에이전트·신규 참여자가 먼저 읽는 파일이라 오도 위험이 크다 (final-consistency-round-1 M6) |
 | 06 §3.1 | "dirty checking 의식적 미사용 — 변경 후 명시 save()" | 쓰기 경로 0건 — 아직 검증 불가 |
 | 06 §7.2 | `@ActiveProfiles("test")` + Testcontainers 권장 | 테스트 프로필·Testcontainers 의존성 없음 |
 | 03 §1.1 | `06. 배포·운영` 링크 | 실제 파일명 `07_배포·운영.md` 인데 그 파일의 H1 도 `# 06. 배포·운영` (`07_배포·운영.md:3`) — 파일명과 제목이 서로 다름 |

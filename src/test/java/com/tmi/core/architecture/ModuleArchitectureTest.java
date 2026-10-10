@@ -38,7 +38,8 @@ class ModuleArchitectureTest {
     // 위반 19건, 2개 클래스: answer.service.AnswerService → sentence.repository / sentence.domain / sentence.exception /
     //          infra.similarity(.dto, .exception), answer.dto.AnswerResponse → sentence.domain.SentenceEntity.
     // 해소 작업: similarity 모듈 승격 + SentenceReader/SentenceDetail 도입 (ARCH-B2, ARCH-B3 — D1=B 결정 전제).
-    @Disabled("R2 위반 19건(answer → sentence·infra 내부 패키지) — ARCH-B2·B3 완료 시 해제. docs/ai/current-state.md §6")
+    @Disabled(
+            "R2 위반 19건(answer → sentence·infra 내부 패키지) — ARCH-B3(B) 완료 시 해제, A′ 면 ARCH-A2 에서 규칙 교체. docs/ai/current-state.md §6")
     @Test
     @DisplayName("R2 다른 모듈은 base package(공개 API)로만 접근한다 — common 은 예외")
     void r2_otherModulesAreAccessedOnlyThroughTheirApi() {

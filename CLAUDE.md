@@ -21,7 +21,9 @@ bash ./gradlew spotlessApply         # 포맷 자동 수정 — 사람 승인 �
 ```
 
 - **`./gradlew test` 는 PostgreSQL 이 필요하다** (`CoreApplicationTests` 가 `localhost:15432/tmi_word` 접속, `ddl-auto=validate`).
-  DB 없으면 `PSQLException: Connection refused` 로 실패 — 코드 문제가 아니다. 기동 방법: README §시작하기 또는 [docs/ai/blockers.md](docs/ai/blockers.md) §2.
+  DB 없으면 `PSQLException: Connection refused` 로 실패 — 코드 문제가 아니다. 기동 방법: [docs/public/README.md](docs/public/README.md) §시작하기 또는 [docs/ai/blockers.md](docs/ai/blockers.md) §2.
+  단 `--tests` 로 아키텍처·단위 테스트만 돌리면 `CoreApplicationTests` 가 실행되지 않아 DB 불필요.
+- 루트 `README.md` 의 패키지 표는 **폐기된 헥사고날 구조**다 — 따르지 말 것 (현재 구조: 05 개발컨벤션 §1.3).
   스키마: `psql -h localhost -p 15432 -U postgres -d tmi_word -f docs/public/init.sql`
 - 아키텍처 테스트 중 `@Disabled` 는 **알려진 위반** (사유 주석에 해소 작업 ID). 위반을 고쳤으면 `@Disabled` 를 지워 통과를 확인한다. 새 위반을 `@Disabled` 로 숨기지 말 것.
 - 테스트 소스셋에는 **Lombok 이 없다** (main 에만 선언). 테스트 코드는 Lombok 없이 작성.
@@ -55,8 +57,8 @@ bash ./gradlew spotlessApply         # 포맷 자동 수정 — 사람 승인 �
 - `@RestControllerAdvice` 는 `GlobalExceptionHandler` 하나뿐. 컨트롤러에서 try/catch 금지.
 - 에러 응답 형식 `{"error":{"code":"TMI.{DOMAIN}.{REASON}","message":...}}` 은 외부 계약 (03 API 명세 §1.4). 바꾸지 말 것.
 - 현재 메시지 번들이 로드되지 않는다 (`spring.messages.basename` 미설정) — 응답 message 가 코드 문자열이면 이것 때문.
-- 로그: `@Slf4j`, placeholder `{}`, 형식 `"{대상} {동작}: key=value"`. throw 직전에 로그 남기지 말 것 (핸들러가 단일 기록). 토큰·시크릿 로그 금지.
-- 외부 호출 예외는 **catch 3개**로 도메인 예외로 변환: `RestClientResponseException`(4xx→502 `RequestInvalid`, 5xx→503 `Unavailable`) / `ResourceAccessException`(→503) / `RestClientException`(→503). 세 번째를 빼면 POST 의 read timeout 이 500 이 된다 (현재 `AnswerService` 가 이 상태). 빈 응답(`null`)도 503.
+- 로그: `@Slf4j`, placeholder `{}`. 토큰·시크릿 로그 금지. `[제안]` 형식 `"{대상} {동작}: key=value"`, throw 직전 로그 금지(핸들러가 단일 기록) — 현행 05 §6.5 예시·`AnswerService` 와 다름, 기존 코드는 해당 FIX 항목에서만 바꾼다.
+- `[제안]` 외부 호출 예외는 **catch 3개**로 도메인 예외로 변환 (현행 05 §5.7 은 2단 catch — `DOC-1` 에서 개정 예정): `RestClientResponseException`(4xx→502 `RequestInvalid`, 5xx→503 `Unavailable`) / `ResourceAccessException`(→503) / `RestClientException`(→503). 세 번째를 빼면 POST 의 read timeout 이 500 이 된다 (현재 `AnswerService` 가 이 상태). 빈 응답(`null`)도 503.
 
 ## 작업 방식
 

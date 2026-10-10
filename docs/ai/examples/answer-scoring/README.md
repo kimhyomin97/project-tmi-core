@@ -39,7 +39,7 @@
 | F1 | HTTP Interface 파라미터에 `@RequestBody` | current-state §7.2 P8 |
 | 외부 예외 분류 | `RestClientResponseException`(4xx→`RequestInvalid`, 5xx→`Unavailable`) / `ResourceAccessException`(연결 오류→`Unavailable`) / **`RestClientException`(→`Unavailable`)** | `SimpleClientHttpRequestFactory` 에서 **본문 있는 요청(POST)의 read timeout 은 `RestClientException`** 으로 온다 (본문 없는 요청은 `ResourceAccessException` — conventions §2.4 표) — 세 번째 catch 가 없으면 타임아웃이 500 (examples-round-1 C1 실행: 3초 지연에 catch 2개 = 500, 3개 = 503) |
 | 빈 응답 | 200/204 빈 본문 → HTTP Interface 가 `null` 반환 → `Unavailable` | examples-round-1 m4 실행 (없으면 NPE → 500). 회귀 테스트는 feature_list `FIX-F1T` (`SimilarityTimeoutTest`) |
-| 점수 범위 | 판정식 `!(raw >= -1e-6 && raw <= 1 + 1e-6)` → `Unavailable`, 통과한 값만 `Math.clamp` 로 `[0, 1]` 보정. 1.5·-0.2·Infinity·**NaN**(문자열 `"NaN"` 응답이 Jackson 으로 NaN 이 됨) → 503. 원래 값은 예외 cause 메시지 — 로그에 찍히는 것은 `FIX-F3` 이후. 소유 항목: `FIX-F1T` | examples-round-1 M3, round-2 M2 — 관대한 clamp 는 서버 결함을 "만점" 으로 바꿨다. 정책 자체는 decisions-needed.md D13 |
+| 점수 범위 | 판정식 `!(raw >= -1e-6 && raw <= 1 + 1e-6)` → `Unavailable`, 통과한 값만 `Math.clamp` 로 `[0, 1]` 보정. 1.5·-0.2·Infinity·**NaN**(문자열 `"NaN"` 응답이 Jackson 으로 NaN 이 됨) → 503. 원래 값은 예외 cause 메시지 — 로그에 찍히는 것은 `FIX-F3` 이후. 소유 항목: `FIX-F1S` (D13 결정 후) | examples-round-1 M3, round-2 M2 — 관대한 clamp 는 서버 결함을 "만점" 으로 바꿨다. 정책 자체는 decisions-needed.md D13 |
 | 등급 계산 위치 | DTO 밖 (`AnswerService` 가 `Grade.fromScore` 호출) | conventions §3.2 |
 | 기능 간 전달 | 엔티티 대신 record — A′·B 는 `SentenceDetail(id, englishText, koreanRef)`, C 는 포트 소유 `SentenceForScoring` (같은 필드) | conventions §3.1·§3.3, R5 |
 | 설정 | `@Value` → `@ConfigurationProperties` record + `@DefaultValue`. `RestClient.builder()` 정적 호출 유지 (Builder 빈 없음) | current-state §4.6 |

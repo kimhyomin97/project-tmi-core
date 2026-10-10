@@ -5,8 +5,8 @@
 > 기존 규칙 [05_개발컨벤션.md](../public/05_개발컨벤션.md), [06_코드가이드라인.md](../public/06_코드가이드라인.md) 을 **대체하지 않고 고친다**. 각 항목에 "05/06 과의 관계" 를 적었다.
 > 구조 선택(architecture-proposal.md D1)과 무관하게 적용되는 규칙이 기본이다. **규칙은 같고 After 코드의 클래스 위치·이름만 선택지에 따라 다른 경우** `[B 전제]` 로 표시하고 A′ 형태를 한 줄 덧붙였다.
 > 개정: Round 1 리뷰([reviews/conventions-proposal-round-1.md](./reviews/conventions-proposal-round-1.md)) 반영 — `BaseException` 생성자 NPE(C1), 상위 `handleExceptionInternal` 동작 보존(M1), Toss 예시를 설계 §6 과 일치(M2), §8 재작성(M5).
-> 개정: Round 3 리뷰([reviews/conventions-proposal-round-3.md](./reviews/conventions-proposal-round-3.md)) 반영 — 스케줄러의 raw 예외 분류를 §2.4 의 명시적 예외 규칙으로, Toss 예시에 `[B 전제]`·A′ 형태(M1), 검증 표 갱신 등 경미 7건.
 > 개정: Round 2 리뷰([reviews/conventions-proposal-round-2.md](./reviews/conventions-proposal-round-2.md)) 반영 — §2.4 A′ 서술·timeout 분류를 요청 방식별 실행 결과로(M1·M2), Toss 토큰 단계 분리(M3), §8 누락 3행(M4), 경미 8건.
+> 개정: Round 3 리뷰([reviews/conventions-proposal-round-3.md](./reviews/conventions-proposal-round-3.md)) 반영 — 스케줄러의 raw 예외 분류를 §2.4 의 명시적 예외 규칙으로, Toss 예시에 `[B 전제]`·A′ 형태(M1), 검증 표 갱신 등 경미 7건.
 
 ## 0. 검증 방법
 
@@ -479,7 +479,7 @@ public SentenceDetail getActive(String sentenceId) { ... }
 | 조회 → 외부 호출 → 응답 (답안 채점) | 오케스트레이터(`AnswerService.score`)는 `@Transactional` 없음. 조회 = 다른 빈의 readOnly 메서드 |
 | 외부 호출 → 저장 (Toss 스냅샷, 향후 답안 이력) | 외부 호출은 오케스트레이터에서. 저장이 리포지토리 상속 `save` 1회면 그 자체 트랜잭션, 여러 쓰기를 묶어야 하면 저장 전용 빈의 `@Transactional` 메서드 |
 
-Toss 스냅샷 적용 예 `[B 전제]` — **트랜잭션 경계와 에러 정책만** 보이는 축약 예시. B 에서 `TossHoldingsClient` 는 같은 `toss` 모듈의 internal 이라 §2.4 예외 규칙에 해당한다. A′ 이면 클라이언트가 `infra/toss` 에 있으므로 서비스가 직접 쓰면 A′ 규칙 (b) 위반 → `infra/toss/TossHoldingsFetcher` 같은 변환 클래스가 재시도·분류를 맡고 서비스는 그 결과와 도메인 예외(`TossException.Rejected`/`.Unavailable` 등)만 받는다 (architecture-proposal.md §2 A′ (b) 의 허용 목록에 그 이름 추가). 이름·정책은 설계 문서 `docs/public/toss/01_보유자산스냅샷.md` §3(시퀀스)·§6(에러 정책)을 따른다.
+Toss 스냅샷 적용 예 `[B 전제]` — **트랜잭션 경계와 에러 정책만** 보이는 축약 예시. B 에서 `TossHoldingsClient` 는 같은 `toss` 모듈의 internal 이라 §2.4 예외 규칙에 해당한다. A′ 이면 클라이언트가 `infra/toss` 에 있으므로 서비스가 직접 쓰면 A′ 규칙 (b) 위반 → `infra/toss/TossHoldingsFetcher` 같은 변환 클래스가 재시도·분류를 맡고 서비스는 그 결과와 도메인 예외(`TossException.Rejected`/`.Unavailable` 등)만 받는다 (architecture-proposal.md §2 A′ (b) 의 허용 목록에 포함됨). A′ 에서는 토큰 획득도 `TossHoldingsFetcher` 안에서 하고, fetcher 는 `infra/toss/dto` 가 아닌 `infra/toss` 바로 아래의 결과 record 를 반환하며, 예외는 `infra/toss/exception/TossException` — (b) 가 dto·클라이언트의 외부 참조를 막기 때문. 이름·정책은 설계 문서 `docs/public/toss/01_보유자산스냅샷.md` §3(시퀀스)·§6(에러 정책)을 따른다.
 
 ```java
 // toss/holdings/service/HoldingsSnapshotService.java — 트랜잭션 없음 (설계 §3 의 진입점 이름)
@@ -722,7 +722,7 @@ After (두 안 — D3)
 | 안 | 내용 | 장점 | 단점 |
 |---|---|---|---|
 | (a) **추천** | `@Tag("integration")` + `@Import(TestcontainersConfig.class)` (`@ServiceConnection PostgreSQLContainer`), `test` 태스크는 `excludeTags 'integration'`, `integrationTest` 태스크 신설 | T1 충족, 통합 테스트도 재현 가능 | Docker 필요 (`integrationTest` 한정) |
-| (b) | 로컬 PostgreSQL 유지 (README §1 의 docker run) | 변경 없음 | `./gradlew build` 가 환경 의존 — AI 루프에서 매번 DB 기동 필요 |
+| (b) | 로컬 PostgreSQL 유지 (`docs/public/README.md` §시작하기 의 docker run) | 변경 없음 | `./gradlew build` 가 환경 의존 — AI 루프에서 매번 DB 기동 필요 |
 
 - H2 는 비권장 — `ORDER BY RANDOM()`, `jsonb` 등 PostgreSQL 종속 (06 §7.2 유지).
 - Testcontainers 2.x 아티팩트: `org.testcontainers:testcontainers-postgresql`, Boot BOM 관리 (research.md §0 표).
@@ -748,7 +748,8 @@ After (두 안 — D3)
 
 | 문서 | 절 | 수정 | 근거 |
 |---|---|---|---|
-| 05 | §5.7 | 예외 분류 예시를 `RestClientResponseException` 기준으로, 마지막 문단 정정 | §2.4 |
+| 05 | §5.7 | 예외 분류 예시를 3단 catch 로, 마지막 문단 정정, **스케줄러 예외 규칙 1문단 추가** | §2.4 |
+| 루트 | `README.md` | 폐기된 헥사고날 패키지 표 → 현재 구조 요약 또는 `docs/public/README.md` 링크로 교체 | current-state.md §3.7 |
 | 02 | §5.2 | 외부 예외 매핑 표를 3단 catch (§2.4 표) 로 | §2.4 |
 | 03 | §3.1 | `POST /answers` Errors 표에 깨진 JSON·빈 body 400 `BAD_REQUEST`, text/plain 415 추가 | §2.2 |
 | 05 | §6.5 | 예시 `log.error("유사도 서버 호출 실패 …", e)` 를 "throw 직전 로그 금지" 와 맞게 교체 | §5.1 |

@@ -15,13 +15,13 @@
 | **[S]** | 검색 결과 스니펫으로만 확인 — 본문 미열람 | 중간 |
 | (미검증) | 2차 출처만 있거나 확인 못 함 | 약함 — 결정 근거로 쓰지 말 것 |
 
-버전은 2026-10-10 기준 Maven Central `maven-metadata.xml` / Gradle Plugin Portal 값이다.
+버전은 2026-10-10 기준 Maven Central `maven-metadata.xml` / Gradle Plugin Portal 값이다. **[J] 근거는 Boot 4.0.8 / Framework 7.0.8 소스 jar** 기준이며 프로젝트(Boot 4.0.2)와의 차이는 개별 확인하지 않았다 — 결정에 쓰인 [J] 주장은 대부분 이 저장소 실행([R])으로 교차 확인됐다. URL 이 생략된 [J] 는 같은 그룹의 Maven Central 경로(`https://repo1.maven.org/maven2/org/springframework/...`)다.
 
 | 항목 | 최신 안정 | 이 프로젝트에 맞는 선택 | 출처 |
 |---|---|---|---|
 | Spring Boot | 4.1.1 (4.0.x 최신 4.0.8) | 현행 4.0.2 유지 — 업그레이드는 별도 결정 | [J] https://repo1.maven.org/maven2/org/springframework/boot/spring-boot/maven-metadata.xml |
 | Spring Modulith | 2.1.1 (Boot 4.1), 2.0.8 (Boot 4.0) | **2.0.x** | [J] https://repo1.maven.org/maven2/org/springframework/modulith/spring-modulith-bom/maven-metadata.xml |
-| ArchUnit | 1.5.1 | `archunit-junit5` 1.5.1 (§6.3 호환성 메모) | [J] https://repo1.maven.org/maven2/com/tngtech/archunit/archunit-junit5/maven-metadata.xml |
+| ArchUnit | 1.5.1 | core `com.tngtech.archunit:archunit:1.5.1` — JUnit 엔진 없이 일반 `@Test` 에서 `check()` (§6.3, current-state §6.3) | [J] https://repo1.maven.org/maven2/com/tngtech/archunit/archunit-junit5/maven-metadata.xml |
 | Testcontainers | 2.0.5 (Postgres 모듈명 `testcontainers-postgresql`) | Boot BOM 관리 버전 사용 | [J] https://repo1.maven.org/maven2/org/testcontainers/testcontainers-postgresql/maven-metadata.xml |
 | Spotless Gradle | 8.10.4 (configuration cache ✓) | 8.10.4 | [F] https://plugins.gradle.org/plugin/com.diffplug.spotless |
 | palantir-java-format | 2.102.0 | — | [J] https://repo1.maven.org/maven2/com/palantir/javaformat/palantir-java-format/maven-metadata.xml |
@@ -92,7 +92,7 @@
 
 **적합성**
 
-- (a) 를 유지하되 **(b) 의 "내장 예외 전부 처리" 이점만 흡수**하는 방법이 있다: `GlobalExceptionHandler extends ResponseEntityExceptionHandler` 로 바꾸고 `handleExceptionInternal` 을 오버라이드해 body 를 기존 `ErrorResponse` 로 만든다. 그러면 current-state F3 의 `HttpMessageNotReadableException` → 500 문제가 개별 핸들러 추가 없이 해소된다 (estimated — 오버라이드 시그니처는 Framework 7 소스로 확인 필요).
+- (a) 를 유지하되 **(b) 의 "내장 예외 전부 처리" 이점만 흡수**하는 방법이 있다: `GlobalExceptionHandler extends ResponseEntityExceptionHandler` 로 바꾸고 `handleExceptionInternal` 을 오버라이드해 body 를 기존 `ErrorResponse` 로 만든다. 그러면 current-state F3 의 `HttpMessageNotReadableException` → 500 문제가 개별 핸들러 추가 없이 해소된다 — **[R] 실행 확인**: conventions-proposal.md §0 의 2차 검증에서 After 코드를 그대로 적용해 깨진 JSON 400·415·405 등 8개 시나리오가 의도대로 동작.
 - 응답 형식을 RFC 9457 로 바꾸는 것(b·c·d)은 **외부 계약 변경**(03 API 명세 §1.4) 이므로 사람 결정 사항 → decisions-needed.md.
 
 ### 3.2 MessageSource 자동 구성 — 현재 결함의 근거
@@ -172,7 +172,7 @@
 | 순수 단위 테스트 (JUnit + Mockito) | `Grade.fromScore`, 서비스 분기 | — | **높음** — DB·Docker 불필요, 에이전트 루프의 빠른 신호 |
 | `@WebMvcTest` + `@MockitoBean` | 컨트롤러 + `GlobalExceptionHandler` + 메시지 | [J] 위 표 | **높음** — current-state F2·F3 회귀 방지 |
 | `MockRestServiceServer.bindTo(RestClient.Builder)` | HTTP Interface 클라이언트 | [J] spring-test 7.0.8 (6.1+) | **높음** — F1(`@RequestBody` 누락) 은 이 테스트 한 개로 잡힘 |
-| `@DataJpaTest` + Testcontainers `@ServiceConnection` | native query(`RANDOM()`, SpEL enum 바인딩), jsonb | [S] https://docs.spring.io/spring-boot/reference/testing/testcontainers.html | 중간 — Docker 필요. 이 세션엔 `docker` CLI 는 있으나 데몬 사용 가능성 미검증 |
+| `@DataJpaTest` + Testcontainers `@ServiceConnection` | native query(`RANDOM()`, SpEL enum 바인딩), jsonb | [S] https://docs.spring.io/spring-boot/reference/testing/testcontainers.html | 중간 — Docker 필요. **이 클라우드 세션엔 Docker 데몬이 없다** [R] (`docker info` 실패 — blockers.md §2 #4) |
 | WireMock (`wiremock-spring-boot` 4.4.3) | 실제 HTTP 전송 계층까지 | [S] https://wiremock.org/docs/spring-boot/ | 낮음 — `MockRestServiceServer` 로 충분 |
 | `@SpringBootTest` + 실 DB | 현재 유일한 테스트 | — | 낮음 — 외부 DB 필요, 빌드 재현성 저하 (blockers.md §2) |
 
@@ -187,7 +187,7 @@
 
 | 도구 | 버전 | 성격 | Gradle 9 | 출처 | 적합성 |
 |---|---|---|---|---|---|
-| Spotless + palantir-java-format | 8.10.4 / 2.102.0 | 포맷 (자동 수정 `spotlessApply`) | CC ✓ 표기, Gradle 9 명시 표기 없음 (미검증) → **이 저장소에서 실행 확인 예정** | [F] https://plugins.gradle.org/plugin/com.diffplug.spotless | **높음** — 에이전트가 포맷을 기계적으로 맞출 수 있음 |
+| Spotless + palantir-java-format | 8.10.4 / 2.102.0 | 포맷 (자동 수정 `spotlessApply`) | CC ✓ 표기, Gradle 9 명시 표기 없음 → **[R] Gradle 9.3.0 + JDK 21 에서 `spotlessCheck`·`spotlessApply` 정상 실행** (current-state.md §7.3) | [F] https://plugins.gradle.org/plugin/com.diffplug.spotless | **높음** — 에이전트가 포맷을 기계적으로 맞출 수 있음 |
 | Spotless + google-java-format | 8.10.4 / 1.37.0 | 포맷 (2-space 기본) | 동일 | [J] | 중간 — 기존 05 §2.1 "들여쓰기 4 spaces" 와 충돌, AOSP 옵션 필요 (estimated) |
 | Error Prone | 2.50.0 / 플러그인 5.1.1 | 컴파일 시 버그 패턴 | CC ✓ | [F] https://plugins.gradle.org/plugin/net.ltgt.errorprone | 중간 — Lombok 과 오탐 가능성 (미검증) |
 | Checkstyle (Gradle 내장) | 14.3.0 | 스타일 규칙 | 내장 | [J] | 낮음 — Spotless 와 중복 |
@@ -209,7 +209,7 @@
 
 **적합성**
 
-- 이 저장소는 이미 Stop hook(`.claude/hooks/check-done.sh`) 으로 `checklist.json` 을 게이트로 쓰는 구조를 갖고 있다 → `feature_list.json` 루프로 확장하기 쉽다.
+- 이 저장소는 이미 Stop hook(`.claude/hooks/check-done.sh`) 으로 `checklist.json` 을 게이트로 쓴다. 다만 이 hook 은 카운터를 초기화하지 않아 15회 뒤 영구히 꺼지는 결함이 있어, feature 루프에는 **확장하지 않고 새 hook 으로 교체**한다 (ai-workflow.md §4.6, decisions-needed.md D12).
 - "기능 1개씩 + 검증 후 passes" 원칙은 **검증 신호가 있어야** 성립한다. 현재 테스트가 사실상 0개이고 그나마 외부 DB 가 필요하므로, AI 루프 도입 전 **DB 없이 도는 테스트 세트 + Spotless** 가 선행 조건이다. → ai-workflow.md §1.
 
 ---

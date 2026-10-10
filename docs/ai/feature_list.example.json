@@ -1,5 +1,5 @@
 {
-  "_comment": "예시 — 루프 시작 시 docs/ai/feature_list.json 으로 복사. 에이전트가 바꿀 수 있는 필드는 passes·blocked·awaiting_human 뿐(passes 만 원문 규칙, 나머지 둘은 이 저장소 확장). plan_approved 는 사람만 기록. verify 는 그 항목 PR 시점에만 유효(회귀용 아님). pending_decision 은 D1 결정(B 또는 A′)에 해당하는 묶음만 items 로 옮긴다 (ai-workflow.md §4).",
+  "_comment": "예시 — 루프 시작 시 docs/ai/feature_list.json 으로 복사. 에이전트가 바꿀 수 있는 필드는 passes·blocked·awaiting_human 뿐(passes 만 원문 규칙, 나머지 둘은 이 저장소 확장). plan_approved 는 사람만 기록. verify 는 그 항목 PR 시점에만 유효(회귀용 아님). pending_decision 은 D1 결정(B 또는 A′)에 해당하는 묶음만 items 로 옮긴다 (ai-workflow.md §4). D5 가 (a) 가 아니면 SIG-2 를 items 에서 빼고 FIX-F3 의 depends_on 에서도 SIG-2 를 지운다. D13 을 (b) 로 정하면 pending_decision[\"D13=(b)\"] 를 items 로 옮긴다 (다른 선택이면 acceptance 를 그 선택에 맞게 사람이 고친다).",
   "items": [
     {
       "id": "TEST-1",
@@ -49,7 +49,7 @@
     },
     {
       "id": "FIX-F1T",
-      "title": "Similarity 비정상 응답을 503 으로 — AnswerService 에 RestClientException catch + 빈 응답(null) + 점수 범위 정책(D13 (b))",
+      "title": "Similarity read timeout·빈 응답을 503 으로 — AnswerService 에 RestClientException catch + 빈 응답(null) 처리 (F1 수정 직후 표면화, 결정 불필요)",
       "module": "answer",
       "depends_on": [
         "FIX-F1"
@@ -59,7 +59,7 @@
       "verify": [
         "bash ./gradlew test --tests '*SimilarityTimeoutTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.SimilarityTimeoutTest.xml"
       ],
-      "acceptance": "SimilarityTimeoutTest(JDK HttpServer): 3초 지연 + readTimeout 500ms → Unavailable, 빈 200 → Unavailable, score 1.0000001 → 1.0, 1.5 → Unavailable, \"NaN\" → Unavailable. 수정 전 실패(500 경로) 기록. 원래 값의 로그 기록은 FIX-F3 이후 (핸들러가 Throwable 전달). ARCH-B2/A2 에서 SimilarityScorer 로 이동 시 테스트 유지",
+      "acceptance": "SimilarityTimeoutTest(JDK HttpServer): 3초 지연 + readTimeout 500ms → SimilarityException.Unavailable, 빈 200 → Unavailable. 수정 전 실패(500 경로) 기록. ARCH-B2/A2 에서 SimilarityScorer 로 이동 시 테스트 유지. 점수 범위 정책은 FIX-F1S (D13 결정 후)",
       "evidence": "current-state.md §3.3(f), examples-round-1 C1·m4",
       "passes": false,
       "blocked": null,
@@ -158,7 +158,7 @@
         "! grep -rn '\"R5 위반' src/test",
         "bash ./gradlew test --tests '*ConventionArchitectureTest.r5_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ConventionArchitectureTest.xml"
       ],
-      "acceptance": "ArchUnit R5 @Disabled 제거 후 통과. 구조 결정(D1)과 무관",
+      "acceptance": "ArchUnit R5 @Disabled 제거 후 통과. conventions §1.2 의 쿼리 메서드 개명(findRandomBy → findRandomActiveByLevelAndCategory) 포함. 구조 결정(D1)과 무관",
       "evidence": "conventions-proposal.md §3.1, decisions-needed D4",
       "passes": false,
       "blocked": null,
@@ -311,7 +311,7 @@
           "bash ./gradlew test --tests '*ModuleArchitectureTest.r2_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml",
           "! grep -rn '\"R2 위반' src/test"
         ],
-        "acceptance": "계획(H1)에 새 규칙 (a)(b) 의 ArchUnit 코드를 포함해 사람이 승인. 두 규칙 통과, AnswerService 가 sentence.repository·domain·exception 과 infra.similarity.SimilarityClient 를 import 하지 않음",
+        "acceptance": "계획(H1)에 새 규칙 (a)(b) 의 ArchUnit 코드를 포함해 사람이 승인. 두 규칙 통과, AnswerService 가 sentence.repository·domain·exception 과 infra.similarity.SimilarityClient 를 import 하지 않음. 교체 규칙의 테스트 메서드 이름은 r2_ 로 시작 (verify 의 --tests '*ModuleArchitectureTest.r2_*' 와 매칭)",
         "evidence": "architecture-proposal.md §2 A′, §4.3 단계 2-A′",
         "passes": false,
         "blocked": null,
@@ -335,6 +335,27 @@
         "passes": false,
         "blocked": null,
         "requires": [],
+        "awaiting_human": false
+      }
+    ],
+    "D13=(b)": [
+      {
+        "id": "FIX-F1S",
+        "title": "Similarity 점수 범위 정책 (D13 (b)): 허용 오차 1e-6 밖·NaN → Unavailable, 통과 값만 clamp",
+        "module": "answer",
+        "depends_on": [
+          "FIX-F1T"
+        ],
+        "human_gate": "none",
+        "plan_approved": null,
+        "requires": [],
+        "verify": [
+          "bash ./gradlew test --tests '*SimilarityScorePolicyTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.SimilarityScorePolicyTest.xml"
+        ],
+        "acceptance": "SimilarityScorePolicyTest: 1.0000001 → 1.0, -1e-7 → 0.0, 1.5·-0.2·Infinity·\"NaN\" → Unavailable. 수정 전 실패 기록. 판정식은 NaN 을 거르는 !(raw >= -tol && raw <= 1 + tol) 형태. ARCH-B2/A2 이후면 SimilarityScorer 에 적용. 원래 값의 로그 기록은 FIX-F3 이후",
+        "evidence": "decisions-needed.md D13, examples/answer-scoring/README.md §2",
+        "passes": false,
+        "blocked": null,
         "awaiting_human": false
       }
     ]

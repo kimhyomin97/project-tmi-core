@@ -21,7 +21,7 @@
 | 포맷 | Spotless 추가됨, `enforceCheck = false` | 기존 `src/main` 29파일 미포맷 | `SIG-2` (D5) |
 | Docker 데몬 | 이 클라우드 세션에서 **미기동** (`docker info` → `failed to connect to the docker API`, round-2 리뷰 [실행·리뷰]) | Testcontainers 기반 `integrationTest`(`FIX-F4` 의 `OsivConnectionIT`) 실행 불가 | 항목의 `requires: ["docker"]` + §4.4 선택 규칙 |
 
-→ 첫 항목들은 "신호 만들기" 다. 단 **DB·Docker 없이 검증되는 항목은 `SIG-1` 을 기다리지 않는다** — `--tests` 필터로 실행하면 `CoreApplicationTests` 가 돌지 않기 때문. 해당: `TEST-1`, `FIX-F1`, `FIX-F1T`, `FIX-F2`, `FIX-R5`, `ARCH-A1` (decisions-needed.md §0 과 일치).
+→ 첫 항목들은 "신호 만들기" 다. 단 **DB·Docker 없이 검증되는 항목은 `SIG-1` 을 기다리지 않는다** — `--tests` 필터로 실행하면 `CoreApplicationTests` 가 돌지 않기 때문. 해당: `TEST-1`, `FIX-F1`, `FIX-F1T`, `FIX-F2`, `FIX-R5`, `ARCH-A1` (decisions-needed.md §0 과 일치). 점수 범위 정책 `FIX-F1S` 는 D13 결정 후 (`pending_decision`).
 
 ---
 
@@ -93,7 +93,7 @@ flowchart TD
 
 | ID | 시점 | 사람이 보는 것 | 소요 (estimated) | 기록 방법 |
 |---|---|---|---|---|
-| **H0** | 루프 시작 전 | decisions-needed.md 결정, `feature_list.json` 항목 승인. D5 가 (a) 가 아니면 `SIG-2` 를 `items` 에서 뺀다 | 30분 | 항목을 `items` 에 넣는 커밋 |
+| **H0** | 루프 시작 전 | decisions-needed.md 결정, `feature_list.json` 항목 승인. D5 가 (a) 가 아니면 `SIG-2` 를 `items` 에서 빼고 `FIX-F3` 의 `depends_on` 에서도 지운다. hook 등록(§4.6) 확인 | 30분 | 항목을 `items` 에 넣는 커밋 |
 | **H1** | `human_gate: "plan"` 항목의 구현 전 | `docs/ai/plans/<id>.md` 의 변경 파일 목록·계약 변경 여부 | 항목당 5분 | **사람이** `plan_approved` 에 날짜 또는 커밋 sha (승인) / `"rejected: <사유>"` (반려 — 재반려 시 계획 파일의 `Status: revised` 줄 삭제) |
 | **H2** | PR 머지 | diff, 리뷰 파일, verify 출력. `verify: ["human"]` 항목은 판정 후 **사람이** `passes: true` (변경 요청이면 `awaiting_human: false`) | PR당 10~20분 | PR 승인 + feature_list 커밋 |
 | **H3** | `blocked` 발생 시 | blockers.md 의 원인·시도 내역 | 수시 | `blocked` 를 `null` 로 되돌리거나 항목 수정 |
@@ -216,7 +216,7 @@ flowchart TD
 | 9 | `FIX-F4` | self-invocation 제거 + OSIV off (`OsivConnectionIT`) | plan | **FIX-R5**, SIG-1 | **docker** |
 | 10 | `ARCH-A1` | Similarity 빈 설정을 `common` 밖으로 (R1·R3) | none | FIX-F1 | — |
 | 11 | `DOC-1` | 05/06/99/03 수정 (구조 무관분) | plan | FIX-F3, FIX-F4 | — |
-| 보류 | `ARCH-B2` → `ARCH-B3` → `DOC-2` / `ARCH-A2` → `DOC-2` | `pending_decision["D1=B"]` / `["D1=A'"]` | B2·A2·DOC-2 plan | ARCH-A1, FIX-F1T (+ B2 는 SIG-1 — 전체 test 를 DB 없이) | — |
+| 보류 | `ARCH-B2` → `ARCH-B3` → `DOC-2` / `ARCH-A2` → `DOC-2` / `FIX-F1S` | `pending_decision["D1=B"]` / `["D1=A'"]` / `["D13=(b)"]` | B2·A2·DOC-2 plan | ARCH-A1, FIX-F1T (+ B2 는 SIG-1 — 전체 test 를 DB 없이) | — |
 
 - `FIX-F4` 가 `FIX-R5` 에 의존: OSIV 를 끄기 전에 엔티티가 트랜잭션 밖으로 나가지 않아야 한다 (conventions-proposal.md §3.4, decisions-needed.md D4).
 - `SIG-2` 를 `FIX-F3` 앞에 둠: `GlobalExceptionHandler` 를 크게 고치기 전에 포맷 소음을 없앤다. `SIG-2` 자체는 `SIG-1` 에 의존하지 않는다 (round-2 m9 — 근거 없는 의존 제거).
@@ -409,7 +409,7 @@ exit 0
 | 너무 일찍 완료 선언 | `./gradlew build` 가 DB 없어서 실패하는데 "환경 문제" 로 넘김 | `SIG-1`, Stop hook |
 | 버그·미기록 상태로 종료 | WIP 가 미커밋 상태로 남음 (이 저장소가 실제로 그랬다 — current-state.md §5) | 세션 종료 시 커밋, progress 기록 |
 | 검증 없이 passing 표시 | F1 처럼 "컴파일은 되는데 호출하면 500", `@Disabled` 로 skip 된 규칙이나 OR 결합된 `--tests` 를 "통과" 로 착각 | §4.2 verify 원칙, hook 의 이번 세션 기록 확인, 리뷰어 재실행 |
-| 실행 방법 탐색에 시간 낭비 | `gradlew` 권한, Maven 429, PostgreSQL 기동, Docker 데몬 부재 (blockers.md §2 — 이 작업에서 약 15분) | `init.sh`, CLAUDE.md 의 빌드 명령, `requires` |
+| 실행 방법 탐색에 시간 낭비 | `gradlew` 권한, Maven 429, PostgreSQL 기동, Docker 데몬 부재 (blockers.md §2 #1~#4 — #1~#3 약 16분) | `init.sh`, CLAUDE.md 의 빌드 명령, `requires` |
 
 ---
 

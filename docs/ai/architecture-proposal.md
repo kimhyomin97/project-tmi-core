@@ -218,7 +218,7 @@ com.tmi.core.sentence
 |---|---|---|---|---|
 | 0 (구조 무관) | `TEST-1` → `FIX-F1`, `FIX-F2` | DB 없는 테스트 + F1·F2 | 각 테스트의 `@Disabled` 제거 후 통과, R7 해제 | — / TEST-1 |
 | 0 | `FIX-F1T` | read timeout·빈 응답 → 503 (`AnswerService` 에 catch·null 처리) | `SimilarityTimeoutTest` | FIX-F1 |
-| 0 | `SIG-1`, `SIG-2` | 테스트 기본 신호, 포맷 | DB 차단 상태에서 `test` 통과 / `spotlessCheck` 0 | — / SIG-1 |
+| 0 | `SIG-1`, `SIG-2` | 테스트 기본 신호, 포맷 | DB 차단 상태에서 `test` 통과 / `spotlessCheck` 0 | — / — |
 | 0 | `FIX-F3` | 예외 핸들러 | 깨진 JSON 400 등 테스트 | FIX-F2, SIG-2 |
 | 0 | `FIX-R5` → `FIX-F4` | 서비스 DTO 반환 → self-invocation 제거 + OSIV off | **R5 해제 → R6 해제**, `OsivConnectionIT` | TEST-1 / FIX-R5, SIG-1 |
 | 1 (A′·B 공통) | `ARCH-A1` | Similarity 빈 설정을 `common` 밖(`infra.similarity`)으로 | **R1·R3 해제** (round-1 리뷰가 실제 이동 후 통과를 실행 확인) | FIX-F1 |
