@@ -1,10 +1,13 @@
-// 선택지 A — 위치: src/main/java/com/tmi/core/infra/similarity/SimilarityClientConfig.java (신규)
+// 선택지 A′ — 위치: src/main/java/com/tmi/core/infra/similarity/SimilarityClientConfig.java (신규)
 // 변경점: common/config/RestClientConfig 의 Similarity 빈을 외부 시스템 패키지로 이동 → common → infra 역방향 의존 제거 (P3).
-//        @Value 필드 주입 → @ConfigurationProperties record.
+// **같은 PR 에서 common/config/RestClientConfig.java 를 삭제**한다 (남기면 similarityClient 빈 중복으로 기동 실패).
+// application.properties 키 변경: similarity.timeout-ms=2000 → similarity.connect-timeout=1s, similarity.read-timeout=2s
+// B 와 본문 동일, 패키지(infra.similarity)·가시성(public)만 다름.
 package com.tmi.core.infra.similarity;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -19,23 +22,19 @@ import java.time.Duration;
 public class SimilarityClientConfig {
 
     @ConfigurationProperties("similarity")
-    public record SimilarityProperties(String baseUrl, Duration connectTimeout, Duration readTimeout) {}
-    // application.properties: similarity.base-url / similarity.connect-timeout=1s / similarity.read-timeout=2s
-    // (기존 similarity.timeout-ms 는 이름 변경 — 마이그레이션 시 함께 수정)
+    public record SimilarityProperties(
+            String baseUrl,
+            @DefaultValue("1s") Duration connectTimeout,     // 누락 시 "ConnectTimeout must not be null" 방지
+            @DefaultValue("2s") Duration readTimeout) {}
 
     @Bean
     SimilarityClient similarityClient(SimilarityProperties props) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(props.connectTimeout());
         factory.setReadTimeout(props.readTimeout());
-
-        // Boot 4 + 현재 의존성에는 RestClient.Builder 빈이 없다 (current-state §4.6). spring-boot-starter-restclient 를
-        // 추가하기로 결정하면(decisions-needed D7) 파라미터로 RestClient.Builder 를 주입받는 형태로 바꾼다.
-        RestClient restClient = RestClient.builder()
-                .baseUrl(props.baseUrl())
-                .requestFactory(factory)
-                .build();
-
+        // Boot 4 + 현재 의존성에는 RestClient.Builder 빈이 없다 (current-state §4.6) → 정적 builder().
+        // spring-boot-starter-restclient 를 추가하기로 결정하면(decisions-needed D7) Builder 주입으로 바꾼다.
+        RestClient restClient = RestClient.builder().baseUrl(props.baseUrl()).requestFactory(factory).build();
         return HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))
                 .build()
                 .createClient(SimilarityClient.class);

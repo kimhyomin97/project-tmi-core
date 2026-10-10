@@ -1,10 +1,12 @@
 // 선택지 B — 위치: src/main/java/com/tmi/core/similarity/SimilarityScorer.java (신규, 모듈 공개 API)
 // 기존 infra.similarity 를 독립 모듈 similarity 로 승격. HTTP Interface 와 요청·응답 record 는 similarity.client (internal).
-// 외부 예외 → 도메인 예외 변환을 이 클래스가 전담 (AS-IS 는 AnswerService 가 담당). 호출자는 double 만 받는다.
+// 외부 예외 → 도메인 예외 변환을 이 클래스가 전담 (AS-IS 는 AnswerService 가 담당). 호출자는 0.0~1.0 double 만 받는다.
+// 선택지 A′ 는 같은 본문을 infra.similarity 패키지에 둔다 (option-a-layered/infra-similarity/SimilarityScorer.java).
 package com.tmi.core.similarity;
 
 import com.tmi.core.similarity.client.SimilarityClient;
 import com.tmi.core.similarity.client.SimilarityClient.SimilarityRequest;
+import com.tmi.core.similarity.client.SimilarityClient.SimilarityResponse;
 import com.tmi.core.similarity.exception.SimilarityException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,18 +25,27 @@ public class SimilarityScorer {
     /** 0.0 ~ 1.0. 트랜잭션 안에서 호출하지 않는다 (conventions-proposal §4). */
     public double score(String answer, String reference) {
         log.info("Similarity 호출: answerLength={} referenceLength={}", answer.length(), reference.length());
+        SimilarityResponse response;
         try {
-            double score = similarityClient.score(new SimilarityRequest(answer, reference)).score();
-            log.info("Similarity 응답: score={}", score);
-            return score;
-        } catch (RestClientResponseException e) {        // 4xx/5xx + 비표준 상태 코드
+            response = similarityClient.score(new SimilarityRequest(answer, reference));
+        } catch (RestClientResponseException e) {        // 4xx / 5xx 응답 (DefaultResponseErrorHandler 기준)
             throw e.getStatusCode().is4xxClientError()
                     ? new SimilarityException.RequestInvalid(e)
                     : new SimilarityException.Unavailable(e);
-        } catch (ResourceAccessException e) {            // 연결 거부·타임아웃
+        } catch (ResourceAccessException e) {            // 연결 거부 등 I/O 오류 (연결 단계)
             throw new SimilarityException.Unavailable(e);
-        } catch (RestClientException e) {                // 응답 역직렬화 실패 등 — AS-IS 는 500 으로 누수 (current-state §3.3f)
+        } catch (RestClientException e) {
+            // SimpleClientHttpRequestFactory 에서는 **read timeout 이 여기로 온다** ("Error while extracting response"
+            // → SocketTimeoutException, examples-round-1 리뷰 C1 실행 확인). 응답 역직렬화 실패도 여기.
+            // 이 catch 를 지우면 타임아웃이 503 → 500 으로 회귀한다 — 회귀 테스트: 지연 응답 + 짧은 readTimeout.
             throw new SimilarityException.Unavailable(e);
         }
+        if (response == null) {                          // 200/204 + 빈 본문 → HTTP Interface 가 null 반환
+            throw new SimilarityException.Unavailable(new IllegalStateException("empty similarity response"));
+        }
+        // 점수 범위 정책: 부동소수 오차(1.0000001 등)는 [0, 1] 로 보정. 세 선택지 공통 (README §2).
+        double score = Math.clamp(response.score(), 0.0, 1.0);
+        log.info("Similarity 응답: score={}", score);
+        return score;
     }
 }

@@ -21,7 +21,7 @@ class ScoreAnswerService implements ScoreAnswerUseCase {
     @Override
     public Result score(Command command) {
         Sentence sentence = loadSentencePort.loadActive(command.sentenceId())
-                .orElseThrow(() -> new SentenceException.NotFound(command.sentenceId()));
+                .orElseThrow(() -> new SentenceException.NotFound(command.sentenceId()));   // 예시 선택: answer 소유 예외로 바꿀 수 있음 (README §4 각주)
         AnswerScore score = AnswerScore.of(scoreSimilarityPort.score(command.userAnswer(), sentence.koreanRef()));
         return new Result(sentence.id(), sentence.englishText(), command.userAnswer(), sentence.koreanRef(), score);
     }

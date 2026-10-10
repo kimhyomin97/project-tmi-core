@@ -3,7 +3,7 @@ package com.tmi.core.answer.domain;
 
 public record AnswerScore(double value, Grade grade) {
 
-    public AnswerScore {
+    public AnswerScore {   // 불변식. 어댑터가 A′·B 와 같은 정책으로 [0,1] 보정한 값만 들어온다 (README §2)
         if (value < 0.0 || value > 1.0) throw new IllegalArgumentException("score out of range: " + value);
     }
 
