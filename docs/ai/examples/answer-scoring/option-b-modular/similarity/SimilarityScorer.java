@@ -20,6 +20,8 @@ import org.springframework.web.client.RestClientResponseException;
 @RequiredArgsConstructor
 public class SimilarityScorer {
 
+    private static final double SCORE_TOLERANCE = 1e-6;
+
     private final SimilarityClient similarityClient;
 
     /** 0.0 ~ 1.0. 트랜잭션 안에서 호출하지 않는다 (conventions-proposal §4). */
@@ -43,8 +45,14 @@ public class SimilarityScorer {
         if (response == null) {                          // 200/204 + 빈 본문 → HTTP Interface 가 null 반환
             throw new SimilarityException.Unavailable(new IllegalStateException("empty similarity response"));
         }
-        // 점수 범위 정책: 부동소수 오차(1.0000001 등)는 [0, 1] 로 보정. 세 선택지 공통 (README §2).
-        double score = Math.clamp(response.score(), 0.0, 1.0);
+        // 점수 범위 정책 (세 선택지 공통, README §2, decisions-needed D13):
+        // 허용 오차(1e-6) 안의 범위 밖 값만 [0, 1] 로 보정하고, 그 밖은 계약(03 §5.1 score 0.0~1.0) 위반으로 Unavailable.
+        // 원래 값은 예외 메시지로 남긴다 — 핸들러가 5xx 로 ERROR + 스택 기록 (throw 직전 로그 금지, conventions §5.1).
+        double raw = response.score();
+        double score = Math.clamp(raw, 0.0, 1.0);
+        if (Math.abs(raw - score) > SCORE_TOLERANCE) {
+            throw new SimilarityException.Unavailable(new IllegalStateException("similarity score out of range: " + raw));
+        }
         log.info("Similarity 응답: score={}", score);
         return score;
     }

@@ -60,7 +60,7 @@ com.tmi.core
 └── common/{config,domain,exception}
 ```
 
-- 강제 규칙 (ArchUnit, 미구현 — A′ 선택 시 R2 를 교체): R2 와 같은 구조의 **조건 1개** — 모든 클래스에 대해 "의존 대상이 다른 기능 모듈(`moduleOf` 기준, `common`·`infra` 제외)의 `repository`·`domain`·`exception` 하위 패키지이면 위반". 기능 쌍을 열거하지 않는다. round-2 리뷰가 이 형태로 실행해 A′ 적용 코드 통과, AS-IS 9건(exception 포함 시 10건) 탐지를 확인 [실행·리뷰].
+- 강제 규칙 (ArchUnit, 미구현 — A′ 선택 시 R2 를 교체): (a) R2 와 같은 구조의 **조건 1개** — 모든 클래스에 대해 "의존 대상이 다른 기능 모듈(`moduleOf` 기준, `common`·`infra` 제외)의 `repository`·`domain`·`exception` 하위 패키지이면 위반". 기능 쌍을 열거하지 않는다. round-2 리뷰가 이 형태로 실행해 A′ 적용 코드 통과, AS-IS 9건(exception 포함 시 10건) 탐지를 확인 [실행·리뷰]. (b) 외부 클라이언트 우회 방지 — `infra/{시스템}` 패키지의 타입 중 `*Scorer`(변환 클래스) 외에는 `infra` 밖에서 접근 금지. 없으면 다른 기능이 `SimilarityClient` 를 직접 주입해 예외 변환을 건너뛸 수 있다 (examples-round-2 M3). B 는 `similarity.client` 가 internal 이라 R2 가 이미 막는다.
 - 예시: [examples/answer-scoring/option-a-layered/](./examples/answer-scoring/option-a-layered/)
 
 ### 선택지 B — 기능 모듈 + 공개 API (추천)
@@ -136,8 +136,8 @@ com.tmi.core.sentence
                               SentenceJpaEntity, SentenceJpaRepository
 ```
 
-- 이 배치는 **`answer ↔ sentence` 순환**을 만든다: 포트가 `sentence.domain.Sentence` 를 반환 타입으로 쓰고(answer → sentence), sentence 의 어댑터가 answer 의 포트를 구현한다(sentence → answer).
-- 순환 없는 세 번째 배치: 포트가 answer 소유 record 를 반환하고, 어댑터를 `answer/adapter/out/sentence/` 에 두어 sentence 의 **공개 조회 API**(인바운드 포트)를 호출. 비용은 포트 1 + 어댑터 1 + sentence 인바운드 포트 1 추가. 이 공개 조회 API 는 B 의 `SentenceReader` 와 같은 모양 — **C 를 순환 없이 하려면 B 의 경계가 먼저 필요**하다 (examples README §5).
+- 포트 반환 타입이 중요하다: 포트가 `sentence.domain` 타입을 반환하면 `answer ↔ sentence` 순환이 된다. 예시는 포트가 answer 소유 record(`SentenceForScoring`)를 반환해 의존이 sentence(어댑터) → answer(포트) 단방향이다 — worktree 에서 컴파일·R1 순환 없음을 확인 (examples README §0).
+- 대신 C 는 R2 를 "포트 패키지만 모듈 간 교차 허용" 하는 C 전용 경계 규칙으로 교체해야 한다 (R2 위반 3건 = 어댑터 → 포트, 헥사고날의 정상 방향).
 - 예시: [examples/answer-scoring/option-c-hexagonal/](./examples/answer-scoring/option-c-hexagonal/)
 - 02 §2.2 에서 **이미 한 번 도입했다가 되돌린** 구조다.
 
@@ -155,7 +155,7 @@ com.tmi.core.sentence
 | P4 기능 간 엔티티 전달 | 해결 (R5 + `sentence.dto.SentenceDetail`) | 해결 (공개 record) | 해결 (도메인 모델) |
 | P5 AI 작업 단위 | 기능 패키지. 경계 규칙 1개 (A′ 규칙, §2) | 모듈. 경계 규칙 1개 (R2) | 유스케이스 (가장 세밀) |
 | 공개 범위의 명시성 | 암묵 — "service 와 dto 는 공개" | 명시 — 파일 위치가 곧 공개 여부 | 명시 — 포트 |
-| 포트 소유·어댑터 위치 문제 | 없음 | 없음 | **있음** — 예시 배치는 `answer ↔ sentence` 순환, 순환 없는 배치는 B 의 공개 API 가 선행 (§2 C) |
+| 포트 소유·어댑터 위치 문제 | 없음 | 없음 | 있음 — 포트 반환 타입을 잘못 고르면 순환. answer 소유 record 로 해결(+1 타입), C 전용 경계 규칙 필요 (§2 C) |
 | 도메인 순수성 | 낮음 (엔티티 = 도메인) | 낮음 | **높음** |
 | 파일 수 (§3.2) | 약 8 | 약 12 | 약 22 수정 + 20 이상 신규 |
 | 팀 기존 결정 (§0 표) | 99 §2.3, 02 §4.2 변경 | + 02 §3.2·§5.1·05 §1.3·06 §6.5 변경 | 02 §2.2 포함 전부 변경 |
@@ -169,7 +169,7 @@ com.tmi.core.sentence
 |---|---|---|---|
 | A′ | 신규 `infra/similarity/SimilarityClientConfig`, `infra/similarity/SimilarityScorer`, `sentence/dto/SentenceDetail` · 수정 `common/config/RestClientConfig`(→삭제), `sentence/service/SentenceService`(`getActive` 추가), `answer/service/AnswerService`, `answer/dto/AnswerResponse`, `application.properties`(`similarity.*` 키) | **8** | 8×15~20분 ≈ 2~2.7h + 리뷰 1회 → **0.5일** |
 | B | 신규 `sentence/SentenceReader`, `sentence/SentenceDetail`, `similarity/SimilarityScorer`, `similarity/config/SimilarityClientConfig` · 이동 `SimilarityClient`→`similarity/client/`(dto 2개 흡수 → `SimilarityRequest`·`SimilarityResponse` 삭제 2), `SimilarityException`→`similarity/exception/` · 삭제 `common/config/RestClientConfig` · 수정 `AnswerService`, `AnswerResponse`, `application.properties` | **12** | 12×15~20분 ≈ 3~4h + 리뷰 2회(B2·B3) + `git mv` 단독 커밋 + B2 의 plan gate 대기 → **0.5~1일** |
-| C | 기존 수정·이동 최대 22 (`common` 11 + `CoreApplication` 제외한 전부) + 신규: `answer` 포트 3·서비스 1·도메인 1, `sentence` 도메인 모델 1·어댑터 1·매퍼 1, 웹 DTO 이동, Similarity 어댑터 1 … (examples C 기준 `answer` 한 흐름에만 신규 9) | **약 22 + 20 이상** | 42+×15~20분 ≈ 10.5~14h + 엔티티·도메인 분리에 따른 테스트 재작성 + 02·05·06 전면 개정 → **2~3일** |
+| C | 기존 수정·이동 최대 22 (`common` 11 + `CoreApplication` 제외한 전부) + 신규: `answer` 포트 3·서비스 1·도메인 1, `sentence` 도메인 모델 1·어댑터 1·매퍼 1, 웹 DTO 이동, Similarity 어댑터 1 … (examples C 기준 한 흐름에 신규 7 + 수정 1) | **약 22 + 20 이상** | 42+×15~20분 ≈ 10.5~14h + 엔티티·도메인 분리에 따른 테스트 재작성 + 02·05·06 전면 개정 → **2~3일** |
 
 - B 의 `SimilarityRequest`·`SimilarityResponse` 는 `SimilarityClient` 에 중첩 record 로 흡수하는 예시를 따랐다 — 흡수하면 이 두 파일은 `git mv` 로 blame 을 유지할 수 없다. 별도 파일로 이동만 하면 합계는 같고 blame 은 유지된다.
 - 파일 목록 상세: [examples/answer-scoring/README.md §3](./examples/answer-scoring/README.md#3-파일-목록과-비교).
