@@ -311,7 +311,7 @@
           "bash ./gradlew test --tests '*ModuleArchitectureTest.r2_*' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.ModuleArchitectureTest.xml",
           "! grep -rn '\"R2 위반' src/test"
         ],
-        "acceptance": "계획(H1)에 새 규칙 (a)(b) 의 ArchUnit 코드를 포함해 사람이 승인. 두 규칙 통과, AnswerService 가 sentence.repository·domain·exception 과 infra.similarity.SimilarityClient 를 import 하지 않음. 교체 규칙의 테스트 메서드 이름은 r2_ 로 시작 (verify 의 --tests '*ModuleArchitectureTest.r2_*' 와 매칭)",
+        "acceptance": "계획(H1)에 새 규칙 (a)(b) 의 ArchUnit 코드를 포함해 사람이 승인. 두 규칙 통과, AnswerService 가 sentence.repository·domain·exception 과 infra.similarity.SimilarityClient 를 import 하지 않음. 교체 규칙 (a)(b) 의 테스트 메서드 이름은 모두 r2_ 로 시작 (예: r2_featureBoundary, r2_infraEntryPoint — verify 의 --tests '*ModuleArchitectureTest.r2_*' 가 둘 다 실행)",
         "evidence": "architecture-proposal.md §2 A′, §4.3 단계 2-A′",
         "passes": false,
         "blocked": null,

@@ -4,8 +4,8 @@
 > 이 문서는 "이 저장소에서 Claude Code 같은 코딩 에이전트에게 일을 맡기는 방법" 을 정한다. 외부 근거는 [research.md §8](./research.md#8-ai-코딩-에이전트-장시간-작업).
 > 전제: architecture-proposal.md 추천안 B (모듈 경계). A′ 를 고르면 "모듈" 을 "기능 패키지" 로 읽으면 된다.
 > 개정: Round 1 리뷰([reviews/ai-workflow-round-1.md](./reviews/ai-workflow-round-1.md)) 반영 — hook 재설계(C1), "수정 전 실패" verify(C2), `plan_approved` 필드(C3), OSIV 순서·게이트 규칙·init.sh 정정.
-> 개정: Round 3 리뷰([reviews/ai-workflow-round-3.md](./reviews/ai-workflow-round-3.md)) 반영 — ArchUnit verify 를 메서드 단위로(C1: 클래스 단위 skip 검사가 항목 간 교착), base 에 session_id·matcher startup·pull(M1·M3), 반려 후 재제출 상태(M2), 브랜치 규칙(M3), ARCH-B2 의 SIG-1 의존(M4), hook 경미 5건.
 > 개정: Round 2 리뷰([reviews/ai-workflow-round-2.md](./reviews/ai-workflow-round-2.md)) 반영 — hook 이 `stop_hook_active` 로 풀리던 문제·base 비교 우회(C1·M1), `--tests` OR 결합으로 거짓 통과하던 verify(C2), 계획 반려 교착(C3), 사람 판정 항목 종료(M2), Docker 전제(M3), 기록 형식 고정(M4), 계획 작성 우선순위(M5), ARCH-A2 게이트(M6).
+> 개정: Round 3 리뷰([reviews/ai-workflow-round-3.md](./reviews/ai-workflow-round-3.md)) 반영 — ArchUnit verify 를 메서드 단위로(C1: 클래스 단위 skip 검사가 항목 간 교착), base 에 session_id·matcher startup·pull(M1·M3), 반려 후 재제출 상태(M2), 브랜치 규칙(M3), ARCH-B2 의 SIG-1 의존(M4), hook 경미 5건.
 
 ---
 

@@ -4,16 +4,16 @@
 > 각 파일 첫 줄 주석에 **실제로 놓일 경로**와 **AS-IS 대비 변경점**을 적었다.
 > 관련 문서: [architecture-proposal.md](../../architecture-proposal.md) §2 · [conventions-proposal.md](../../conventions-proposal.md)
 > 개정: Round 1 리뷰([reviews/examples-round-1.md](../../reviews/examples-round-1.md)) 반영 — A 를 A′ 로 재작성(C2), 세 선택지에 같은 예외 분류(catch 3개)·빈 응답·점수 범위 정책(C1, M3, m4), 누락된 마이그레이션 단계(M1), C 의 세 번째 배치(M2).
-> 개정: Round 3 리뷰([reviews/examples-round-3.md](../../reviews/examples-round-3.md)) 반영 — NaN 이 점수 검사를 통과하던 결함(M1), 점수 정책의 소유 항목·로그 전제(M2), A′ 규칙 (b) 재작성 전파(M3), 수치·절차 경미 8건.
 > 개정: Round 2 리뷰([reviews/examples-round-2.md](../../reviews/examples-round-2.md)) 반영 — `.gitignore` 의 `out/` 에 걸려 빠졌던 C 4파일 커밋(C1), **C 예시를 순환 없는 표준형으로 교체**(M1), 점수 보정을 허용 오차로 제한(M2), A′ 의 클라이언트 우회 가능성(M3).
+> 개정: Round 3 리뷰([reviews/examples-round-3.md](../../reviews/examples-round-3.md)) 반영 — NaN 이 점수 검사를 통과하던 결함(M1), 점수 정책의 소유 항목·로그 전제(M2), A′ 규칙 (b) 재작성 전파(M3), 수치·절차 경미 8건.
 
 ## 0. 실행 검증
 
 | 선택지 | 방법 | 결과 |
 |---|---|---|
 | A′ | 전용 worktree 의 `src/main` 에 `option-a-layered/` 파일을 실제 경로로 복사, `common/config/RestClientConfig.java` 삭제, `similarity.*` 키 변경 → `./gradlew build` | **BUILD SUCCESSFUL** (컴파일 + `CoreApplicationTests`). ArchUnit: R1·R3·R4·R4b·R6·R7 통과, R5 1건(`getRandom` — `FIX-R5` 미적용분), R2 11건(B 전용 규칙 — A′ 에서는 교체 대상) |
-| B | Round 1·2 리뷰어가 같은 방식으로 적용 | 컴파일·기존 테스트·R1·R2·R3·R4·R4b·R6·R7 통과 (R5 1건만 — `FIX-R5` 미적용분). 가짜 Similarity 서버로 3초 지연·빈 200/204 → 503 확인 (examples-round-2 [실행·리뷰]). Round 3 리뷰어 재실행: `build`·`contextLoads` 성공, R1·R2·R3·R4·R4b·R6·R7 통과, R5 1건, 3초 지연·빈 200 → 503, 1.0000001 → 1.0, 1.5 → 503. 이후 NaN 처리 수정(§2) — 판정식만 바뀌어 로컬 단위 확인: NaN·1.5·-0.2·Infinity·1e308 → 503, 1.0000001 → 1.0, -1e-7 → 0.0 [실행] |
-| C | worktree 에 포트·유스케이스·서비스·`AnswerException`·`SentencePersistenceAdapter`(JPA 리포지토리 이름만 AS-IS 로) 적용, 대체되는 AS-IS `AnswerService`·`AnswerController`·`AnswerApi`·`AnswerResponse` 삭제 → `compileJava` | **컴파일 성공**. ArchUnit R1: `answer ↔ sentence` 순환 **없음** (AS-IS `common ↔ infra` 1건만). R2: `sentence.adapter → answer.application.port.out` 3건 — 헥사고날의 정상 방향이므로 C 를 고르면 "포트 패키지만 모듈 간 교차 허용" 규칙으로 R2 를 교체. R4 도 어댑터 레이어를 정의한 C 용으로 교체 (지금은 어댑터가 어느 레이어에도 속하지 않아 통과할 뿐) |
+| B | Round 1·2 리뷰어가 같은 방식으로 적용 | 컴파일·기존 테스트·R1·R2·R3·R4·R4b·R6·R7 통과 (R5 1건만 — `FIX-R5` 미적용분). 가짜 Similarity 서버로 3초 지연·빈 200/204 → 503 확인 (examples-round-2 [실행·리뷰]). Round 3 리뷰어 재실행: `build`·`contextLoads` 성공, R1·R2·R3·R4·R4b·R6·R7 통과, R5 1건, 3초 지연·빈 200 → 503, 1.0000001 → 1.0, 1.5 → 503. NaN 처리 수정 후 Round 4 리뷰어 재실행: 문자열 "NaN"·NaN·1.5·-0.2·Infinity·1.0000011·빈 200·3초 지연 → 503, 1.0000001 → 200 1.0 [실행·리뷰] |
+| C | worktree 에 포트·유스케이스·서비스·`AnswerScore`·`AnswerException`·`SentencePersistenceAdapter`(`SentenceJpaRepository` → AS-IS `com.tmi.core.sentence.repository.SentenceRepository` 로 치환) 적용, 대체되는 AS-IS `AnswerService`·`AnswerController`·`AnswerApi`·`AnswerResponse` 삭제 → `compileJava` | **컴파일 성공**. ArchUnit R1: `answer ↔ sentence` 순환 **없음** (AS-IS `common ↔ infra` 1건만). R2: `sentence.adapter → answer.application.port.out` 3건 — 헥사고날의 정상 방향이므로 C 를 고르면 "포트 패키지만 모듈 간 교차 허용" 규칙으로 R2 를 교체. R4 도 어댑터 레이어를 정의한 C 용으로 교체 (지금은 어댑터가 어느 레이어에도 속하지 않아 통과할 뿐) |
 
 ## 1. 왜 이 기능인가
 
