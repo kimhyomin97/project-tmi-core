@@ -10,8 +10,8 @@
 |---|---|
 | 현상 | 저장소 수령 시 `src/main` 4개 파일 + `.gitattributes` 에 미커밋 변경이 있었고, 그중 2개 파일이 **존재하지 않는 클래스**(`toss.holdings.infra.TossHoldingsClient`, `toss.holdings.dto.HoldingsApiResponse`)를 import → 컴파일 불가 |
 | 제약 | 작업 규칙상 `src/main` 수정 금지 → 커밋도, 되돌림도 하지 않음 |
-| 조치 | ① 패치 전문을 [`wip-snapshot.patch`](./wip-snapshot.patch) 로 보존 ② 빌드·테스트 실행 동안만 `git stash` 로 치움 ③ 작업 종료 시 `git stash pop` 으로 작업 트리에 복원 |
-| 사람이 할 일 | WIP 를 이어서 완성할지, 브랜치로 분리할지 결정. 복원: `git apply docs/ai/wip-snapshot.patch` (작업 트리에 이미 복원돼 있으면 불필요) |
+| 조치 | ① 패치 전문을 [`wip-snapshot.patch`](./wip-snapshot.patch) 로 보존 (`git apply --check` 통과) ② 빌드·테스트 실행 동안 `git stash` 로 치움 ③ 작업 종료 시 **`git apply docs/ai/wip-snapshot.patch`** 로 작업 트리에 복원. `git stash pop` 은 쓰지 않는다 — stash 에 이미 커밋된 `.claude/*`·`docs/ai/TASK.md` 가 섞여 충돌한다 (reviews/current-state-round-1.md M9) |
+| 사람이 할 일 | WIP 를 이어서 완성할지, 브랜치로 분리할지 결정. Toss 클라이언트 위치는 architecture-proposal.md 결정(D1)에 따름 |
 
 ## 2. `./gradlew build` 환경
 
