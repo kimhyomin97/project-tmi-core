@@ -60,7 +60,7 @@ com.tmi.core
 └── common/{config,domain,exception}
 ```
 
-- 강제 규칙 (ArchUnit, 미구현 — A′ 선택 시 R2 를 교체): (a) R2 와 같은 구조의 **조건 1개** — 모든 클래스에 대해 "의존 대상이 다른 기능 모듈(`moduleOf` 기준, `common`·`infra` 제외)의 `repository`·`domain`·`exception` 하위 패키지이면 위반". 기능 쌍을 열거하지 않는다. round-2 리뷰가 이 형태로 실행해 A′ 적용 코드 통과, AS-IS 9건(exception 포함 시 10건) 탐지를 확인 [실행·리뷰]. (b) 외부 클라이언트 우회 방지 — `infra/{시스템}` 패키지의 타입 중 `*Scorer`(변환 클래스) 외에는 `infra` 밖에서 접근 금지. 없으면 다른 기능이 `SimilarityClient` 를 직접 주입해 예외 변환을 건너뛸 수 있다 (examples-round-2 M3). B 는 `similarity.client` 가 internal 이라 R2 가 이미 막는다.
+- 강제 규칙 (ArchUnit, 미구현 — A′ 선택 시 R2 를 교체): (a) R2 와 같은 구조의 **조건 1개** — 모든 클래스에 대해 "의존 대상이 다른 기능 모듈(`moduleOf` 기준, `common`·`infra` 제외)의 `repository`·`domain`·`exception` 하위 패키지이면 위반". 기능 쌍을 열거하지 않는다. round-2 리뷰가 이 형태로 실행해 A′ 적용 코드 통과, AS-IS 9건(exception 포함 시 10건) 탐지를 확인 [실행·리뷰]. (b) 외부 클라이언트 우회 방지 — `infra/{시스템}` 패키지의 타입 중 **변환 클래스 허용 목록**(`SimilarityScorer`, Toss 는 `TossHoldingsFetcher` 등 — conventions §4.3) 외에는 `infra` 밖에서 접근 금지. 없으면 다른 기능이 `SimilarityClient` 를 직접 주입해 예외 변환을 건너뛸 수 있다 (examples-round-2 M3). B 는 `similarity.client` 가 internal 이라 R2 가 이미 막는다.
 - 예시: [examples/answer-scoring/option-a-layered/](./examples/answer-scoring/option-a-layered/)
 
 ### 선택지 B — 기능 모듈 + 공개 API (추천)
