@@ -108,14 +108,13 @@
 
 ¹ 구조 때문이 아니라 예시의 선택. `answer/exception/AnswerException` 이 이미 있으므로 answer 소유 예외로 바꿀 수 있다.
 
-**A′ 와 B 의 코드 차이는 import 경로뿐이다.** 차이는 규칙에 있다: A′ 에서는 `answer` 가 `sentence.service`·`sentence.dto` 의 **어떤 타입이든** 쓸 수 있고(웹 응답 DTO `SentenceResponse` 포함), 이를 막으려면 기능 쌍마다 ArchUnit 규칙이 필요하다. B 에서는 공개 타입이 base package 에 있는 것뿐이고 규칙 R2 하나가 모든 모듈에 적용된다.
+**A′ 와 B 의 코드 차이는 import 경로뿐이다.** 차이는 공개 표면의 크기에 있다: A′ 에서는 `answer` 가 `sentence.service`·`sentence.dto` 의 **어떤 타입이든** 쓸 수 있다(웹 응답 DTO `SentenceResponse` 포함). B 에서는 base package 에 골라 둔 타입만 쓸 수 있고, 넓히려면 파일을 옮기는 diff 가 생긴다. 경계 규칙은 둘 다 ArchUnit 조건 1개다 (architecture-proposal.md §2 A′).
 
 ## 5. 예시가 드러내는 각 선택지의 약점
 
 | 선택지 | 약점 | 예시 위치 |
 |---|---|---|
 | A′ | `sentence.service`·`sentence.dto` 전체가 암묵적으로 공개 — `answer` 가 `SentenceResponse`(웹 응답)를 재사용해도 규칙 위반이 아니다 | `option-a-layered/answer/AnswerService.java` 10-11행 import |
-| A′ | 경계 규칙을 기능 쌍마다 선언 (2기능이면 2개, Toss 포함 3기능이면 최대 6개 방향) | architecture-proposal.md §2 A′ |
 | B | `SentenceDetail` 이 엔티티 필드 일부를 복제 (A′ 도 동일) | `option-b-modular/sentence/SentenceDetail.java` |
 | B | `SentenceReader` 가 internal 예외(`SentenceException.NotFound`)를 경계 밖으로 던짐 — 호출 측은 catch 하지 않는 전제 | `option-b-modular/sentence/SentenceReader.java` javadoc |
 | B | `infra/` 해체 → 02 §3.2·05 §1.3 규칙 변경 | architecture-proposal.md §0 표 |

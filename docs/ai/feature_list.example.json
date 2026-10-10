@@ -209,7 +209,8 @@
         "title": "infra.similarity → similarity 모듈 승격 + SimilarityScorer (git mv 커밋 분리)",
         "module": "similarity",
         "depends_on": [
-          "ARCH-A1"
+          "ARCH-A1",
+          "FIX-F1T"
         ],
         "human_gate": "plan",
         "plan_approved": null,
@@ -239,6 +240,23 @@
         "evidence": "architecture-proposal.md §4.3 단계 2",
         "passes": false,
         "blocked": null
+      },
+      {
+        "id": "DOC-2",
+        "title": "구조 결정(D1=B) 에 따른 기존 문서 수정: 02 §3.1 트리·§3.2·§4.2·§5.1, 05 §1.3, 06 §6.5, 99 §2.3",
+        "module": "docs",
+        "depends_on": [
+          "ARCH-B3"
+        ],
+        "human_gate": "plan",
+        "plan_approved": null,
+        "verify": [
+          "human"
+        ],
+        "acceptance": "architecture-proposal.md §0 표의 해당 열 모든 행 반영을 사람이 확인",
+        "evidence": "architecture-proposal.md §0, §3.2",
+        "passes": false,
+        "blocked": null
       }
     ],
     "D1=A'": [
@@ -247,7 +265,8 @@
         "title": "A′: SentenceService.getActive → sentence.dto.SentenceDetail, infra.similarity.SimilarityScorer 도입, R2 를 '타 기능 repository·domain 접근 금지' 규칙으로 교체",
         "module": "answer",
         "depends_on": [
-          "ARCH-A1"
+          "ARCH-A1",
+          "FIX-F1T"
         ],
         "human_gate": "none",
         "plan_approved": null,
@@ -257,6 +276,23 @@
         ],
         "acceptance": "A′ 규칙 통과, AnswerService 가 sentence.repository·domain·exception 을 import 하지 않음",
         "evidence": "architecture-proposal.md §2 A′, §4.3 단계 2-A′",
+        "passes": false,
+        "blocked": null
+      },
+      {
+        "id": "DOC-2",
+        "title": "구조 결정(D1=A') 에 따른 기존 문서 수정: 02 §4.2, 05 §1.3 (기능 간 규칙), 99 §2.3",
+        "module": "docs",
+        "depends_on": [
+          "ARCH-A2"
+        ],
+        "human_gate": "plan",
+        "plan_approved": null,
+        "verify": [
+          "human"
+        ],
+        "acceptance": "architecture-proposal.md §0 표의 해당 열 모든 행 반영을 사람이 확인",
+        "evidence": "architecture-proposal.md §0, §3.2",
         "passes": false,
         "blocked": null
       }
