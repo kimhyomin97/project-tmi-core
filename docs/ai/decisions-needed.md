@@ -132,7 +132,7 @@
 ### D12. AI 루프 운영
 
 - 추천 기본값: ai-workflow.md §2.2 — H0(결정·항목 승인), H1(`human_gate: plan` 항목: 계획 파일 검토 후 **사람이 `plan_approved` 기록**), H2(PR 머지), H3(`blocked`).
-- hook: 제안된 `session-base.sh`(SessionStart) + `check-feature.sh`(Stop — 이번 세션의 id 별 verify 기록, 사람 전용 필드 불변, 사람 판정 항목 차단; 14개 시나리오 실행 확인)를 추가하고, 이 문서 세트용 `check-done.sh` 는 내린다. 후자는 `/tmp/stop-hook-count` 를 초기화하지 않아 15회 이후 영구히 꺼지는 결함이 있다 (ai-workflow.md §4.6).
+- hook: 제안된 `session-base.sh`(SessionStart) + `check-feature.sh`(Stop — 이번 세션의 id 별 verify 기록, 사람 전용 필드 불변, 사람 판정 항목 차단; 20개 시나리오 실행 확인)를 추가하고, 이 문서 세트용 `check-done.sh` 는 내린다. 후자는 `/tmp/stop-hook-count` 를 초기화하지 않아 15회 이후 영구히 꺼지는 결함이 있다 (ai-workflow.md §4.6).
 - **결정하면 바로 시작**: `feature_list.example.json` 을 `feature_list.json` 으로 복사하고 D1 에 해당하는 `pending_decision` 묶음을 `items` 로 옮긴다 → 첫 세션 `TEST-1`.
 
 ### D13. Similarity 비정상 응답

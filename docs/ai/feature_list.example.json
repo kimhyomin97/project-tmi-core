@@ -16,7 +16,7 @@
         "bash ./gradlew test --tests '*GradeTest' && grep -q 'skipped=\"0\"' build/test-results/test/TEST-*.GradeTest.xml",
         "bash ./gradlew test --tests '*SimilarityClientTest'",
         "bash ./gradlew test --tests '*SentenceControllerTest'",
-        "grep -rln '\"FIX-F1 ' src/test && grep -rln '\"FIX-F2 ' src/test"
+        "grep -rn -A1 '@Disabled' src/test | grep -q '\"FIX-F1 ' && grep -rn -A1 '@Disabled' src/test | grep -q '\"FIX-F2 '"
       ],
       "acceptance": "GradeTest 실행·통과(skip 0). SimilarityClientTest·SentenceControllerTest 는 클래스가 존재하고 @Disabled(\"FIX-F1 …\")/(\"FIX-F2 …\") — 사유는 '<ID> + 공백' 형식. @Disabled 를 지우면 현재 코드에서 실패함을 1회 실행해 progress 에 기록",
       "evidence": "conventions-proposal.md §6.3 (현재 코드로 실패 재현 검증됨)",

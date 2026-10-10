@@ -270,12 +270,21 @@ verify: <ID> OK                   ← 줄 전체가 정확히 이 형태. 목록
 1. `git log --oneline -20` → `docs/ai/claude-progress.md` 마지막 블록 → `docs/ai/feature_list.json`
 2. `bash scripts/init.sh`. **실패하면 새 항목을 시작하지 않고** 깨진 원인부터 (직전 세션이 남긴 문제일 가능성)
 3. 항목 선택 — 아래 우선순위대로 배열 순서상 첫 번째 1개. 공통 제외 조건: `passes: true`, `blocked` 가 null 아님, `awaiting_human: true`, `requires` 를 이 환경이 충족하지 않음(예: Docker 없음 — init.sh 요약), `depends_on` 미충족
+   0. `blocked == "changes-requested"` 이고 원격에 `ai/<id>` 가 있는 항목 → 그 브랜치에서 수정 (위 브랜치 표)
    1. `plan_approved` 가 `"rejected: …"` 이고 계획 파일 첫 줄이 `Status: revised` **가 아닌** 항목 → 계획을 고치고 첫 줄에 `Status: revised <날짜>` 를 쓰고 세션 종료 (H1 재요청). 첫 줄이 이미 `Status: revised` 면 사람 검토 대기 → 건너뜀. 사람은 다시 반려할 때 이 줄을 지운다
    2. `human_gate: plan` + `plan_approved: null` + `docs/ai/plans/<id>.md` 없음 → **계획만 작성하고 세션 종료** (H1 대기가 뒤로 밀리지 않게 구현보다 우선)
    3. `human_gate: none`, 또는 `plan_approved` 에 날짜·sha 가 있는 항목 → 구현
    4. 해당 없음 → progress 에 "대기 중: <id 목록과 이유>" 를 쓰고 종료
 
-**브랜치·PR** — 항목마다 브랜치 `ai/<id>` 를 `main` 에서 만든다. 원격에 `ai/<id>` 가 이미 있으면(PR 머지 대기) 그 항목은 건너뛴다. 세션 시작 시 SessionStart hook 이 `git pull --ff-only` 로 사람의 `plan_approved`·`passes` 변경을 먼저 받으므로 세션 중 pull 은 하지 않는다 (하면 hook 이 사람 전용 필드 변경으로 막는다).
+**브랜치·PR** (Round 4 M1 반영)
+
+| 세션 종류 | 브랜치 | 선택 규칙과의 관계 |
+|---|---|---|
+| 계획 작성·수정 (선택 규칙 1·2) | 브랜치를 만들지 않고 `main` 에 `docs/ai/plans/<id>.md` 만 커밋 (PR 없음, H1 이 파일을 직접 검토) | 원격 브랜치가 생기지 않으므로 승인 후 구현 단계로 정상 진행 |
+| 구현 (선택 규칙 3) | `main` 에서 `ai/<id>` 생성 → PR | 원격에 `ai/<id>` 가 있고 그 항목의 `blocked` 가 null 이면 PR 머지 대기 → 건너뜀 |
+| H2 변경 요청 | 사람이 PR 에 코멘트 + `blocked: "changes-requested"` 기록 | 선택 규칙 0번: `blocked == "changes-requested"` 이고 원격 `ai/<id>` 가 있으면 **그 브랜치를 체크아웃해 수정** (blocked 개수에서 제외, 수정 후 에이전트가 `blocked: null`) |
+
+- `claude-progress.md` 는 브랜치마다 append 되어 머지 시 충돌한다 (Round 4 [실행·리뷰]) → `.gitattributes` 에 `docs/ai/claude-progress.md merge=union` 추가를 권장 (이번 작업 범위 밖이라 미적용, H0 확인 항목). 세션 시작 시 SessionStart hook 이 `git pull --ff-only` 로 사람의 `plan_approved`·`passes` 변경을 먼저 받으므로 세션 중 pull 은 하지 않는다 (하면 hook 이 사람 전용 필드 변경으로 막는다).
 
 **진행**
 
@@ -295,7 +304,7 @@ verify: <ID> OK                   ← 줄 전체가 정확히 이 형태. 목록
 | 한 세션 = 한 항목, 다음 항목은 새 세션 | 원문은 "work on only one feature at a time" [F]. 세션 분리는 컨텍스트 오염을 줄이려는 **이 문서의 판단** |
 | 에이전트는 사람 전용 필드(`verify`·`acceptance`·`id`·`depends_on`·`human_gate`·`plan_approved`·`requires`)를 고치지 않는다 | 원문: "It is unacceptable to remove or edit tests because this could lead to missing or buggy functionality." [F]. hook 이 base 대비 비교로 강제 (§4.6) |
 | **기존** 테스트를 `@Disabled` 로 끄는 것은 `blocked` 와 함께만 | 같은 이유. 단 `TEST-1` 처럼 **새 테스트를 예정된 FIX id 와 묶어 `@Disabled("<ID> …")` 로 추가**하는 것은 허용 — 그 FIX 의 verify 가 해제를 확인 |
-| 같은 항목이 2세션 연속 실패하면 `blocked` | 무한 재시도 방지. 환경 미충족(`requires`)으로 건너뛴 것은 실패로 세지 않는다 |
+| 같은 항목이 2세션 연속 실패하면 `blocked` | 무한 재시도 방지. 환경 미충족(`requires`)으로 건너뛴 것은 실패로 세지 않는다. `blocked: "changes-requested"` 는 사람이 쓰는 값이며 아래 개수에서 제외 |
 | `blocked` 3개 이상이면 루프 중단 → H3 | 구조적 문제 신호. `awaiting_human` 은 세지 않는다 |
 | 30분 이상 환경 문제 → blockers.md 기록 후 분석 가능한 범위까지 | 이 작업의 TASK.md 규칙과 동일 |
 
@@ -313,6 +322,8 @@ settings.json 등록 (제안):
 ```
 
 - `matcher: "startup"` — resume·compact 때 SessionStart 가 다시 돌아 base 가 바뀌는 것을 막는다 (hooks 문서의 SessionStart matcher 값: startup·resume·clear·compact [F]).
+
+- 두 hook 은 `CLAUDE_CODE_REMOTE=true`(클라우드 세션)에서만 동작한다 — 기존 `check-done.sh` 와 같은 조건. 로컬 세션에서 루프를 돌린다면 첫 줄 조건을 지우거나 별도 변수로 바꾼다.
 
 **설계 판단**: 이 hook 이 막는 조건(기록 누락, 사람 전용 필드 변경, 사람 판정 항목의 `passes`)은 **모두 에이전트가 되돌리거나 verify 를 실행하면 해소된다** — "never resolve" 조건이 아니다. 그래서 `stop_hook_active` 로 빠져나가지 않고(Round 1 판의 결함 — 두 번째 종료 시도에서 풀렸다), 무한 차단은 내장 8회 상한에 맡긴다. 포기하는 것: 8회 연속 막힌 뒤의 종료는 hook 이 통제하지 못한다 → 다음 세션 init.sh·H2 에서 드러난다. 또 상한은 도구 호출 시 초기화되므로, 에이전트가 해소할 수 **없는** 조건(base 파일 없음 — SessionStart 미등록 등)에서는 막힘이 끝나지 않을 수 있다 → 등록 확인은 H0 체크 항목. 남는 위험: 에이전트가 `$(git rev-parse --git-dir)/claude-session-base` 를 직접 다시 쓰는 것은 막지 못한다 (협조적 에이전트 전제 — H2 리뷰에서 progress 의 `session-base` 줄과 브랜치 시작 커밋을 대조).
 
