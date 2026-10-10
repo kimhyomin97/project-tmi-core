@@ -1,0 +1,457 @@
+# 현재 상태 전수 분석 (current-state)
+
+> 상태: **제안 단계 산출물** — 이 문서는 사실 기록이며 결정을 담지 않는다. 결정 항목은 [decisions-needed.md](./decisions-needed.md).
+> 분석 기준: 브랜치 `main` HEAD `e85dba5` 의 `src/main` (Java 34 파일, 중첩 클래스 포함 40 타입).
+> 작업 트리에만 존재하는 미커밋 변경(WIP)은 §5 에 별도로 정리했다. 이 문서의 표는 **커밋된 코드** 기준이다.
+
+표기 규칙
+
+- `[정적]` 코드를 읽고 판단한 내용. 실행으로 검증하지 않음.
+- `[실행]` 테스트·빌드 실행으로 확인한 내용 (§6 ArchUnit 결과, §7 빌드 결과 참조).
+- 경로는 `src/main/java/com/tmi/core/` 를 생략하고 `answer/service/AnswerService.java:36` 형식으로 쓴다.
+
+---
+
+## 0. 요약 — 결정에 영향을 주는 발견 (중요도 순)
+
+| # | 발견 | 근거 | 검증 |
+|---|---|---|---|
+| F1 | `POST /api/v1/answers` 가 **항상 500** — `SimilarityClient.score` 의 `@RequestBody` 누락 | `infra/similarity/SimilarityClient.java:10`, §7.2 P7 | [실행] |
+| F2 | 에러 메시지 번들이 로드되지 않아 모든 에러 `message` 가 코드 문자열, i18n 미동작 | `resources/messages/` 위치 + basename 미설정, §7.2 P2·P3 | [실행] |
+| F3 | 깨진 JSON 등 클라이언트 오류가 500 + ERROR 로 처리, 500 로그에 스택트레이스 없음, 404 가 ERROR 레벨 | `GlobalExceptionHandler.java:68-78`, `BaseException.java:15`, §7.2 P5 | [실행] |
+| F4 | `@Transactional` self-invocation — 어노테이션이 무효 (동작은 리포지토리 기본 트랜잭션 덕분에 우연히 맞음) | `AnswerService.java:28,35` | [정적] |
+| F5 | DTO 변환 위치가 기능마다 다름 (컨트롤러 vs 서비스), 응답 DTO 가 타 기능 엔티티에 의존 | `SentenceController.java:26`, `AnswerResponse.java:30` | [정적] |
+| F6 | 기능 간 직접 의존 (`answer → sentence.repository/exception/domain`), `common.config → infra` 역방향 | §2 | [정적]·ArchUnit §6 |
+| F7 | 외부 클라이언트 배치 규칙 분열 (`infra/similarity` vs WIP `toss/holdings/infra`) | §3.6 | [정적] |
+| F8 | 테스트 1개(실 DB 필요) — F1~F3 이 모두 테스트 부재로 잠복 | `src/test` | [실행] |
+
+---
+
+## 1. 클래스 전수 표
+
+레이어 구분: `boot`(부트스트랩) · `web`(컨트롤러·API 명세) · `app`(서비스) · `domain`(엔티티·값 객체·enum) · `persistence`(리포지토리) · `dto` · `exception` · `infra`(외부 시스템 클라이언트) · `config`.
+"의존 대상"은 **프로젝트 내부 타입만** 적었다 (`import com.tmi.core.*` 기준, 프레임워크 의존 제외).
+
+### 1.1 루트
+
+| 패키지 | 클래스 | 역할 | 레이어 | 의존 대상 | 컨벤션 불일치 사항 |
+|---|---|---|---|---|---|
+| `com.tmi.core` | `CoreApplication` | `@SpringBootApplication` 진입점 | boot | — | 없음 |
+
+### 1.2 `answer` — 답안 채점
+
+| 패키지 | 클래스 | 역할 | 레이어 | 의존 대상 | 컨벤션 불일치 사항 |
+|---|---|---|---|---|---|
+| `answer.controller` | `AnswerApi` | Swagger 명세 인터페이스 (`@Tag`, `@Operation`, `@ApiResponses`) | web | `answer.dto.AnswerResponse`, `answer.dto.SubmitAnswerRequest`, `common.exception.ErrorResponse` | 400 예시 메시지 `"userAnswer: must not be blank"` 는 실제 핸들러 출력 형식(`field: defaultMessage`)과 일치. 502/503 예시 메시지는 `messages.properties` 값과 마침표 유무가 다름 (`AnswerApi.java:86` vs `messages.properties:13`) |
+| `answer.controller` | `AnswerController` | `POST /api/v1/answers` 진입점 | web | `answer.dto.*`, `answer.service.AnswerService` | `implements AnswerApi{` 공백 누락 (`AnswerController.java:17`). POST 가 200 반환 — 05 §4.2 "POST → 201" 규칙의 문서화된 예외 (`AnswerApi.java:29`) |
+| `answer.domain` | `Grade` | 점수 → 등급 변환 enum (`fromScore`) | domain | — | 02 §4.2 는 "점수 → 등급 변환은 **Service 책임**" 이라 적었으나 실제는 domain enum 이 소유하고 **DTO 가** 호출 (`AnswerResponse.java:37`) |
+| `answer.dto` | `AnswerResponse` | 채점 응답 record + `of(SentenceEntity, String, double)` | dto | `answer.domain.Grade`, **`sentence.domain.SentenceEntity`** | ① 다른 기능(`sentence`)의 **엔티티**에 직접 의존 ② 팩토리 이름 `of` — 06 §5.1 "Response 는 `from(Entity)`" 와 다름 ③ DTO 가 `Grade.fromScore` 로 도메인 규칙 실행 ④ `record AnswerResponse (` 공백 (`AnswerResponse.java:8`) |
+| `answer.dto` | `SubmitAnswerRequest` | 답안 제출 요청 record + Bean Validation | dto | — | `@Schema` 설명은 "36자 UUID" 인데 example 은 12자 `"01HTM3ABCXYZ"` (`SubmitAnswerRequest.java:10-11`). `@NotBlank` + `@Size(min = 1)` 중복 |
+| `answer.exception` | `AnswerException` | 빈 홀더 클래스 (중첩 예외 없음) | exception | — | 사용처 0 — 미사용 코드 |
+| `answer.service` | `AnswerService` | 채점 유스케이스: 문장 조회 → Similarity 호출 → 응답 조립 | app | `answer.dto.*`, **`sentence.repository.SentenceRepository`**, **`sentence.domain.SentenceEntity`**, **`sentence.exception.SentenceException`**, `infra.similarity.*` (Client, dto, exception) | ① 다른 기능의 **리포지토리 직접 호출** (`AnswerService.java:24`) ② `@Transactional(readOnly = true) protected loadSentence` 를 **같은 클래스에서 호출** → 프록시 미경유로 어노테이션 무효 (`AnswerService.java:28,35-36`) ③ 외부 예외 변환이 infra 가 아닌 서비스에 위치 ④ 로깅 비대칭 — 네트워크 오류만 `log.error` 후 rethrow, 4xx/5xx 는 로그 없음 (`AnswerService.java:47-55`) |
+
+### 1.3 `sentence` — 문장 출제
+
+| 패키지 | 클래스 | 역할 | 레이어 | 의존 대상 | 컨벤션 불일치 사항 |
+|---|---|---|---|---|---|
+| `sentence.controller` | `SentenceApi` | Swagger 명세 인터페이스 | web | `sentence.domain.Category`, `sentence.domain.Level`, `sentence.dto.SentenceResponse`, `common.exception.ErrorResponse` | 400 예시 `"level: must be one of LEVEL_1 ~ LEVEL_5"` 는 실제 동작과 다름 — 실제 `MethodArgumentTypeMismatchException` 은 `TMI.COMMON.INVALID_REQUEST` 메시지(인자 무시)로 응답 (`GlobalExceptionHandler.java:44-48`) |
+| `sentence.controller` | `SentenceController` | `GET /api/v1/sentences/random` | web | `sentence.service.SentenceService`, **`sentence.domain.SentenceEntity`**, `sentence.dto.SentenceResponse` | **컨트롤러가 엔티티를 받아 DTO 로 변환** (`SentenceController.java:26-27`). `AnswerController` 는 서비스가 DTO 를 반환 → **DTO 변환 위치 불일치** |
+| `sentence.domain` | `Category` | 카테고리 enum (`DAILY`, `BUSINESS`, `TECH`) | domain | — | 표시 라벨 없음. `SentenceMetaResponse.CategoryItem.label` 을 채울 원천 부재 |
+| `sentence.domain` | `Level` | 난이도 enum + 단어 수 범위 | domain | — | 라벨(`STARTER` 등)이 **주석으로만** 존재 (`Level.java:10-14`). 02 §2.1 은 이 값 객체를 `Difficulty` 로 지칭 — 이름 불일치 |
+| `sentence.domain` | `SentenceEntity` | `sentence` 테이블 JPA 엔티티 + `create(...)` 팩토리 | domain | `common.domain.BaseEntity` | 05 §3.2 "UUID 는 **서비스 레이어**에서 생성" vs 06 §1.1 "Entity `create()` 팩토리에서 생성" — 문서끼리 모순, 코드는 06 을 따름 (`SentenceEntity.java:36`). `create` 사용처 0 (쓰기 경로 없음) |
+| `sentence.dto` | `SentenceMetaResponse` | 필터 UI 메타데이터 응답 | dto | — | 사용처 0 — 대응 엔드포인트 없음 |
+| `sentence.dto` | `SentenceMetaResponse.LevelItem` | 난이도 항목 | dto | — | 위와 동일 |
+| `sentence.dto` | `SentenceMetaResponse.CategoryItem` | 카테고리 항목 | dto | — | 위와 동일 |
+| `sentence.dto` | `SentenceResponse` | 출제 응답 record + `from(SentenceEntity)` | dto | `sentence.domain.*` | `@Schema` "36자 UUID" vs example 12자 (`SentenceResponse.java:10`) |
+| `sentence.exception` | `SentenceException` | 예외 홀더 (private 생성자) | exception | `common.exception.*` | 미사용 import `IErrorType` (`SentenceException.java:5`), `SentenceException  {` 이중 공백 (`:8`) |
+| `sentence.exception` | `SentenceException.NotFound` | 404 `TMI.SENTENCE.NOT_FOUND` | exception | `common.exception.BaseException`, `ETmiErrorType` | 없음 |
+| `sentence.repository` | `SentenceRepository` | `JpaRepository<SentenceEntity, String>` + 랜덤 1건 native query | persistence | `sentence.domain.*` | SpEL `:#{#level.name()}` 사용 — 06 §2.3 은 "마지막 수단" 으로 규정 (`SentenceRepository.java:16-17`). 필요성 미검증 |
+| `sentence.service` | `SentenceService` | 랜덤 출제 | app | `sentence.domain.*`, `sentence.exception.*`, `sentence.repository.*` | **엔티티 반환** (`SentenceService.java:25`). 빈 줄 trailing whitespace (`:30`) |
+
+### 1.4 `infra.similarity` — 외부 유사도 서버
+
+| 패키지 | 클래스 | 역할 | 레이어 | 의존 대상 | 컨벤션 불일치 사항 |
+|---|---|---|---|---|---|
+| `infra.similarity` | `SimilarityClient` | HTTP Interface (`@PostExchange("/similarity")`) | infra | `infra.similarity.dto.*` | **`score(SimilarityRequest)` 파라미터에 `@RequestBody` 누락 → 호출 시 항상 `IllegalStateException`** (`SimilarityClient.java:10`, §7.2 P7 실행 확인) |
+| `infra.similarity.dto` | `SimilarityRequest` | 요청 record `(answer, reference)` | infra | — | 없음 |
+| `infra.similarity.dto` | `SimilarityResponse` | 응답 record `(score)` | infra | — | 없음 |
+| `infra.similarity.exception` | `SimilarityException` | 예외 홀더 | infra | `common.exception.*` | 없음 |
+| `infra.similarity.exception` | `SimilarityException.RequestInvalid` | 502 | infra | `common.exception.*` | 없음 |
+| `infra.similarity.exception` | `SimilarityException.Unavailable` | 503 | infra | `common.exception.*` | 없음 |
+
+### 1.5 `toss.holdings` — 보유자산 스냅샷 (구현 초기)
+
+| 패키지 | 클래스 | 역할 | 레이어 | 의존 대상 | 컨벤션 불일치 사항 |
+|---|---|---|---|---|---|
+| `toss.holdings.domain` | `HoldingsSnapshotEntity` | `toss_holdings_snapshot` JPA 엔티티 | domain | — | ① `BaseEntity` 미상속 — append-only 이력이라 의도된 예외(05 §3.5)지만 `createdAt` 을 `insertable=false` 로 **DB default 에 위임** → 다른 엔티티(JPA Auditing)와 방식이 다름, 저장 직후 메모리 값은 `null` [정적] ② 어노테이션 순서 `@Getter @Entity` (다른 엔티티는 `@Entity @Table @Getter`) ③ 엔티티 이름에 `Entity` 접미사 + 패키지 2단(`toss.holdings`) — 05 §1.3 `{도메인}/` 1단 구조와 다름 ④ PK 가 `Long IDENTITY` — 05 §3.2 "PK 는 varchar(36) UUID" 규칙의 문서화되지 않은 예외 |
+| `toss.holdings.repository` | `HoldingsSnapshotRepository` | `JpaRepository<HoldingsSnapshotEntity, Long>` | persistence | `toss.holdings.domain.*` | 사용처 0 (서비스·스케줄러 미구현) |
+
+### 1.6 `common` — 횡단 관심사
+
+| 패키지 | 클래스 | 역할 | 레이어 | 의존 대상 | 컨벤션 불일치 사항 |
+|---|---|---|---|---|---|
+| `common.config` | `JpaAuditingConfig` | `@EnableJpaAuditing` | config | — | 없음 (별도 클래스 분리는 `@WebMvcTest` 슬라이스에 유리) |
+| `common.config` | `RestClientConfig` | `SimilarityClient` 빈 등록 (RestClient + HttpServiceProxyFactory) | config | **`infra.similarity.SimilarityClient`** | ① **`common` → `infra` 역방향 의존** — 외부 시스템이 늘 때마다 `common` 수정 필요 ② `@Value` 필드 주입 (불변·검증 불가) ③ connect timeout `1s` 하드코딩 (`RestClientConfig.java:33`) ④ `RestClient.builder()` 정적 호출 — Boot 가 제공하는 `RestClient.Builder` 빈 미사용 (§4.6) |
+| `common.config` | `SchedulerConfig` | `@EnableScheduling` | config | — | HEAD 기준 `@Scheduled` 메서드 0개 — 선행 추가 |
+| `common.domain` | `BaseEntity` | `created_at`/`updated_at`/`deleted_at` + `softDelete()` | domain | — | `Instant.now()` 직접 호출 (`BaseEntity.java:30`) — 시간 고정 테스트 불가 |
+| `common.exception` | `BaseException` | 모든 도메인 예외의 추상 부모 (HttpStatus + IErrorType + args + 로그 레벨) | exception | `IErrorType`, `ELogLevel` | ① `logMessage` 필드는 **어디서도 읽지 않음** — 죽은 기능 (`BaseException.java:16,53`) ② 예외가 `org.springframework.http.HttpStatus` 보유 → 도메인 예외가 spring-web 에 결합 |
+| `common.exception` | `ELogLevel` | 로그 레벨 전략 enum | exception | — | `E` 접두 (헝가리안) — Java 관례와 다름. `DEBUG` 없음 |
+| `common.exception` | `ETmiErrorType` | 모듈 단일 에러 코드 enum | exception | `IErrorType` | `E` 접두. `BAD_REQUEST` 사용처 0. `implements IErrorType{` 공백 |
+| `common.exception` | `ErrorResponse` | 에러 응답 record | exception | — | 없음 |
+| `common.exception` | `ErrorResponse.Error` | `{code, message}` | exception | — | 없음 |
+| `common.exception` | `GlobalExceptionHandler` | 단일 `@RestControllerAdvice` | exception | `BaseException`, `ETmiErrorType`, `IErrorType`, `ELogLevel`, `ErrorResponse` | §3.3 상세 — ERROR 로그에 스택트레이스 누락, 메시지 번들 미해결, `HttpMessageNotReadableException` 미처리, 주석 오타 "모드 예외" (`:67`) |
+| `common.exception` | `IErrorType` | 에러 코드 계약 | exception | — | `I` 접두 (헝가리안) |
+
+### 1.7 리소스·테스트 (클래스 아님, 참고)
+
+| 파일 | 내용 | 불일치·위험 |
+|---|---|---|
+| `src/main/resources/application.properties` | DB 접속, JPA, API prefix, similarity 설정 | DB 비밀번호 평문 커밋 (`:8`), `show-sql=true` 기본 활성, `spring.jpa.open-in-view` 미설정(기본 `true`), `spring.messages.basename` 미설정 |
+| `src/main/resources/messages/messages*.properties` | 에러 메시지 en/ko | **Spring Boot 기본 basename(`messages`)은 classpath 루트의 `messages.properties` 를 찾는다.** 파일은 `messages/` 하위에 있어 자동 구성 `MessageSource` 가 등록되지 않을 가능성 높음 → `GlobalExceptionHandler` 가 기본값인 **코드 문자열을 그대로 message 로 응답** [정적, §4.1] |
+| `src/test/java/.../CoreApplicationTests.java` | `@SpringBootTest contextLoads` 1개 | 실 PostgreSQL(`localhost:15432`) 필요 → DB 없는 환경에서 `./gradlew build` 실패 [실행, §7] |
+
+---
+
+## 2. 패키지 간 의존 방향
+
+`import` 문 기준 실측 (HEAD). 점선은 WIP(§5) 에서 새로 생기는 의존.
+
+```mermaid
+flowchart LR
+    subgraph answer
+        AC[answer.controller] --> AS[answer.service]
+        AC --> AD[answer.dto]
+        AS --> AD
+        AD --> ADom[answer.domain]
+    end
+    subgraph sentence
+        SC[sentence.controller] --> SS[sentence.service]
+        SC --> SD[sentence.dto]
+        SC --> SDom[sentence.domain]
+        SS --> SR[sentence.repository]
+        SS --> SDom
+        SS --> SE[sentence.exception]
+        SR --> SDom
+        SD --> SDom
+    end
+    subgraph infra
+        IS[infra.similarity] --> ISD[infra.similarity.dto]
+        ISE[infra.similarity.exception]
+    end
+    subgraph toss
+        TR[toss.holdings.repository] --> TD[toss.holdings.domain]
+        TD -.WIP.-> TDto[toss.holdings.dto]
+    end
+    subgraph common
+        CC[common.config]
+        CD[common.domain]
+        CE[common.exception]
+    end
+
+    AS ==> SR
+    AS ==> SDom
+    AS ==> SE
+    AD ==> SDom
+    AS --> IS
+    AS --> ISD
+    AS --> ISE
+    AC --> CE
+    SC --> CE
+    SE --> CE
+    ISE --> CE
+    SDom --> CD
+    CC ==> IS
+    CC -.WIP.-> TI[toss.holdings.infra]
+```
+
+굵은 화살표(`==>`)는 §3 에서 문제로 지적하는 의존이다.
+
+| 의존 | 근거 | 평가 |
+|---|---|---|
+| `answer.service → sentence.repository` | `AnswerService.java:11,24,37` | 기능 간 결합. `sentence` 의 조회 규칙(`AndDeletedAtIsNull`)을 `answer` 가 알아야 함 |
+| `answer.service → sentence.exception` | `AnswerService.java:10,38` | `answer` 가 `sentence` 의 예외를 직접 생성 |
+| `answer.dto → sentence.domain` | `AnswerResponse.java:4,30` | 응답 DTO 가 타 기능 엔티티에 결합 → 엔티티 필드 변경이 API 계약에 전파 |
+| `common.config → infra.similarity` | `RestClientConfig.java:3` | 공통 → 구체 방향. 02 §3.2 "도메인은 외부 통신 세부에 묶이지 않음" 의 취지와 반대로 `common` 이 묶임 |
+| 순환 | 없음 | `sentence` → `answer` 방향 의존 0건 [정적] |
+
+---
+
+## 3. 반복 패턴과 일관성이 깨진 지점
+
+### 3.1 잘 지켜지는 반복 패턴
+
+| 패턴 | 적용 위치 | 인용 |
+|---|---|---|
+| 기능 우선 → 레이어 후속 패키지 | `answer/`, `sentence/` | `answer/{controller,service,domain,dto,exception}` |
+| API 명세 인터페이스 + 구현 컨트롤러 분리 | `AnswerApi`/`AnswerController`, `SentenceApi`/`SentenceController` | `public class SentenceController implements SentenceApi` |
+| 외부 클래스 + 정적 중첩 예외 | `SentenceException`, `SimilarityException` | `public static class NotFound extends BaseException` |
+| record DTO + 정적 팩토리 | `SentenceResponse.from`, `AnswerResponse.of`, `ErrorResponse.of` | `public static SentenceResponse from(SentenceEntity sentence)` |
+| 엔티티 setter 금지 + protected 기본 생성자 | `SentenceEntity`, `HoldingsSnapshotEntity` | `@NoArgsConstructor(access = AccessLevel.PROTECTED)` |
+| URL prefix 외부화 | 두 컨트롤러 | `@RequestMapping("${rest.api.version}/sentences")` |
+| 생성자 주입 + `@RequiredArgsConstructor` | 모든 서비스·컨트롤러·핸들러 | `private final SentenceRepository sentenceRepository;` |
+
+### 3.2 DTO 변환 위치가 기능마다 다름
+
+```java
+// sentence/controller/SentenceController.java:26-27 — 컨트롤러가 변환
+SentenceEntity sentence = sentenceService.getRandom(level, category);
+return ResponseEntity.ok(SentenceResponse.from(sentence));
+```
+
+```java
+// answer/service/AnswerService.java:32 — 서비스가 변환
+return AnswerResponse.of(sentence, request.userAnswer(), similarityScore);
+```
+
+- `sentence` 는 서비스가 엔티티를 반환하고 웹 계층이 변환한다. `answer` 는 서비스가 응답 DTO 를 반환한다.
+- 06 §4.3 의 예시 코드는 `sentence` 방식, 06 §3.3 의 예시 코드는 `answer` 방식(`return AnswerResult.from(...)`) — **가이드 문서 자체에 두 방식이 공존**한다.
+- 엔티티를 웹 계층으로 반환하면 `spring.jpa.open-in-view`(기본 `true`) 에 기대 지연 로딩이 동작하게 된다. 지금은 연관관계가 없어 증상은 없음 [정적].
+
+### 3.3 예외 처리 파이프라인의 결함
+
+**(a) ERROR 로그에 스택트레이스가 남지 않음**
+
+```java
+// common/exception/GlobalExceptionHandler.java:77
+logLevel.log(log, "[{}] {} - {}", code, message, e.getMessage());
+```
+
+- 마지막 인자가 `Throwable` 이 아니라 `String` 이므로 SLF4J 가 스택트레이스를 출력하지 않는다.
+- catch-all(`handleUnknown`, `:68-71`) 로 들어온 `NullPointerException` 등 **원인 불명 500 의 스택트레이스가 유실**된다.
+- 05 §6.5 "ERROR 로그는 `Throwable` 을 마지막 인자로 전달" 규칙 위반.
+
+**(b) 메시지 번들이 로드되지 않음** [정적 추론 → §7.2 P2·P3 에서 실행 확인]
+
+```java
+// common/exception/GlobalExceptionHandler.java:76
+String message = messageSource.getMessage(code, args, code, LocaleContextHolder.getLocale());
+```
+
+- 메시지 파일: `src/main/resources/messages/messages.properties`, `application.properties` 에 `spring.messages.basename` 없음.
+- Spring Boot 의 `MessageSourceAutoConfiguration` 은 basename 기본값 `messages` 로 번들을 찾고, 없으면 자동 구성을 건너뛴다 (출처: research.md §3.2).
+- 이 경우 세 번째 인자(기본 메시지) 인 `code` 가 그대로 반환 → 응답이 `{"code":"TMI.SENTENCE.NOT_FOUND","message":"TMI.SENTENCE.NOT_FOUND"}` 가 된다.
+- 03 §1.4 "message: 영문 기본, `Accept-Language: ko` 시 한글" 계약이 지켜지지 않을 수 있다.
+
+**(c) 처리되지 않는 Spring MVC 표준 예외**
+
+| 예외 | 발생 상황 | 현재 결과 |
+|---|---|---|
+| `HttpMessageNotReadableException` | `POST /answers` 에 깨진 JSON | catch-all → **500 + ERROR 로그** (클라이언트 오류가 서버 오류로 집계) — §7.2 P5 실행 확인 |
+| `HttpMediaTypeNotSupportedException` | `Content-Type: text/plain` | 동일 |
+| `HandlerMethodValidationException` | 메서드 파라미터 제약(`@Min` 등) 도입 시 | 동일 |
+
+**(d) 검증 오류 메시지만 i18n 우회**
+
+```java
+// common/exception/GlobalExceptionHandler.java:34-41
+.map(err -> err.getField() + ": " + err.getDefaultMessage())
+...
+ELogLevel.INFO.log(log, "[{}] {}", errorType.getErrorCode(), message);
+return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse.of(errorType.getErrorCode(), message));
+```
+
+- 다른 핸들러는 공통 `respond(...)` 헬퍼를 쓰지만 이것만 직접 조립한다. `messages*.properties` 의 `TMI.COMMON.INVALID_REQUEST` 를 쓰지 않는다.
+
+**(e) `BaseException.logMessage` 는 저장만 되고 읽히지 않음**
+
+```java
+// common/exception/BaseException.java:52-56
+public <T extends BaseException> T logMessage(String logMessage) {
+    this.logMessage = logMessage;
+    return (T) this;
+}
+```
+
+- `GlobalExceptionHandler.handleBase` (`:26-28`) 는 `getLogMessage()` 를 호출하지 않는다. `logLevel(...)` 은 사용되지만 `logMessage(...)` 는 효과가 없다.
+
+**(f) 외부 호출 예외 분류의 빈틈**
+
+```java
+// answer/service/AnswerService.java:47-55
+} catch(HttpStatusCodeException e) {
+    if(e.getStatusCode().is4xxClientError()) { throw new SimilarityException.RequestInvalid(e); }
+    throw new SimilarityException.Unavailable(e);
+} catch(ResourceAccessException e) {
+```
+
+- `UnknownHttpStatusCodeException`(비표준 상태 코드) 과 응답 역직렬화 실패(`RestClientException`) 는 `HttpStatusCodeException` 의 하위가 아니므로 catch-all 500 으로 떨어진다 [정적].
+- 로그: 네트워크 오류는 서비스에서 `log.error(..., e)` 한 뒤 핸들러가 다시 ERROR 로 남김(이중 로깅). 4xx/5xx 는 서비스 로그 없이 핸들러만 기록. 06 §3.5 "외부 호출 실패 ERROR" 와 06 §6.6 "throw 직전 로그 금지" 가 서로 충돌하는 지점.
+
+### 3.4 트랜잭션 경계가 의도대로 동작하지 않음
+
+```java
+// answer/service/AnswerService.java:27-39
+public AnswerResponse score(SubmitAnswerRequest request) {
+    SentenceEntity sentence = loadSentence(request.sentenceId());   // this.loadSentence(...)
+    ...
+}
+
+@Transactional(readOnly = true)
+protected SentenceEntity loadSentence(String sentenceId) { ... }
+```
+
+- 같은 객체 안의 호출(`this.loadSentence`)은 Spring AOP 프록시를 거치지 않아 `@Transactional` 이 적용되지 않는다 (출처: research.md §5.1). 06 §3.4 가 직접 경고한 함정이 실제 코드에 있다.
+- 실제 트랜잭션은 `SimpleJpaRepository` 의 기본 `@Transactional(readOnly = true)` 가 `findByIdAndDeletedAtIsNull` 호출 단위로 걸어준다 (출처: research.md §5.3). **결과적으로 동작은 맞지만 이유가 다르다** — 어노테이션을 지워도 같은 동작이며, 코드가 독자를 오도한다.
+- 06 §3.3 "외부 호출은 트랜잭션 밖" 의 의도(커넥션 점유 방지)는 결과적으로 충족된다 [정적].
+
+### 3.5 기능 경계를 넘는 직접 의존
+
+```java
+// answer/service/AnswerService.java:24,36-38
+private final SentenceRepository sentenceRepository;
+...
+return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
+        .orElseThrow(() -> new SentenceException.NotFound(sentenceId));
+```
+
+- `answer` 가 `sentence` 의 리포지토리·엔티티·예외 3종에 결합. soft delete 규칙(`AndDeletedAtIsNull`) 을 `answer` 가 재구현해야 한다.
+- 동일 의미의 조회가 `SentenceService` 에는 없다 → `sentence` 기능이 "ID 로 활성 문장 조회" 공개 API 를 제공하지 않음.
+
+### 3.6 외부 시스템 클라이언트 위치 규칙의 분열
+
+| 대상 | 위치 | 근거 |
+|---|---|---|
+| Similarity | `infra/similarity/` (최상위) | 05 §1.3 `infra/{외부시스템}/` |
+| Toss | `toss/holdings/infra/` (기능 하위) — WIP | `RestClientConfig` WIP diff `import com.tmi.core.toss.holdings.infra.TossHoldingsClient` |
+
+- 같은 "외부 HTTP 클라이언트" 가 두 규칙으로 배치되려 한다. 05 §1.3 은 Toss 이전에 쓰였고, Toss 설계 문서(`docs/public/toss/01_보유자산스냅샷.md`)는 패키지 위치를 명시하지 않는다.
+
+### 3.7 문서와 코드의 불일치 목록
+
+| 문서 위치 | 문서 내용 | 실제 |
+|---|---|---|
+| 02 §2.1 | 값 객체 `Difficulty` | `Level` |
+| 02 §4.1 | `SentenceService.pickRandom(filter)` | `getRandom(level, category)` |
+| 02 §4.1 | `?level=3` | `level=LEVEL_3` (enum 이름) |
+| 02 §4.2 | `SentenceRepository.findById` | `findByIdAndDeletedAtIsNull` |
+| 02 §4.2 | 등급 변환 = Service 책임 | `Grade.fromScore` (domain), DTO 가 호출 |
+| 04 §4.2 | SSOT `src/main/resources/db/schema.sql` | 파일 없음. 실제 DDL 은 `docs/public/init.sql` |
+| 05 §3.2 vs 06 §1.1 | UUID 생성 위치 (서비스 vs 엔티티) | 엔티티 (`SentenceEntity.create`) |
+| 05 §4.1, §6.3 | `application.yml` | `application.properties` |
+| 06 §2.2 | native query `:level` 바인딩 | SpEL `:#{#level.name()}` |
+| 06 §3.1 | "dirty checking 의식적 미사용 — 변경 후 명시 save()" | 쓰기 경로 0건 — 아직 검증 불가 |
+| 06 §7.2 | `@ActiveProfiles("test")` + Testcontainers 권장 | 테스트 프로필·Testcontainers 의존성 없음 |
+| 03 §1.1 | `06. 배포·운영` 링크 | 실제 파일명 `07_배포·운영.md` |
+| 99 §1 | `common/config` 에 `JpaAuditingConfig`, `RestClientConfig` | `SchedulerConfig` 누락 |
+
+### 3.8 네이밍 혼재
+
+| 축 | 사례 |
+|---|---|
+| 타입 접두사 | `IErrorType`, `ETmiErrorType`, `ELogLevel` (헝가리안) vs 나머지 전부 접두사 없음 |
+| 엔티티 접미사 | `SentenceEntity`, `HoldingsSnapshotEntity` (접미사) — 06 §1.1 예시와 일치하나 02 의 도메인 용어는 접미사 없음 (`Sentence`) |
+| 정적 팩토리 | `from` (`SentenceResponse`), `of` (`AnswerResponse`, `ErrorResponse`), `create` (`SentenceEntity`) — `of`/`from` 구분 기준 미정의 |
+| 로그 메시지 | `"문장 출제 : level={}"` (콜론 앞 공백) vs `"Similarity 응답: score={}"` |
+
+---
+
+## 4. 정적 분석 상세 근거
+
+### 4.1 MessageSource 미로딩 추론 근거
+
+- 리소스 위치: `src/main/resources/messages/messages.properties`, `messages_ko.properties`.
+- `application.properties` 전체에 `spring.messages` 키 없음 (`grep -n messages src/main/resources/application.properties` 0건).
+- `@Bean MessageSource` 직접 등록 없음 (`grep -rn MessageSource src/main` → `GlobalExceptionHandler` 의 주입 1건뿐).
+- 따라서 Boot 기본 basename `messages` → `classpath:messages.properties` 탐색 → 부재 → 자동 구성 조건 불충족 (research.md §3.2).
+
+### 4.2 `@Transactional` self-invocation 근거
+
+- `AnswerService.score` → `loadSentence` 는 `this` 호출 (`AnswerService.java:28`).
+- `@EnableTransactionManagement(mode = ASPECTJ)` 설정 없음 → 프록시 모드.
+
+### 4.3 `SpEL` 바인딩 필요성
+
+- 06 §2.3 은 `:level` 단순 바인딩이 동작한다고 가정하지만 native query 에서 enum 을 그대로 바인딩할 때 Hibernate 가 문자열로 보낼지는 매핑 정보에 달려 있다 (native query 는 엔티티 속성 매핑을 모름). 현재 SpEL 사용이 "필요해서" 인지 "관성" 인지 근거 문서 없음 → [decisions-needed.md](./decisions-needed.md) 가 아니라 테스트(Testcontainers) 로 확인할 사항.
+
+### 4.4 `HttpStatus` 의 예외 결합
+
+- `BaseException` 이 `org.springframework.http.HttpStatus` 를 필드로 가진다 (`BaseException.java:4,11`). 결과적으로 `sentence.exception`, `infra.similarity.exception` 이 spring-web 에 의존한다. 레이어드 구조에서는 허용 범위이나, 헥사고날로 전환하면 위반이 된다 (architecture-proposal.md 선택지 C).
+
+### 4.5 테스트 자산
+
+- `src/test` 에는 `CoreApplicationTests` 1개. 단위·슬라이스·통합 테스트 0개.
+- `build.gradle` 에 슬라이스 테스트 스타터(`spring-boot-starter-webmvc-test`, `spring-boot-starter-data-jpa-test`)는 이미 선언되어 있으나 사용처 0.
+
+### 4.6 `RestClient.Builder` 미사용
+
+- `RestClientConfig.java:36` `RestClient.builder()` 정적 생성. Boot 는 메시지 컨버터·관측(observation) 설정이 반영된 `RestClient.Builder` 프로토타입 빈을 제공한다 (research.md §1.3). 현재는 기능 차이 없음, 관측 도입 시 차이 발생 [정적].
+
+---
+
+## 5. 작업 트리의 미커밋 변경 (WIP)
+
+이 저장소를 받았을 때 작업 트리에 아래 변경이 **커밋되지 않은 상태**로 있었다. 규칙(`src/main` 수정 금지)에 따라 이 작업에서는 **커밋하지도 되돌리지도 않았다**. 내용 보존을 위해 패치 전문을 [`docs/ai/wip-snapshot.patch`](./wip-snapshot.patch) 에 저장했다.
+
+| 파일 | 변경 | 관찰 |
+|---|---|---|
+| `CoreApplication.java` | `@ConfigurationPropertiesScan` 추가 | `@ConfigurationProperties` 클래스가 아직 없음 — 후속 작업 준비 |
+| `common/config/RestClientConfig.java` | `tossRestClient`, `tossHoldingsClient` 빈 추가 | **존재하지 않는 `toss.holdings.infra.TossHoldingsClient` import → 컴파일 불가** |
+| `toss/holdings/domain/HoldingsSnapshotEntity.java` | `create(..., HoldingsApiResponse.Result, ...)` 팩토리 추가 | **존재하지 않는 `toss.holdings.dto.HoldingsApiResponse` import → 컴파일 불가**. 추가되면 `domain → dto` 의존이 생김 (05 §1.3 "domain 은 다른 패키지에 의존하지 않음" 위반) |
+| `application.properties` | `toss.*` 설정 7줄 | `${TOSS_CLIENT_ID}` 등 기본값 없는 placeholder → 환경 변수 없으면 **컨텍스트 기동 실패** (`@Value("${toss.base-url}")` 는 값이 있으나 `client-id` 를 읽는 빈이 생기면 실패) |
+| `.gitattributes` | `*.sh text eol=lf` | 무해 |
+
+결론: WIP 상태에서는 `./gradlew build` 가 컴파일 단계에서 실패한다. 이 작업의 빌드 검증은 WIP 를 `git stash` 로 잠시 치운 HEAD + 본 브랜치 커밋 기준으로 수행했다 (→ [blockers.md](./blockers.md)).
+
+---
+
+## 6. ArchUnit 위반 목록
+
+> 6단계에서 추가. 아래 표는 추천안(architecture-proposal.md 의 선택지 B) 규칙을 실제 바이트코드에 적용한 결과다.
+
+(6단계에서 채움)
+
+---
+
+## 7. 빌드·실행 검증 결과
+
+### 7.1 빌드
+
+| 조건 | 결과 |
+|---|---|
+| HEAD + 본 브랜치, PostgreSQL **없음** | `:test` 실패 — `CoreApplicationTests.contextLoads` 가 `PSQLException: Connection refused` (`ddl-auto=validate` 가 기동 시 DB 접속) |
+| HEAD + 본 브랜치, 로컬 PostgreSQL 16 (`localhost:15432/tmi_word`, `docs/public/init.sql` 적용) | `BUILD SUCCESSFUL` |
+| WIP 포함 작업 트리 | 컴파일 실패 예상 (§5, 없는 클래스 import) [정적] |
+
+환경 구성 절차는 [blockers.md](./blockers.md) §2.
+
+### 7.2 동작 프로브 [실행]
+
+`@SpringBootTest + MockMvc` 로 실제 컨텍스트에 요청을 보내는 **일회성 프로브 테스트**를 실행하고 삭제했다 (커밋하지 않음 — `src/test` 변경 허용 범위가 ArchUnit 뿐이므로). 환경: 로컬 PostgreSQL + `init.sql` 시드, Similarity 서버 미기동.
+
+| # | 요청 | 기대(문서) | 실제 응답 | 판정 |
+|---|---|---|---|---|
+| P1 | `GET /sentences/random?level=LEVEL_1&category=DAILY` | 200 | 200 `{"sentenceId":"00000000-...-0001","englishText":"Sounds good.",...}` | 정상 |
+| P2 | `GET /sentences/random?level=LEVEL_5&category=TECH` | 404 + `"Sentence not found: level=LEVEL_5, category=TECH"` | 404 `{"code":"TMI.SENTENCE.NOT_FOUND","message":"TMI.SENTENCE.NOT_FOUND"}` | **메시지 미해결** |
+| P3 | P2 + `Accept-Language: ko` | 한글 메시지 | P2 와 동일 | **i18n 미동작** |
+| P4 | `level=LEVEL_9` (잘못된 enum) | 400 | 400 `"message":"TMI.COMMON.INVALID_REQUEST"` | 코드 정상, 메시지 미해결 |
+| P5 | `POST /answers` body `{broken` | 400 | **500** `TMI.COMMON.INTERNAL_ERROR` + ERROR 로그 | **결함** (§3.3c 확인) |
+| P6 | `POST /answers` `userAnswer: ""` | 400 | 400 `"userAnswer: must not be blank"` | 정상 |
+| P7 | `POST /answers` 정상 body, Similarity 서버 다운 | **503** `TMI.SIMILARITY.UNAVAILABLE` | **500** `TMI.COMMON.INTERNAL_ERROR` | **치명 결함** — 아래 |
+
+- 자동 구성 `messageSource` 빈의 실제 타입: `org.springframework.context.support.DelegatingMessageSource` (빈 껍데기). §3.3(b) 추론 확정.
+- 기동 로그: `spring.jpa.open-in-view is enabled by default ... Explicitly configure spring.jpa.open-in-view to disable this warning` 경고 확인.
+
+**P7 치명 결함 — `SimilarityClient` 요청 본문 바인딩 누락**
+
+```java
+// infra/similarity/SimilarityClient.java:9-10
+@PostExchange("/similarity")
+SimilarityResponse score(SimilarityRequest request);   // @RequestBody 없음
+```
+
+```
+ERROR ... GlobalExceptionHandler : [TMI.COMMON.INTERNAL_ERROR] TMI.COMMON.INTERNAL_ERROR -
+  Could not resolve parameter [0] in public abstract ... SimilarityClient.score(SimilarityRequest): No suitable resolver
+```
+
+- HTTP Interface 는 어노테이션 없는 복합 타입 파라미터를 해석하지 못해 **요청을 보내기 전에** `IllegalStateException` 을 던진다. `AnswerService` 의 catch 블록(`HttpStatusCodeException`, `ResourceAccessException`) 에 걸리지 않아 catch-all 500.
+- 결과: **Similarity 서버 상태와 무관하게 `POST /api/v1/answers` 는 항상 500** — 채점 기능이 현재 동작하지 않는다. Similarity 서버를 띄워도 동일 (요청 전 단계 실패) [실행 로그 근거, 서버 기동 상태는 미검증].
+- 테스트가 0개였기 때문에 발견되지 않았다 → conventions-proposal.md 테스트 규칙의 직접 근거.
+
+**로그 관찰**
+
+| 관찰 | 근거 로그 | 영향 |
+|---|---|---|
+| 404(`SENTENCE.NOT_FOUND`)가 **ERROR** 레벨로 기록 | `ERROR ... [TMI.SENTENCE.NOT_FOUND] TMI.SENTENCE.NOT_FOUND - TMI.SENTENCE.NOT_FOUND` | `BaseException.logLevel` 기본값 `ERROR` (`BaseException.java:15`). 정상적인 "없음" 응답이 장애 알람 대상이 됨 |
+| 예외 `args`(`level=LEVEL_5, category=TECH`) 가 로그에 남지 않음 | 위와 동일 — 세 칸 모두 코드 문자열 | `e.getMessage()` 는 `errorCode` (`BaseException.java:19`), 메시지 번들도 미해결 → **원인 추적 정보 소실** |
+| 500 에 스택트레이스 없음 | P5·P7 로그가 한 줄 | §3.3(a) 확인 |
