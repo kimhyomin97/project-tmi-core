@@ -103,7 +103,7 @@ flowchart TD
 | `build.gradle` 의존성·태스크 추가 | `plan` | `SIG-1` |
 | `docs/public` (05/06/03/99) 수정 | `plan` | `DOC-1` |
 | H0 에서 이미 결정된 기계적 작업 | `none` | `SIG-2` (D5 결정 후 `spotlessApply`) |
-| 그 외 (테스트 추가, 모듈 내부 수정) | `none` | `TEST-1`, `FIX-R5`, `ARCH-A1`, `ARCH-B3` |
+| 그 외 (테스트 추가, 모듈 내부 수정) | `none` | `TEST-1`, `FIX-F1T`, `FIX-R5`, `ARCH-A1`, `ARCH-B3`, `ARCH-A2` |
 
 ### 2.3 독립 리뷰
 
@@ -191,6 +191,7 @@ flowchart TD
 |---|---|---|---|---|
 | 1 | `TEST-1` | DB 없이 도는 테스트 3종 (현재 실패하는 2개는 `@Disabled("FIX-F1 …")`/`("FIX-F2 …")`) | none | — |
 | 2 | `FIX-F1` | `@RequestBody` | none | TEST-1 |
+| 2b | `FIX-F1T` | read timeout·빈 응답 → 503 (F1 수정 직후 표면화) | none | FIX-F1 |
 | 3 | `FIX-F2` | basename + fallback | none | TEST-1 |
 | 4 | `SIG-1` | `CoreApplicationTests` → `integration` 태그 + Testcontainers | plan | — |
 | 5 | `SIG-2` | `spotlessApply` + `enforceCheck = true` | none (D5 결정 전제) | SIG-1 |
@@ -199,7 +200,7 @@ flowchart TD
 | 8 | `FIX-F4` | self-invocation 제거 + OSIV off (`OsivConnectionIT`) | plan | **FIX-R5**, SIG-1 |
 | 9 | `ARCH-A1` | Similarity 빈 설정을 `common` 밖으로 (R1·R3) | none | FIX-F1 |
 | 10 | `DOC-1` | 05/06/99/03 수정 | plan | FIX-F3, FIX-F4 |
-| 보류 | `ARCH-B2`, `ARCH-B3` | `pending_decision["D1=B"]` | — | — |
+| 보류 | `ARCH-B2`, `ARCH-B3` / `ARCH-A2` | `pending_decision["D1=B"]` / `["D1=A'"]` | — | — |
 
 - `FIX-F4` 가 `FIX-R5` 에 의존하는 이유: OSIV 를 끄기 전에 엔티티가 트랜잭션 밖으로 나가지 않아야 한다 (conventions-proposal.md §3.4, decisions-needed.md D4). R5 는 구조 결정과 무관하므로 `ARCH-B3` 가 아닌 독립 항목이다.
 - `SIG-2` 를 `FIX-F3` 앞에 둔 이유: `GlobalExceptionHandler` 를 크게 고치기 전에 포맷 소음을 없앤다. `FIX-F1`·`F2` 는 1~2줄이라 기다리지 않는다 (decisions-needed.md D5).

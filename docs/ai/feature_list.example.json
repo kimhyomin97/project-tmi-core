@@ -41,6 +41,23 @@
       "blocked": null
     },
     {
+      "id": "FIX-F1T",
+      "title": "Similarity read timeout·빈 응답을 503 으로 — AnswerService 에 RestClientException catch + null 처리 (F1 수정 직후 표면화)",
+      "module": "answer",
+      "depends_on": [
+        "FIX-F1"
+      ],
+      "human_gate": "none",
+      "plan_approved": null,
+      "verify": [
+        "bash ./gradlew test --tests '*SimilarityTimeoutTest'"
+      ],
+      "acceptance": "SimilarityTimeoutTest: com.sun.net.httpserver 로 3초 지연 응답 서버 + readTimeout 500ms → SimilarityException.Unavailable, 빈 200 응답 → Unavailable. 수정 전 실패(500 경로) 기록. ARCH-B2/A2 에서 SimilarityScorer 로 이동 시 테스트 유지",
+      "evidence": "current-state.md §3.3(f), examples-round-1 C1·m4",
+      "passes": false,
+      "blocked": null
+    },
+    {
       "id": "FIX-F2",
       "title": "spring.messages.basename=messages/messages + fallback-to-system-locale=false",
       "module": "common",

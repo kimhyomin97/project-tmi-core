@@ -132,7 +132,8 @@ com.tmi.core.sentence
                               SentenceJpaEntity, SentenceJpaRepository
 ```
 
-- 이 배치는 **`sentence → answer` 역방향 의존**을 만든다 (sentence 의 어댑터가 answer 의 포트를 구현). 피하려면 포트를 공유 패키지로 빼거나 `answer` 쪽에 어댑터를 둬야 하는데, 후자는 `answer` 가 `sentence` 의 JPA 리포지토리를 다시 알게 된다 (examples README §5).
+- 이 배치는 **`answer ↔ sentence` 순환**을 만든다: 포트가 `sentence.domain.Sentence` 를 반환 타입으로 쓰고(answer → sentence), sentence 의 어댑터가 answer 의 포트를 구현한다(sentence → answer).
+- 순환 없는 세 번째 배치: 포트가 answer 소유 record 를 반환하고, 어댑터를 `answer/adapter/out/sentence/` 에 두어 sentence 의 **공개 조회 API**(인바운드 포트)를 호출. 비용은 포트 1 + 어댑터 1 + sentence 인바운드 포트 1 추가. 이 공개 조회 API 는 B 의 `SentenceReader` 와 같은 모양 — **C 를 순환 없이 하려면 B 의 경계가 먼저 필요**하다 (examples README §5).
 - 예시: [examples/answer-scoring/option-c-hexagonal/](./examples/answer-scoring/option-c-hexagonal/)
 - 02 §2.2 에서 **이미 한 번 도입했다가 되돌린** 구조다.
 
@@ -150,7 +151,7 @@ com.tmi.core.sentence
 | P4 기능 간 엔티티 전달 | 해결 (R5 + `sentence.dto.SentenceDetail`) | 해결 (공개 record) | 해결 (도메인 모델) |
 | P5 AI 작업 단위 | 기능 패키지. 경계 규칙이 **기능 쌍마다** 선언 필요 | 모듈. 경계 규칙 **1개**가 모든 모듈에 일반화 (R2) | 유스케이스 (가장 세밀) |
 | 공개 범위의 명시성 | 암묵 — "service 와 dto 는 공개" | 명시 — 파일 위치가 곧 공개 여부 | 명시 — 포트 |
-| 포트 소유·어댑터 위치 문제 | 없음 | 없음 | **있음** — `sentence → answer` 역방향 (§2 C) |
+| 포트 소유·어댑터 위치 문제 | 없음 | 없음 | **있음** — 예시 배치는 `answer ↔ sentence` 순환, 순환 없는 배치는 B 의 공개 API 가 선행 (§2 C) |
 | 도메인 순수성 | 낮음 (엔티티 = 도메인) | 낮음 | **높음** |
 | 파일 수 (§3.2) | 약 8 | 약 12 | 약 22 수정 + 20 이상 신규 |
 | 팀 기존 결정 (§0 표) | 99 §2.3 만 변경 | 02 §3.2·05 §1.3·99 §2.3 변경 | 02 §2.2 포함 전부 변경 |

@@ -100,7 +100,7 @@
 - `spring.messages.basename` 기본값 `messages` (`MessageSourceProperties.basename = List.of("messages")`). [J] https://repo1.maven.org/maven2/org/springframework/boot/spring-boot-autoconfigure/4.0.8/spring-boot-autoconfigure-4.0.8-sources.jar
 - `ResourceBundleCondition` 이 `classpath*:<basename>.properties` 를 찾고 없으면 noMatch → **자동 구성 MessageSource 미생성**. [J] 같은 jar. 공식 문서 문구: "If no properties file is found that matches any of the configured base names, there will be no auto-configured MessageSource". [S] https://docs.spring.io/spring-boot/reference/features/internationalization.html
 - 그 경우 컨텍스트는 빈 `DelegatingMessageSource` 를 등록하고, 기본 메시지 오버로드는 기본 메시지를 그대로 반환. [J] spring-context 7.0.8 sources — **이 저장소에서 빈 타입 `DelegatingMessageSource` 확인 [R]**.
-- 해법: `spring.messages.basename=messages/messages`. (값은 slash 경로 형식으로 지정 가능 — estimated, 테스트로 확인 필요)
+- 해법: `spring.messages.basename=messages/messages` + `spring.messages.fallback-to-system-locale=false`. slash 경로 basename 이 동작하는 것은 이 저장소에서 실행 확인 [R] (conventions-proposal.md §0). 폴백 설정이 함께 필요한 이유는 current-state.md §3.3(b).
 
 ---
 
@@ -179,7 +179,7 @@
 ### 6.3 ArchUnit
 
 - JUnit 5: `@AnalyzeClasses(packages = …)` + `@ArchTest`. `layeredArchitecture().consideringAllDependencies()…whereLayer(..).mayOnlyBeAccessedByLayers(..)`. `FreezingArchRule.freeze(rule)` 로 기존 위반 동결. [S] https://archunit.org/userguide/html/000_Index.html
-- 호환성 메모: Boot 4.0.x BOM 의 JUnit Jupiter 는 6.x (4.0.8 기준 6.0.3 [J]). `archunit-junit5` 엔진이 JUnit Platform 6 에서 동작하는지 공식 표기를 찾지 못함 (미검증) → **이 저장소에서 실제 실행으로 확인** (current-state.md §6, 6단계 결과).
+- 호환성 메모: Boot 4.0.x BOM 의 JUnit Jupiter 는 6.x (4.0.8 기준 6.0.3 [J]). `archunit-junit5` 엔진이 JUnit Platform 6 에서 동작하는지 공식 표기를 찾지 못함 (미검증). 이 저장소는 그 엔진을 **쓰지 않고** ArchUnit core(`com.tngtech.archunit:archunit:1.5.1`)를 일반 JUnit `@Test` 에서 호출해 이 문제를 피했다 (current-state.md §6.3) — 엔진 호환성은 여전히 미검증.
 
 ---
 

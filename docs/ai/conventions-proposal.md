@@ -295,7 +295,7 @@ Before (`answer/service/AnswerService.java:47-55`)
     log.error("Similarity 네트워크 오류", e);   // 핸들러와 이중 로깅
     throw new SimilarityException.Unavailable(e);
 }
-// 응답 역직렬화 실패(RestClientException) → catch-all 500
+// read timeout·응답 역직렬화 실패(RestClientException) → catch-all 500 (current-state §3.3(f) [실행·리뷰])
 ```
 
 After ([examples/answer-scoring/option-b-modular/similarity/SimilarityScorer.java](./examples/answer-scoring/option-b-modular/similarity/SimilarityScorer.java))
@@ -305,11 +305,12 @@ After ([examples/answer-scoring/option-b-modular/similarity/SimilarityScorer.jav
     throw e.getStatusCode().is4xxClientError()
             ? new SimilarityException.RequestInvalid(e)
             : new SimilarityException.Unavailable(e);
-} catch (ResourceAccessException e) {            // 연결 거부·타임아웃
+} catch (ResourceAccessException e) {            // 연결 거부 등 연결 단계 I/O 오류
     throw new SimilarityException.Unavailable(e);
-} catch (RestClientException e) {                // 역직렬화 실패 등
-    throw new SimilarityException.Unavailable(e);
+} catch (RestClientException e) {                // read timeout (SimpleClientHttpRequestFactory), 역직렬화 실패
+    throw new SimilarityException.Unavailable(e);  // 이 catch 를 지우면 타임아웃이 503 → 500 으로 회귀
 }
+// + 빈 응답(null) → Unavailable, 점수는 Math.clamp(score, 0.0, 1.0) — examples/answer-scoring/README.md §2
 ```
 
 - 변환 위치: `[B 전제]` 외부 시스템 모듈의 공개 클래스(`SimilarityScorer`) 하나. 선택지 A 이면 서비스의 private 메서드에 둔다.
@@ -582,6 +583,7 @@ spring.jpa.properties.hibernate.format_sql=true
 | 도메인 단위 | JUnit + AssertJ | `Grade.fromScore` 경계값 | (회귀 방지) | 불필요 |
 | 웹 슬라이스 | `@WebMvcTest` + `@MockitoBean` | 컨트롤러 + `GlobalExceptionHandler` + 메시지 | **F2, F3** | 불필요 |
 | HTTP 클라이언트 | `MockRestServiceServer.bindTo(RestClient.Builder)` | `SimilarityClient` 요청 형식 | **F1** | 불필요 |
+| HTTP 타임아웃 | JDK `com.sun.net.httpserver.HttpServer` 로 지연 응답 + 짧은 readTimeout (MockRestServiceServer 는 소켓 타임아웃을 재현하지 못함 — estimated) | 예외 변환 (catch 3개) | read timeout → 500 (current-state §3.3(f)) | 불필요 |
 | 서비스 단위 | Mockito `@ExtendWith(MockitoExtension.class)` | `AnswerService` 분기, 예외 변환 | §2.4 분류 빈틈 | 불필요 |
 | 영속성 | `@DataJpaTest` + Testcontainers `@ServiceConnection` | native query, soft delete 조건 | SpEL 바인딩 (current-state §4.3) | **Docker** |
 | 아키텍처 | ArchUnit | 패키지 규칙 R1~R7 | F4(R6), F1(R7), F6(R2·R3) | 불필요 |

@@ -19,14 +19,14 @@
 |---|---|---|---|
 | F1 | `POST /api/v1/answers` 가 **항상 500** — `SimilarityClient.score` 의 `@RequestBody` 누락 | `infra/similarity/SimilarityClient.java:10`, §7.2 P7 | [실행] |
 | F2 | 에러 메시지 번들이 로드되지 않아 모든 에러 `message` 가 코드 문자열, i18n 미동작. basename 만 고치면 `fallback-to-system-locale`(기본 `true`) 때문에 서버 로케일이 ko 일 때 영어 요청에도 한글이 나감 | `resources/messages/` 위치 + basename 미설정, §3.3(b), §7.2 P2·P3 | [실행] / 폴백은 [실행·리뷰] |
-| F3 | 깨진 JSON 등 클라이언트 오류가 500 + ERROR 로 처리, 500 로그에 스택트레이스 없음, 404 가 ERROR 레벨 | `GlobalExceptionHandler.java:68-78`, `BaseException.java:15`, §7.2 P5 | [실행] |
+| F3 | 깨진 JSON 등 클라이언트 오류가 500 + ERROR 로 처리, **Similarity read timeout 도 503 이 아닌 500** (§3.3(f)), 500 로그에 스택트레이스 없음, 404 가 ERROR 레벨 | `GlobalExceptionHandler.java:68-78`, `BaseException.java:15`, §7.2 P5 | [실행] |
 | F4 | `@Transactional` self-invocation — 어노테이션이 무효이고, 파생 쿼리라 리포지토리 기본 트랜잭션도 없어 **조회가 트랜잭션 없이 실행**. 여기에 OSIV(기본 `true`)가 겹쳐 **Similarity 외부 호출 동안 DB 커넥션 1개를 점유** — 06 §3.3 이 막으려던 안티패턴이 이미 발생 중. 원인의 일부는 06 §3.3 의 "권장" 예시 자체가 self-invocation 패턴이라는 점 | `AnswerService.java:28,35`, §3.4 | [실행] |
 | F5 | DTO 변환 위치가 기능마다 다름 (컨트롤러 vs 서비스), 응답 DTO 가 타 기능 엔티티에 의존 | `SentenceController.java:26`, `AnswerResponse.java:30` | [정적] |
-| F6 | 기능 간 직접 의존 (`answer → sentence.repository/exception/domain`), `common.config → infra` 역방향으로 **`common ↔ infra` 패키지 순환** 1건 (WIP 적용 시 `common ↔ toss` 추가) | §2, §6 | [실행] (ArchUnit R1·R2·R3) |
+| F6 | 기능 간 직접 의존 (`answer → sentence.repository/exception/domain`), `common.config → infra` 역방향으로 **`common ↔ infra` 패키지 순환** 1건 (WIP 적용 시 `common ↔ toss` 추가) | §2, §6 | [실행] (ArchUnit R1·R3, R2 중 `answer→sentence` 10건) |
 | F7 | 외부 클라이언트 배치 규칙 분열 (`infra/similarity` vs WIP `toss/holdings/infra`) | §3.6 | [정적] |
 | F8 | 테스트 1개(실 DB 필요) — F1~F4 가 모두 테스트 부재로 잠복 | `src/test` | [실행] |
 | F9 | 외부 API 계약(03)과 실제 동작 불일치 — 파라미터 누락 시 03 은 `INVALID_REQUEST`, 실제는 `MISSING_PARAMETER`. 03 의 `GET /sentences/meta`, `GET /api/v1/health` 미구현 | §3.7 | [실행·리뷰] |
-| F10 | 사내 가이드(06) 자체에 틀린 지침 2건 — §3.3 권장 예시(self-invocation), §2.3 "enum 은 `:level` 로 자동 바인딩"(실제로는 smallint 로 바인딩되어 실패, SpEL 이 필요) | §3.7, §4.3 | [실행·리뷰] |
+| F10 | 사내 가이드(06) 자체에 틀린 지침 2건 — §3.3 권장 예시(self-invocation), §2.3 "enum 은 `:level` 로 자동 바인딩"(**native query 에서는** smallint 로 바인딩되어 실패, SpEL 필요. JPQL 에서는 동작) | §3.7, §4.3 | [실행·리뷰] |
 
 ---
 
@@ -235,7 +235,7 @@ String message = messageSource.getMessage(code, args, code, LocaleContextHolder.
 
 - 메시지 파일: `src/main/resources/messages/messages.properties`, `application.properties` 에 `spring.messages.basename` 없음.
 - Spring Boot 의 `MessageSourceAutoConfiguration` 은 basename 기본값 `messages` 로 번들을 찾고, 없으면 자동 구성을 건너뛴다 (출처: research.md §3.2).
-- 이 경우 세 번째 인자(기본 메시지) 인 `code` 가 그대로 반환 → 응답이 `{"code":"TMI.SENTENCE.NOT_FOUND","message":"TMI.SENTENCE.NOT_FOUND"}` 가 된다.
+- 이 경우 세 번째 인자(기본 메시지) 인 `code` 가 그대로 반환 → 응답이 `{"error":{"code":"TMI.SENTENCE.NOT_FOUND","message":"TMI.SENTENCE.NOT_FOUND"}}` 가 된다 (래핑 구조 자체는 03 §1.4 계약대로).
 - 03 §1.4 "message: 영문 기본, `Accept-Language: ko` 시 한글" 계약이 지켜지지 않는다 (§7.2 P2·P3 [실행]).
 - **basename 만 고치면 부족하다** [실행·리뷰, round-1 M8]: `spring.messages.basename=messages/messages` 를 주고 JVM 기본 로케일을 `ko_KR` 로 둔 채 `Accept-Language: en`·`fr` 로 요청하면 둘 다 한글이 나온다. `messages_en.properties` 가 없고 `spring.messages.fallback-to-system-locale` 기본값이 `true` 라 시스템 로케일(ko)로 폴백하기 때문. 필요 조치: basename + `fallback-to-system-locale=false` (헤더 없는 요청의 기본 로케일을 고정하려면 `spring.web.locale=en` 추가 검토).
 - slash 경로 basename(`messages/messages`)이 동작하는 것은 실행으로 확인됨 (round-1 M8 및 conventions-proposal.md §2.1 검증).
@@ -284,7 +284,9 @@ public <T extends BaseException> T logMessage(String logMessage) {
 } catch(ResourceAccessException e) {
 ```
 
-- `UnknownHttpStatusCodeException`(비표준 상태 코드) 과 응답 역직렬화 실패(`RestClientException`) 는 `HttpStatusCodeException` 의 하위가 아니므로 catch-all 500 으로 떨어진다 [정적].
+- **read timeout 이 500 이 된다** [실행·리뷰, examples-round-1 C1]: 현재 설정(`SimpleClientHttpRequestFactory`)에서 read timeout 은 `ResourceAccessException` 이 아니라 `RestClientException("Error while extracting response …") → SocketTimeoutException` 으로 올라온다. 두 catch 어디에도 걸리지 않아 catch-all 500. `AnswerApi.java:93` 이 문서화한 "타임아웃 → 503" 계약과 다르다. (F1 때문에 지금은 요청 자체가 나가지 않아 드러나지 않는다 — F1 수정 즉시 표면화)
+- 응답 역직렬화 실패도 같은 `RestClientException` 경로 → 500 [정적]. 200/204 빈 본문이면 HTTP Interface 가 `null` 을 반환해 `.score()` 에서 NPE → 500 [실행·리뷰, examples-round-1 m4].
+- 비표준 상태 코드: 599 는 `HttpServerErrorException`(이미 잡힘), 600 이상은 기본 `ResponseErrorHandler` 가 에러로 보지 않아 **성공으로 처리** [실행·리뷰, examples-round-1 M4]. `UnknownHttpStatusCodeException` 은 기본 설정에서 나오지 않는다.
 - 로그: 네트워크 오류는 서비스에서 `log.error(..., e)` 한 뒤 핸들러가 다시 ERROR 로 남김(이중 로깅). 4xx/5xx 는 서비스 로그 없이 핸들러만 기록. 06 §3.5 "외부 호출 실패 ERROR" 와 06 §6.6 "throw 직전 로그 금지" 가 서로 충돌하는 지점.
 
 ### 3.4 트랜잭션 경계가 의도대로 동작하지 않음
@@ -373,7 +375,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | 04 §4.5, §5.2 | 테스트 `create-drop`, `db/seed.sql` | 둘 다 미적용 |
 | 06 §3.1 | "dirty checking 의식적 미사용 — 변경 후 명시 save()" | 쓰기 경로 0건 — 아직 검증 불가 |
 | 06 §7.2 | `@ActiveProfiles("test")` + Testcontainers 권장 | 테스트 프로필·Testcontainers 의존성 없음 |
-| 03 §1.1 | `06. 배포·운영` 링크 | 실제 파일명 `07_배포·운영.md` |
+| 03 §1.1 | `06. 배포·운영` 링크 | 실제 파일명 `07_배포·운영.md` 인데 그 파일의 H1 도 `# 06. 배포·운영` (`07_배포·운영.md:3`) — 파일명과 제목이 서로 다름 |
 | 99 §1 | `common/config` 에 `JpaAuditingConfig`, `RestClientConfig` | `SchedulerConfig` 누락 |
 
 ### 3.8 네이밍 혼재
@@ -406,7 +408,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 
 - [실행·리뷰, round-1 M5] `em.createNativeQuery("select count(*) from sentence where level = :level").setParameter("level", Level.LEVEL_1)` → `SQLGrammarException: operator does not exist: character varying = smallint`. Hibernate 7 은 native 쿼리 파라미터의 enum 을 ORDINAL 로 바인딩한다 (native 쿼리는 엔티티 속성의 `@Enumerated(STRING)` 매핑을 모름).
 - 따라서 **SpEL 은 필요하다**. 06 §2.3 의 "자동 바인딩" 은 틀렸다. 대안은 메서드 시그니처를 `String level` 로 바꾸고 호출 측이 `level.name()` 을 넘기는 방식 (타입 안전성 저하).
-- 한계: 리뷰어 검증은 Spring Data `@Query` 경유가 아닌 `EntityManager` 직접 호출이다. Spring Data 경유도 같은 Hibernate 바인딩을 쓰므로 결과가 같을 것으로 본다 (estimated).
+- Spring Data 경유도 확정 [실행·리뷰, round-2 m2]: `@Query(nativeQuery = true)` + `where level = :level` → `InvalidDataAccessResourceUsageException: operator does not exist: character varying = smallint`, SpEL 로 바꾸면 정상. **JPQL** `where s.level = :level` 은 정상 → 06 §2.3 은 JPQL 에서는 맞고 native 에서만 틀리다.
 
 ### 4.4 `HttpStatus` 의 예외 결합
 
@@ -434,7 +436,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 |---|---|
 | 보존 | 패치 전문을 [`docs/ai/wip-snapshot.patch`](./wip-snapshot.patch) 로 커밋. `git apply --check` 통과 확인 |
 | 작업 중 위치 | 빌드·테스트 실행을 위해 작업 트리에서 치워 `git stash` 에 보관 중. 이 stash 에는 이미 커밋된 `.claude/*`, `docs/ai/TASK.md` 도 섞여 있어 **`git stash pop` 은 충돌한다** (round-1 M9) |
-| 복원 방법 | `git apply docs/ai/wip-snapshot.patch` (작업 트리에 미커밋 상태로 되돌림). 작업 종료 시 이 명령으로 복원하고 결과를 blockers.md §1 에 기록한다 |
+| 복원 방법 | `git apply docs/ai/wip-snapshot.patch` (작업 트리에 미커밋 상태로 되돌림). **7단계 마지막 커밋·push 직후** 이 명령으로 복원하고 `git status --short src/main` 에 4파일(+`.gitattributes`)이 보이는지 확인, 결과를 blockers.md §1 에 기록한다 |
 
 | 파일 | 변경 | 관찰 |
 |---|---|---|
@@ -458,11 +460,11 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | 규칙 | 테스트 | 결과 | 위반 수 | 해제 조건 (feature_list.example.json) |
 |---|---|---|---|---|
 | R1 모듈 간 순환 금지 | `ModuleArchitectureTest.r1_…` | **위반** → `@Disabled` | 1 사이클 | `ARCH-A1` |
-| R2 타 모듈은 base package 로만 | `ModuleArchitectureTest.r2_…` | **위반** → `@Disabled` | 19 의존 (2 클래스) | `ARCH-B2`, `ARCH-B3` |
+| R2 타 모듈은 base package 로만 | `ModuleArchitectureTest.r2_…` | **위반** → `@Disabled` | 19 의존 (2 클래스) = `answer→sentence.*` **10** (현행 규칙으로도 문제) + `answer→infra.similarity.*` **9** (선택지 B 기준에서만 위반 — 현행 05 §1.3 은 허용) | `ARCH-B3` (B) / A′ 면 규칙 교체 `ARCH-A2` |
 | R3 `common` → 기능 모듈 금지 | `ModuleArchitectureTest.r3_…` | **위반** → `@Disabled` | 2 의존 (1 메서드) | `ARCH-A1` |
 | R4 controller → service → repository | `LayerArchitectureTest.r4_…` | 통과 | 0 | — |
-| R4b domain → 바깥 레이어 금지 | `LayerArchitectureTest.r4b_…` | 통과 | 0 (WIP 적용 시 1 예상 — `HoldingsSnapshotEntity → toss.holdings.dto`) | — |
-| R5 `@Service` public 메서드의 `@Entity` 반환 금지 | `ConventionArchitectureTest.r5_…` | **위반** → `@Disabled` | 1 | conventions §3.1 적용 |
+| R4b domain → 바깥 레이어 금지 | `LayerArchitectureTest.r4b_…` | 통과 | 0. WIP 적용 시 1 클래스 쌍(`HoldingsSnapshotEntity → toss.holdings.dto`, 파라미터 1 + 접근자 체인 20여 건) [정적 — WIP 컴파일 불가] | — |
+| R5 `@Service` public 메서드의 `@Entity` 반환 금지 | `ConventionArchitectureTest.r5_…` | **위반** → `@Disabled` | 1 | `FIX-R5` |
 | R6 `@Transactional` self-invocation 금지 | `ConventionArchitectureTest.r6_…` | **위반** → `@Disabled` | 1 | `FIX-F4` |
 | R7 HTTP Interface 파라미터 바인딩 필수 | `ConventionArchitectureTest.r7_…` | **위반** → `@Disabled` | 1 | `FIX-F1` |
 
@@ -472,10 +474,10 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 |---|---|---|
 | R1 | `common → infra`: `RestClientConfig.similarityClient()` 반환 타입·클래스 참조 `infra.similarity.SimilarityClient` / `infra → common`: `SimilarityException$RequestInvalid`·`$Unavailable` 가 `common.exception.BaseException` 상속, `ETmiErrorType.SIMILARITY_*` 참조 | §2 순환 행, F6 |
 | R2 | `AnswerService` 생성자 파라미터·필드 `sentence.repository.SentenceRepository` | §3.5 |
-| R2 | `AnswerService` 생성자 파라미터·필드 `infra.similarity.SimilarityClient` | §3.6 |
+| R2 (B 기준) | `AnswerService` 생성자 파라미터·필드 `infra.similarity.SimilarityClient` | 현행 규칙상 허용. B 에서 `similarity` 모듈의 공개 API(`SimilarityScorer`) 경유로 바뀜 |
 | R2 | `AnswerService.loadSentence` → `SentenceRepository.findByIdAndDeletedAtIsNull`, `SentenceException$NotFound` 생성, 반환 타입 `sentence.domain.SentenceEntity` | §3.5 |
 | R2 | `AnswerService.score` → `SentenceEntity.getKoreanRef()` | §3.5 |
-| R2 | `AnswerService.callSimilarity` → `SimilarityRequest` 생성, `SimilarityClient.score`, `SimilarityResponse.score()` ×2, `SimilarityException$RequestInvalid`·`$Unavailable` 생성 ×3 | §3.3(f) |
+| R2 (B 기준) | `AnswerService.callSimilarity` → `SimilarityRequest` 생성, `SimilarityClient.score`, `SimilarityResponse.score()` ×2, `SimilarityException$RequestInvalid`·`$Unavailable` 생성 ×3 | 현행 규칙상 허용. 단 예외 분류 빈틈은 §3.3(f) |
 | R2 | `AnswerResponse.of` 파라미터 `SentenceEntity`, `getId()`·`getEnglishText()`·`getKoreanRef()` 호출 | §1.2, F5 |
 | R3 | `RestClientConfig.similarityClient()` 반환 타입 `SimilarityClient`, `SimilarityClient.class` 참조 (`RestClientConfig.java:38`) | §1.6 |
 | R5 | `SentenceService.getRandom(Level, Category)` returns `SentenceEntity` | §3.2, F5 |
@@ -489,8 +491,18 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | 중복 보고 | 1차 실행에서 R2 가 `common.config → infra` 2건을 R3 와 **중복** 보고 (R2 21건) | R2 에서 `common` 출발 의존 제외 → 19건. 실제 위반은 R3 가 계속 보고 |
 | 추천 구조에서의 오탐 (양성 대조) | 임시 픽스처 패키지에 선택지 B 형태(`sentence.SentenceReader` 가 `sentence.repository` 사용, `answer.service` 가 `sentence.SentenceReader`·`SentenceDetail` 만 사용)를 만들고 R2·R5 조건을 같은 로직으로 실행 | **위반 0** — 모듈 내부의 공개 API → 리포지토리 접근, 공개 record 사용을 위반으로 보지 않음 |
 | 탐지력 (음성 대조) | 같은 픽스처에 `answer.service` 가 `sentence.repository` 를 직접 쓰고 `@Entity` 를 반환하는 클래스 추가 | R2 위반 4건, R5 위반 1건 탐지 |
+| 음성 대조 2 (Round 2 반영) | 전용 worktree 의 실제 패키지에 위반 클래스 3개를 넣고 전체 규칙 실행: `@Service` 가 `Optional<SentenceEntity>`·`List<SentenceEntity>` 반환, `controller` 가 `SentenceRepository` 필드 보유, `domain` 이 `dto.SentenceResponse` 필드 보유 | R5 +2 (`optional()`, `list()`), R4 +1, R4b +1 탐지 [실행] — R4·R4b "통과" 가 규칙이 비어서가 아님을 확인 |
 | R4 의 공개 API 처리 | 선택지 B 의 `SentenceReader`(모듈 base package, `@Service`)가 repository 를 쓰면 "Repository 는 Service 만 접근" 에 걸릴 수 있음 | Service 레이어 정의를 `..service..` **또는 `@Service`** 로 → 픽스처에서 통과 |
 | R7 특수 타입 | HTTP Interface 가 어노테이션 없이 받는 `URI`, `HttpMethod`, `UriBuilderFactory` 는 허용 목록 | 현재 코드에 해당 타입 없음 — 허용 목록 자체는 미검증 (estimated) |
+
+규칙별 탐지 한계 (Round 2 M2):
+
+| 규칙 | 한계 | 조치 |
+|---|---|---|
+| R5 | (Round 2 시점) raw 반환 타입만 검사 → `Optional<E>`·`List<E>` 미탐지 | **수정함** — `getReturnType().getAllInvolvedRawTypes()` 로 제네릭 인자까지. 음성 대조 2 로 확인 |
+| R6 | 메서드 레벨 `org.springframework.transaction.annotation.Transactional` 만. 클래스 레벨 `@Transactional`(예: 클래스에 `REQUIRES_NEW`)·`jakarta.transaction.Transactional` 의 self-invocation 미탐지 | 테스트 코드 주석에 명시. 현재 코드에 해당 사례 없음 |
+| R2 | 모듈 = 직속 패키지라는 B 의 해석에 고정 → A′ 를 고르면 규칙 자체를 교체해야 함 | architecture-proposal.md §2 A′, feature_list `ARCH-A2` |
+| 공통 | 픽스처 코드는 커밋하지 않음 → 양성·음성 대조를 재현하려면 위 설명대로 다시 만들어야 함 | 재현 절차는 이 표의 "방법" 열 |
 
 - 임시 픽스처 테스트는 실행 후 삭제했다 (`src/test` 변경 허용 범위가 ArchUnit 테스트 자체이므로 픽스처는 커밋하지 않음).
 - ArchUnit 은 JUnit 엔진(`archunit-junit5`) 대신 **core(`com.tngtech.archunit:archunit:1.5.1`)** 만 쓰고 일반 `@Test` 에서 `rule.check()` 를 호출한다. 이유: (1) TASK 지시의 `@Disabled` 가 그대로 동작 (2) Boot 4 BOM 의 JUnit 6 과 `archunit-junit5` 엔진 호환성 미검증 (research.md §6.3) 을 피함.
@@ -511,7 +523,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 
 `@SpringBootTest + MockMvc` 로 실제 컨텍스트에 요청을 보내는 **일회성 프로브 테스트**를 실행하고 삭제했다 (커밋하지 않음 — `src/test` 변경 허용 범위가 ArchUnit 뿐이므로). 환경: 로컬 PostgreSQL + `init.sql` 시드, Similarity 서버 미기동.
 
-| # | 요청 | 기대(문서) | 실제 응답 | 판정 |
+| # | 요청 | 기대(문서) | 실제 응답 (에러는 모두 `{"error":{...}}` 로 래핑 — 표에서는 안쪽만 표기) | 판정 |
 |---|---|---|---|---|
 | P1 | `GET /sentences/random?level=LEVEL_1&category=DAILY` | 200 | 200 `{"sentenceId":"00000000-...-0001","englishText":"Sounds good.",...}` | 정상 |
 | P2 | `GET /sentences/random?level=LEVEL_5&category=TECH` | 404 + `"Sentence not found: level=LEVEL_5, category=TECH"` | 404 `{"code":"TMI.SENTENCE.NOT_FOUND","message":"TMI.SENTENCE.NOT_FOUND"}` | **메시지 미해결** |
@@ -519,7 +531,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | P4 | `level=LEVEL_9` (잘못된 enum) | 400 | 400 `"message":"TMI.COMMON.INVALID_REQUEST"` | 코드 정상, 메시지 미해결 |
 | P5 | `POST /answers` body `{broken` | 400 | **500** `TMI.COMMON.INTERNAL_ERROR` + ERROR 로그 | **결함** (§3.3c 확인) |
 | P6 | `POST /answers` `userAnswer: ""` | 400 | 400 `"userAnswer: must not be blank"` (다른 실행에서는 `"userAnswer: size must be between 1 and 500"`) | 코드 정상, **메시지 비결정** |
-| P9 | `GET /sentences/random?category=DAILY` (level 누락) [실행·리뷰] | 03 §2.1: 400 `INVALID_REQUEST` | 400 `TMI.COMMON.MISSING_PARAMETER` | **계약 불일치** (F9) |
+| P8 | `GET /sentences/random?category=DAILY` (level 누락) [실행·리뷰] | 03 §2.1: 400 `INVALID_REQUEST` | 400 `TMI.COMMON.MISSING_PARAMETER` | **계약 불일치** (F9) |
 | P7 | `POST /answers` 정상 body, Similarity 서버 다운 | **503** `TMI.SIMILARITY.UNAVAILABLE` | **500** `TMI.COMMON.INTERNAL_ERROR` | **치명 결함** — 아래 |
 
 - 자동 구성 `messageSource` 빈의 실제 타입: `org.springframework.context.support.DelegatingMessageSource` (빈 껍데기). §3.3(b) 추론 확정.
@@ -558,8 +570,8 @@ ERROR ... GlobalExceptionHandler : [TMI.COMMON.INTERNAL_ERROR] TMI.COMMON.INTERN
 |---|---|
 | Gradle 9.3.0 + JDK 21 에서 플러그인 동작 | ✓ (`spotlessCheck`, `spotlessApply` 정상 실행) |
 | `./gradlew build` 에 영향 | 없음 (`check` 에 미연결) |
-| `src/main` 위반 | **34 파일 중 29 파일** (+178 / −214 줄). 사본에서 `spotlessApply` 후 `git diff --stat` 로 계수 |
-| 변경 성격 (표본: `AnswerController.java`) | `implements AnswerApi{` → `implements AnswerApi {` 같은 공백, import 정리, 줄바꿈 — 의미 변경 없음 |
+| `src/main` 위반 | **34 파일 중 29 파일** (+178 / −214 줄). 사본에서 `spotlessApply` 후 `git diff --stat` 로 계수. `target` 이 `src/*/java/**` 라 일괄 적용 커밋에는 `CoreApplicationTests.java` 도 포함되어 **30 파일** |
+| 변경 성격 | 공백·import 정리·줄바꿈. **의미 변경 없음** — 적용 전후 `src/main` 40개 class 파일의 상수 풀(문자열·text block 포함)이 전부 동일 [실행·리뷰, round-2 m5] |
 | 이 작업이 추가한 ArchUnit 테스트 | palantir 포맷 적용 완료 (위반 0) |
 | 기존 `CoreApplicationTests` | 위반 (탭 들여쓰기) — 작업 범위 밖이라 미수정 |
 
