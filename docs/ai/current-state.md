@@ -19,7 +19,7 @@
 | F1 | `POST /api/v1/answers` 가 **항상 500** — `SimilarityClient.score` 의 `@RequestBody` 누락 | `infra/similarity/SimilarityClient.java:10`, §7.2 P7 | [실행] |
 | F2 | 에러 메시지 번들이 로드되지 않아 모든 에러 `message` 가 코드 문자열, i18n 미동작 | `resources/messages/` 위치 + basename 미설정, §7.2 P2·P3 | [실행] |
 | F3 | 깨진 JSON 등 클라이언트 오류가 500 + ERROR 로 처리, 500 로그에 스택트레이스 없음, 404 가 ERROR 레벨 | `GlobalExceptionHandler.java:68-78`, `BaseException.java:15`, §7.2 P5 | [실행] |
-| F4 | `@Transactional` self-invocation — 어노테이션이 무효 (동작은 리포지토리 기본 트랜잭션 덕분에 우연히 맞음) | `AnswerService.java:28,35` | [정적] |
+| F4 | `@Transactional` self-invocation — 어노테이션이 무효이고, 파생 쿼리라 리포지토리 기본 트랜잭션도 없어 **조회가 트랜잭션 없이 실행** | `AnswerService.java:28,35`, §3.4 | [실행] |
 | F5 | DTO 변환 위치가 기능마다 다름 (컨트롤러 vs 서비스), 응답 DTO 가 타 기능 엔티티에 의존 | `SentenceController.java:26`, `AnswerResponse.java:30` | [정적] |
 | F6 | 기능 간 직접 의존 (`answer → sentence.repository/exception/domain`), `common.config → infra` 역방향 | §2 | [정적]·ArchUnit §6 |
 | F7 | 외부 클라이언트 배치 규칙 분열 (`infra/similarity` vs WIP `toss/holdings/infra`) | §3.6 | [정적] |
@@ -291,8 +291,19 @@ protected SentenceEntity loadSentence(String sentenceId) { ... }
 ```
 
 - 같은 객체 안의 호출(`this.loadSentence`)은 Spring AOP 프록시를 거치지 않아 `@Transactional` 이 적용되지 않는다 (출처: research.md §5.1). 06 §3.4 가 직접 경고한 함정이 실제 코드에 있다.
-- 실제 트랜잭션은 `SimpleJpaRepository` 의 기본 `@Transactional(readOnly = true)` 가 `findByIdAndDeletedAtIsNull` 호출 단위로 걸어준다 (출처: research.md §5.3). **결과적으로 동작은 맞지만 이유가 다르다** — 어노테이션을 지워도 같은 동작이며, 코드가 독자를 오도한다.
-- 06 §3.3 "외부 호출은 트랜잭션 밖" 의 의도(커넥션 점유 방지)는 결과적으로 충족된다 [정적].
+- 그리고 `findByIdAndDeletedAtIsNull` 은 **인터페이스에 선언한 파생 쿼리**라 `SimpleJpaRepository` 의 클래스 레벨 `@Transactional(readOnly = true)` 도 물려받지 않는다 (출처: research.md §5.3). 결과적으로 **이 조회는 트랜잭션 없이(auto-commit) 실행된다** [실행 — 아래 로그].
+- 06 §3.3 "외부 호출은 트랜잭션 밖" 의 의도(커넥션 점유 방지)는 결과적으로 충족되지만, "조회는 readOnly 트랜잭션 안" 이라는 코드의 표면 의도는 충족되지 않는다. 지금은 단건 조회라 증상이 없다.
+
+트랜잭션 프로브 [실행] — `JpaTransactionManager` DEBUG 로그, 리포지토리 메서드를 서비스 밖에서 직접 호출:
+
+| 호출 | `Creating new transaction` 로그 |
+|---|---|
+| `SentenceRepository.findByIdAndDeletedAtIsNull(...)` (파생 쿼리) | **없음** |
+| `SentenceRepository.findRandomBy(...)` (`@Query` native) | **없음** |
+| `SentenceRepository.findById(...)` (`CrudRepository` 상속) | `SimpleJpaRepository.findById: PROPAGATION_REQUIRED,ISOLATION_DEFAULT,readOnly` |
+
+- `SentenceService.getRandom` 은 컨트롤러에서 프록시를 거쳐 호출되므로 서비스의 `@Transactional(readOnly = true)` 가 정상 적용된다 [정적].
+- 함의: 앞으로 리포지토리에 쿼리 메서드를 추가할 때 "리포지토리가 알아서 readOnly 트랜잭션을 건다" 는 가정은 틀리다. 트랜잭션 경계는 서비스가 책임져야 한다 (conventions-proposal.md §4).
 
 ### 3.5 기능 경계를 넘는 직접 의존
 
@@ -358,6 +369,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 
 - `AnswerService.score` → `loadSentence` 는 `this` 호출 (`AnswerService.java:28`).
 - `@EnableTransactionManagement(mode = ASPECTJ)` 설정 없음 → 프록시 모드.
+- `protected` 가시성 자체는 문제가 아니다 — Spring 6.0 부터 CGLIB 프록시는 protected 메서드에도 트랜잭션을 적용한다 (research.md §5.2). 원인은 오직 self-invocation.
 
 ### 4.3 `SpEL` 바인딩 필요성
 
