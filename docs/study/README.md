@@ -13,6 +13,7 @@
 | 2 | [jpa/osiv.md](jpa/osiv.md) | OSIV 는 요청이 끝날 때까지 DB 커넥션을 잡아 둘 수 있다 | `FIX-F4`, D4 |
 | 3 | [spring/exception-handling.md](spring/exception-handling.md) | 예외가 HTTP 응답이 되기까지의 경로, 그리고 500 이 잘못 나오는 이유 | `FIX-F3`, `FIX-F1T`, D2 |
 | 4 | [spring/http-interface.md](spring/http-interface.md) | 인터페이스만 선언하면 HTTP 클라이언트가 생긴다. 단 파라미터 어노테이션은 필수 | `FIX-F1` |
+| 5 | [be-standards/README.md](be-standards/README.md) | 국내 IT 기업 BE 관례(근거 등급 표시, 국내 기업 원문 미확인)와 이 프로젝트의 연습 로드맵 | 전체 (D1~D7 참고) |
 
 1·2 는 함께 읽으면 좋다. 같은 결함(F4)의 두 원인이다.
 
