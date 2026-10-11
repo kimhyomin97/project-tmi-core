@@ -73,7 +73,6 @@
 ## 참고 · 남은 것
 
 - 수령 당시 작업 트리에 있던 미커밋 Toss WIP(`src/main` 4파일, 존재하지 않는 클래스를 import 해 컴파일 불가)는 커밋하지 않았다. `docs/ai/wip-snapshot.patch` 로 보존했고, 작업 트리에는 미커밋 상태로 복원했다(blockers.md §1, D9).
-- remote 미설정·GH_TOKEN 무효로 push·PR 생성은 하지 못했다(blockers.md §4). 이 본문은 `docs/ai/pr-body.md` 에 있다.
 - `gradlew` 가 실행 권한 없이 커밋돼 있어 `bash ./gradlew` 로 실행했다(D11).
 - 이 클라우드 세션에는 Docker 데몬이 없어 Testcontainers 기반 검증은 하지 못했다(blockers.md §2 #4).
 
