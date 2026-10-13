@@ -1,0 +1,116 @@
+{
+  "items": [
+    {
+      "id": "current-state",
+      "artifact": "docs/ai/current-state.md",
+      "done": true,
+      "review_rounds": 3,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      }
+    },
+    {
+      "id": "research",
+      "artifact": "docs/ai/research.md",
+      "done": true,
+      "review_rounds": 2,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      },
+      "review_note": "final-consistency 리뷰(round-1·2)에서 함께 평가"
+    },
+    {
+      "id": "architecture-proposal",
+      "artifact": "docs/ai/architecture-proposal.md",
+      "done": true,
+      "review_rounds": 4,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      }
+    },
+    {
+      "id": "conventions-proposal",
+      "artifact": "docs/ai/conventions-proposal.md",
+      "done": true,
+      "review_rounds": 4,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      }
+    },
+    {
+      "id": "ai-workflow",
+      "artifact": "docs/ai/ai-workflow.md",
+      "done": true,
+      "review_rounds": 4,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      }
+    },
+    {
+      "id": "examples",
+      "artifact": "docs/ai/examples/",
+      "done": true,
+      "review_rounds": 4,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      }
+    },
+    {
+      "id": "archunit",
+      "artifact": "src/test/java/com/tmi/core/architecture/",
+      "done": true,
+      "review_rounds": 2,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      },
+      "review_note": "final-consistency 리뷰(round-1·2)에서 함께 평가"
+    },
+    {
+      "id": "claude-md",
+      "artifact": "CLAUDE.md",
+      "done": true,
+      "review_rounds": 2,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      },
+      "review_note": "final-consistency 리뷰(round-1·2)에서 함께 평가"
+    },
+    {
+      "id": "decisions-needed",
+      "artifact": "docs/ai/decisions-needed.md",
+      "done": true,
+      "review_rounds": 2,
+      "rubric_scores": {
+        "근거성": 4,
+        "구체성": 4,
+        "일관성": 4,
+        "판단 가능성": 4
+      },
+      "review_note": "final-consistency 리뷰(round-1·2)에서 함께 평가"
+    }
+  ]
+}

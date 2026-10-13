@@ -1,0 +1,139 @@
+diff --git a/.gitattributes b/.gitattributes
+index 8af972c..b467cba 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -1,3 +1,4 @@
+ /gradlew text eol=lf
+ *.bat text eol=crlf
+ *.jar binary
++*.sh text eol=lf
+\ No newline at end of file
+diff --git a/src/main/java/com/tmi/core/CoreApplication.java b/src/main/java/com/tmi/core/CoreApplication.java
+index a8337d9..d6f5d3d 100644
+--- a/src/main/java/com/tmi/core/CoreApplication.java
++++ b/src/main/java/com/tmi/core/CoreApplication.java
+@@ -2,8 +2,10 @@ package com.tmi.core;
+ 
+ import org.springframework.boot.SpringApplication;
+ import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+ 
+ @SpringBootApplication
++@ConfigurationPropertiesScan
+ public class CoreApplication {
+ 
+ 	public static void main(String[] args) {
+diff --git a/src/main/java/com/tmi/core/common/config/RestClientConfig.java b/src/main/java/com/tmi/core/common/config/RestClientConfig.java
+index 3009d00..3d5e228 100644
+--- a/src/main/java/com/tmi/core/common/config/RestClientConfig.java
++++ b/src/main/java/com/tmi/core/common/config/RestClientConfig.java
+@@ -1,6 +1,7 @@
+ package com.tmi.core.common.config;
+ 
+ import com.tmi.core.infra.similarity.SimilarityClient;
++import com.tmi.core.toss.holdings.infra.TossHoldingsClient;
+ import org.springframework.beans.factory.annotation.Value;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.Configuration;
+@@ -20,6 +21,12 @@ public class RestClientConfig {
+     @Value("${similarity.timeout-ms}")
+     private long similarityTimeoutMs;
+ 
++    @Value("${toss.base-url}")
++    private String tossBaseUrl;
++
++    @Value("${toss.timeout-ms}")
++    private long tossTimeoutMs;
++
+     @Bean
+     public SimilarityClient similarityClient() {
+         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+@@ -37,4 +44,24 @@ public class RestClientConfig {
+ 
+         return proxyFactory.createClient(SimilarityClient.class);
+     }
++
++    @Bean
++    public RestClient tossRestClient() {
++        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
++        factory.setConnectTimeout(Duration.ofSeconds(1));
++        factory.setReadTimeout(Duration.ofMillis(tossTimeoutMs));
++
++        return RestClient.builder()
++                .baseUrl(tossBaseUrl)
++                .requestFactory(factory)
++                .build();
++    }
++
++    @Bean
++    public TossHoldingsClient tossHoldingsClient(RestClient tossRestClient) {
++        HttpServiceProxyFactory proxyFactory = HttpServiceProxyFactory
++                .builderFor(RestClientAdapter.create(tossRestClient))
++                .build();
++        return proxyFactory.createClient(TossHoldingsClient.class);
++    }
+ }
+diff --git a/src/main/java/com/tmi/core/toss/holdings/domain/HoldingsSnapshotEntity.java b/src/main/java/com/tmi/core/toss/holdings/domain/HoldingsSnapshotEntity.java
+index 322e57e..6982a2b 100644
+--- a/src/main/java/com/tmi/core/toss/holdings/domain/HoldingsSnapshotEntity.java
++++ b/src/main/java/com/tmi/core/toss/holdings/domain/HoldingsSnapshotEntity.java
+@@ -1,5 +1,6 @@
+ package com.tmi.core.toss.holdings.domain;
+ 
++import com.tmi.core.toss.holdings.dto.HoldingsApiResponse;
+ import jakarta.persistence.*;
+ import lombok.AccessLevel;
+ import lombok.Getter;
+@@ -69,4 +70,29 @@ public class HoldingsSnapshotEntity {
+ 
+     @Column(name = "created_at", nullable = false, updatable = false, insertable = false)
+     private Instant createdAt;
++
++    public static HoldingsSnapshotEntity create(
++            long accountSeq,
++            Instant snapshotAt,
++            LocalDate snapshotDate,
++            HoldingsApiResponse.Result result,
++            String rawResponseJson
++    ) {
++        HoldingsSnapshotEntity e = new HoldingsSnapshotEntity();
++        e.accountSeq = accountSeq;
++        e.snapshotAt = snapshotAt;
++        e.snapshotDate = snapshotDate;
++        e.totalPurchaseKrw = result.totalPurchaseAmount().krw();
++        e.totalPurchaseUsd = result.totalPurchaseAmount().usd();
++        e.marketValueKrw = result.marketValue().amount().krw();
++        e.marketValueUsd = result.marketValue().amount().usd();
++        e.profitLossKrw = result.profitLoss().amount().krw();
++        e.profitLossUsd = result.profitLoss().amount().usd();
++        e.dailyPlKrw = result.dailyProfitLoss().amount().krw();
++        e.dailyPlUsd = result.dailyProfitLoss().amount().usd();
++        e.profitLossRate = result.profitLoss().rate();
++        e.dailyPlRate = result.dailyProfitLoss().rate();
++        e.rawResponse = rawResponseJson;
++        return e;
++    }
+ }
+diff --git a/src/main/resources/application.properties b/src/main/resources/application.properties
+index d6ae361..d268697 100644
+--- a/src/main/resources/application.properties
++++ b/src/main/resources/application.properties
+@@ -19,4 +19,15 @@ spring.jpa.properties.hibernate.format_sql=true
+ rest.api.version=/api/v1
+ 
+ similarity.base-url=http://localhost:8000
+-similarity.timeout-ms=2000
+\ No newline at end of file
++similarity.timeout-ms=2000
++
++# ──────────────────────────────────────────────
++# Toss Open API
++# ──────────────────────────────────────────────
++toss.base-url=https://openapi.tossinvest.com
++toss.client-id=${TOSS_CLIENT_ID}
++toss.client-secret=${TOSS_CLIENT_SECRET}
++toss.timeout-ms=3000
++toss.default-account-seq=${TOSS_DEFAULT_ACCOUNT_SEQ}
++toss.holdings.schedule-cron=0 0 * * * *
++toss.holdings.timezone=Asia/Seoul
+\ No newline at end of file
