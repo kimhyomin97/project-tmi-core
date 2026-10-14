@@ -64,4 +64,4 @@ SentenceResponse r = sentenceService.getRandom(); // DTO 반환
 ## 더 읽을거리
 
 - Spring Boot — JPA 설정 속성 (`spring.jpa.open-in-view`): https://docs.spring.io/spring-boot/appendix/application-properties/index.html
-- 이 저장소의 측정 근거: `docs/ai/current-state.md` §3.4, 결정 항목: `docs/ai/decisions-needed.md` D4
+- 이 저장소의 측정 근거: `docs/ai/context/current-state.md` §3.4, 결정 항목: `docs/ai/proposals/decisions-needed.md` D4

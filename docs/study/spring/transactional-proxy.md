@@ -77,4 +77,4 @@ class AnswerService {
 
 - Spring Framework — `@Transactional` 사용 (프록시 모드 설명): https://docs.spring.io/spring-framework/reference/data-access/transaction/declarative/annotations.html
 - Spring Data JPA — 트랜잭션 (쿼리 메서드 기본값): https://docs.spring.io/spring-data/jpa/reference/jpa/transactions.html
-- 이 저장소의 실행 근거: `docs/ai/current-state.md` §3.4
+- 이 저장소의 실행 근거: `docs/ai/context/current-state.md` §3.4

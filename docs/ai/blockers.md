@@ -1,6 +1,6 @@
 # 막힌 지점·환경 이슈 (blockers)
 
-> 작업 중 만난 환경·접근 문제와 우회 방법. 코드 결함은 [current-state.md](./current-state.md) 에 있다.
+> 작업 중 만난 환경·접근 문제와 우회 방법. 코드 결함은 [current-state.md](./context/current-state.md) 에 있다.
 
 ---
 
@@ -10,8 +10,8 @@
 |---|---|
 | 현상 | 저장소 수령 시 `src/main` 4개 파일(Java 3 + `application.properties`) + `.gitattributes` 에 미커밋 변경이 있었고, 그중 2개 파일이 **존재하지 않는 클래스**(`toss.holdings.infra.TossHoldingsClient`, `toss.holdings.dto.HoldingsApiResponse`)를 import → 컴파일 불가 |
 | 제약 | 작업 규칙상 `src/main` 수정 금지 → 커밋도, 되돌림도 하지 않음 |
-| 조치 | ① 패치 전문을 [`wip-snapshot.patch`](./wip-snapshot.patch) 로 보존 (`git apply --check` 통과) ② 빌드·테스트 실행 동안 `git stash` 로 치움 ③ 작업 종료 시 **`git apply docs/ai/wip-snapshot.patch`** 로 작업 트리에 복원. `git stash pop` 은 쓰지 않는다 — stash 에 이미 커밋된 `.claude/*`·`docs/ai/TASK.md` 가 섞여 충돌한다 (reviews/current-state-round-1.md M9) |
-| 현재 위치 | 마지막 커밋 직후 `git apply docs/ai/wip-snapshot.patch` 로 **작업 트리에 미커밋 상태로 복원함**. `git stash`(stash@{0}) 에도 사본이 남아 있다. 복원 상태에서는 WIP 의 import 때문에 `./gradlew build` 가 컴파일 실패한다 — 빌드하려면 `git stash push -- src/main .gitattributes` 로 다시 치운다 |
+| 조치 | ① 패치 전문을 [`wip-snapshot.patch`](./archive/2026-10-ai-dev-prep/wip-snapshot.patch) 로 보존 (`git apply --check` 통과) ② 빌드·테스트 실행 동안 `git stash` 로 치움 ③ 작업 종료 시 **`git apply docs/ai/archive/2026-10-ai-dev-prep/wip-snapshot.patch`** 로 작업 트리에 복원. `git stash pop` 은 쓰지 않는다 — stash 에 이미 커밋된 `.claude/*`·`docs/ai/archive/2026-10-ai-dev-prep/TASK.md` 가 섞여 충돌한다 (reviews/current-state-round-1.md M9) |
+| 현재 위치 | 마지막 커밋 직후 `git apply docs/ai/archive/2026-10-ai-dev-prep/wip-snapshot.patch` 로 **작업 트리에 미커밋 상태로 복원함**. `git stash`(stash@{0}) 에도 사본이 남아 있다. 복원 상태에서는 WIP 의 import 때문에 `./gradlew build` 가 컴파일 실패한다 — 빌드하려면 `git stash push -- src/main .gitattributes` 로 다시 치운다 |
 | 사람이 할 일 | WIP 를 이어서 완성할지, 브랜치로 분리할지 결정. Toss 클라이언트 위치는 architecture-proposal.md 결정(D1)에 따름 |
 
 ## 2. `./gradlew build` 환경
@@ -36,15 +36,15 @@ bash ./gradlew build
 ```
 
 - 30분 이상 막힌 항목 없음.
-- 근본 해결(테스트가 외부 DB 없이 돌게 하기)은 Testcontainers 도입 여부 결정에 달림 → [decisions-needed.md](./decisions-needed.md) D3.
+- 근본 해결(테스트가 외부 DB 없이 돌게 하기)은 Testcontainers 도입 여부 결정에 달림 → [decisions-needed.md](./proposals/decisions-needed.md) D3.
 
 ## 3. 웹 리서치 접근
 
-리서치 중 접근이 막힌 URL 은 [research.md](./research.md) 의 "접근 실패" 절에 기록한다.
+리서치 중 접근이 막힌 URL 은 [research.md](./context/research.md) 의 "접근 실패" 절에 기록한다.
 
 ## 4. push · PR 생성 (해소)
 
 | 항목 | 내용 |
 |---|---|
 | 현상 | 처음에는 `git remote -v` 가 비어 있어 `git push` 가 `fatal: 'origin' does not appear to be a git repository` 로 실패했고, `gh auth status` 는 `The token in GH_TOKEN is invalid` 였다 |
-| 조치 | 사용자가 GitHub 권한을 부여한 뒤, 로컬 `main`(e85dba5)이 `kimhyomin97/project-tmi-core` 의 `main` 과 같음을 확인하고 이 저장소를 세션에 연결했다. 그다음 `git remote add origin https://github.com/kimhyomin97/project-tmi-core` 를 실행하고 `git push -u origin claude/ai-dev-prep` 에 성공했다. PR 본문은 [`pr-body.md`](./pr-body.md) 이다 |
+| 조치 | 사용자가 GitHub 권한을 부여한 뒤, 로컬 `main`(e85dba5)이 `kimhyomin97/project-tmi-core` 의 `main` 과 같음을 확인하고 이 저장소를 세션에 연결했다. 그다음 `git remote add origin https://github.com/kimhyomin97/project-tmi-core` 를 실행하고 `git push -u origin claude/ai-dev-prep` 에 성공했다. PR 본문은 [`pr-body.md`](./archive/2026-10-ai-dev-prep/pr-body.md) 이다 |

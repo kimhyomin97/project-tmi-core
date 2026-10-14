@@ -103,10 +103,10 @@
 
 | 항목 | 기존 제안 | 이번 조사 근거 | 관계 |
 |---|---|---|---|
-| 구조 | [architecture-proposal](../../ai/architecture-proposal.md) 추천 **B**: 기능 모듈 + base package만 공개 API | Modulith 공식 규칙과 같은 모양 [A]. 카카오페이 관심사 패키징 [C✓] | **일치** |
+| 구조 | [architecture-proposal](../../ai/proposals/architecture-proposal.md) 추천 **B**: 기능 모듈 + base package만 공개 API | Modulith 공식 규칙과 같은 모양 [A]. 카카오페이 관심사 패키징 [C✓] | **일치** |
 | 헥사고날 | C 비추천 | 카카오페이 홈이 적용 후 걷어냄 [C✓]. 코어를 여러 실행 단위가 공유할 때만 쓴다는 것이 국내 공통 | **일치** |
 | Modulith | 확장 가능성으로 언급 | 카카오뱅크가 `verify()`로 경계 강제 [C✓] | 이번 조사가 더 적극적 |
-| 포맷 | [conventions-proposal](../../ai/conventions-proposal.md) §7: Spotless, D5 후 강제 | 도구 강제는 국내 공통 [C✓]. 숫자는 회사마다 다름 | **일치**. 강제 시점은 앞당길 근거 (02 §4) |
+| 포맷 | [conventions-proposal](../../ai/proposals/conventions-proposal.md) §7: Spotless, D5 후 강제 | 도구 강제는 국내 공통 [C✓]. 숫자는 회사마다 다름 | **일치**. 강제 시점은 앞당길 근거 (02 §4) |
 | Git·PR·리뷰 | 범위 밖 | 작은 PR, PR 템플릿, 리뷰어 자동 배정 등 국내 공통 [C✓] | 추가 |
 | 에러 응답 (D2) | (a) 현행 형식 유지 + `ResponseEntityExceptionHandler` | `{code, message}`는 국내 공개 API 문서 공통 [C✓], 사내 호출은 카카오페이 사례. ProblemDetail 국내 채택 근거 없음 | **일치** |
 | 로그 레벨 | 4xx INFO / 5xx ERROR | 컬리 사례 [C✓]: 사용자 오류는 WARN + 빈도 알림. LY는 원인 위치(외부/내부)로 나눈다 | **대체로 일치** |
@@ -120,7 +120,7 @@
 
 ## 이 프로젝트에서 순서대로 연습할 역량 로드맵
 
-각 단계는 **기능 하나 또는 리팩터링 하나**다. 1~6단계는 [decisions-needed §0](../../ai/decisions-needed.md)의 "결정 없이 바로 해도 되는 것" 순서와 같다. `[결정]` 표시는 사람 결정이 먼저 필요하다는 뜻이다.
+각 단계는 **기능 하나 또는 리팩터링 하나**다. 1~6단계는 [decisions-needed §0](../../ai/proposals/decisions-needed.md)의 "결정 없이 바로 해도 되는 것" 순서와 같다. `[결정]` 표시는 사람 결정이 먼저 필요하다는 뜻이다.
 
 | 단계 | 할 일 | 선행 | 익히는 역량 | 문서 |
 |---|---|---|---|---|
@@ -149,7 +149,7 @@
 | 22 | OpenTelemetry 트레이싱, 자동 구성 `RestClient.Builder` `[결정 D7]` | 18 | 분산 추적 | [06](./06-operations-and-career.md) |
 | 선택 | Modulith `verify()`, REST Docs 비교, Flyway 실습, nGrinder 비교 | — | 도구 선택 근거 | 01, 03, 04, 06 |
 
-- **전체 의존은 [architecture-proposal §4.3](../../ai/architecture-proposal.md) 표와 `docs/ai/feature_list.example.json`이 기준**이다. 12단계 이후의 선행은 학습 순서 제안이다 [D].
+- **전체 의존은 [architecture-proposal §4.3](../../ai/proposals/architecture-proposal.md) 표와 `docs/ai/feature_list.example.json`이 기준**이다. 12단계 이후의 선행은 학습 순서 제안이다 [D].
 - D13 결정 후 `FIX-F1S`(점수 범위 정책, 선행 FIX-F1T). `FIX-F3`·`FIX-F4` 뒤 `DOC-1`(docs/public 수정, 사람 판정).
 - ¹ D1=B 기준. D1=A′이면 10단계 대신 `ARCH-A2`(선행 ARCH-A1, FIX-F1T)에서 R2를 A′ 규칙으로 교체한다.
 - ² `docs/public/07` 예시의 DB 이름 `tmi`와 코드의 `tmi_word`가 다르다. 사람 확인.

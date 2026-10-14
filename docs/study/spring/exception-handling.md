@@ -13,7 +13,7 @@
 | 유사도 서버 read timeout | 503 | **500** | POST 의 timeout 은 `RestClientException` 으로 오는데, 서비스가 이 타입을 catch 하지 않음 |
 | 404 | WARN/INFO 로그 | ERROR 로그 | 모든 도메인 예외의 기본 로그 레벨이 ERROR |
 
-(근거: `docs/ai/current-state.md` §3.3, §7.2)
+(근거: `docs/ai/context/current-state.md` §3.3, §7.2)
 
 ## 동작 원리
 
@@ -48,7 +48,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 ```
 
 - 상태 코드는 Spring 이 정하고, 응답 형식은 우리가 정한다. 그래서 외부 API 계약(03 명세의 에러 형식)은 그대로 유지된다.
-- 이것이 decisions-needed D2 의 추천안이다. 전체 After 코드는 `docs/ai/conventions-proposal.md` 에 있다.
+- 이것이 decisions-needed D2 의 추천안이다. 전체 After 코드는 `docs/ai/proposals/conventions-proposal.md` 에 있다.
 
 ## 외부 HTTP 호출 예외 — catch 순서
 
@@ -88,4 +88,4 @@ try {
 ## 더 읽을거리
 
 - Spring Framework — REST 에러 응답 (`ResponseEntityExceptionHandler`): https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-ann-rest-exceptions.html
-- 이 저장소의 근거: `docs/ai/current-state.md` §3.3, 제안 코드: `docs/ai/conventions-proposal.md`
+- 이 저장소의 근거: `docs/ai/context/current-state.md` §3.3, 제안 코드: `docs/ai/proposals/conventions-proposal.md`

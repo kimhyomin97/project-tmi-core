@@ -35,4 +35,10 @@ out/
 
 ### VS Code ###
 .vscode/
-/docs/private
+### AI 에이전트 작업 파일 ###
+# 쓰고 버리되 세션 밖까지 남겨야 하는 임시 파일 (docs/ai/proposals/context-structure-design.md §5.4)
+.scratch/
+# 개인용 설정
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/worktrees/
