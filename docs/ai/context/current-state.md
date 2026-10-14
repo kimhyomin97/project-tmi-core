@@ -2,9 +2,9 @@
 
 > 상태: **제안 단계 산출물** — 이 문서는 사실 기록이며 결정을 담지 않는다. 결정 항목은 [decisions-needed.md](../proposals/decisions-needed.md).
 > 분석 기준: 브랜치 `claude/ai-dev-prep` 의 `src/main` (Java 34 파일, 중첩 클래스 포함 40 타입). 이 브랜치는 `src/main` 을 변경하지 않으므로 `main` HEAD `e85dba5` 와 동일하다 (`git diff e85dba5 HEAD -- src/main` 0줄).
-> 개정: Round 1 리뷰([reviews/current-state-round-1.md](../reviews/current-state-round-1.md)) 반영 — OSIV 커넥션 점유(C1), `RestClient.Builder` 빈 부재, SpEL 필요성, 계약 불일치 등.
-> 개정: Round 2 리뷰([reviews/current-state-round-2.md](../reviews/current-state-round-2.md)) 반영 — R2 위반 19건 분해(현행 규칙 위반 10 / B 기준 9), 규칙별 탐지 한계·음성 대조, read timeout → 500 추가.
-> 개정: Round 3 리뷰([reviews/current-state-round-3.md](../reviews/current-state-round-3.md)) — 4·4·4·4. 경미 7건 반영 (FIX-F1T 연결, P7/P8 번호, 43 class 파일·바이트코드 동일, R6 jakarta 한계).
+> 개정: Round 1 리뷰([reviews/current-state-round-1.md](../archive/2026-10-ai-dev-prep/reviews/current-state-round-1.md)) 반영 — OSIV 커넥션 점유(C1), `RestClient.Builder` 빈 부재, SpEL 필요성, 계약 불일치 등.
+> 개정: Round 2 리뷰([reviews/current-state-round-2.md](../archive/2026-10-ai-dev-prep/reviews/current-state-round-2.md)) 반영 — R2 위반 19건 분해(현행 규칙 위반 10 / B 기준 9), 규칙별 탐지 한계·음성 대조, read timeout → 500 추가.
+> 개정: Round 3 리뷰([reviews/current-state-round-3.md](../archive/2026-10-ai-dev-prep/reviews/current-state-round-3.md)) — 4·4·4·4. 경미 7건 반영 (FIX-F1T 연결, P7/P8 번호, 43 class 파일·바이트코드 동일, R6 jakarta 한계).
 > 작업 트리에만 존재하는 미커밋 변경(WIP)은 §5 에 별도로 정리했다. 이 문서의 표는 **커밋된 코드** 기준이다.
 
 표기 규칙

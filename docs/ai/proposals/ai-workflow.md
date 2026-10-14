@@ -3,9 +3,9 @@
 > 상태: **제안 — 미확정**. 결정 항목은 [decisions-needed.md](./decisions-needed.md) D3·D5·D12.
 > 이 문서는 "이 저장소에서 Claude Code 같은 코딩 에이전트에게 일을 맡기는 방법" 을 정한다. 외부 근거는 [research.md §8](../context/research.md#8-ai-코딩-에이전트-장시간-작업).
 > 전제: architecture-proposal.md 추천안 B (모듈 경계). A′ 를 고르면 "모듈" 을 "기능 패키지" 로 읽으면 된다.
-> 개정: Round 1 리뷰([reviews/ai-workflow-round-1.md](../reviews/ai-workflow-round-1.md)) 반영 — hook 재설계(C1), "수정 전 실패" verify(C2), `plan_approved` 필드(C3), OSIV 순서·게이트 규칙·init.sh 정정.
-> 개정: Round 2 리뷰([reviews/ai-workflow-round-2.md](../reviews/ai-workflow-round-2.md)) 반영 — hook 이 `stop_hook_active` 로 풀리던 문제·base 비교 우회(C1·M1), `--tests` OR 결합으로 거짓 통과하던 verify(C2), 계획 반려 교착(C3), 사람 판정 항목 종료(M2), Docker 전제(M3), 기록 형식 고정(M4), 계획 작성 우선순위(M5), ARCH-A2 게이트(M6).
-> 개정: Round 3 리뷰([reviews/ai-workflow-round-3.md](../reviews/ai-workflow-round-3.md)) 반영 — ArchUnit verify 를 메서드 단위로(C1: 클래스 단위 skip 검사가 항목 간 교착), base 에 session_id·matcher startup·pull(M1·M3), 반려 후 재제출 상태(M2), 브랜치 규칙(M3), ARCH-B2 의 SIG-1 의존(M4), hook 경미 5건.
+> 개정: Round 1 리뷰([reviews/ai-workflow-round-1.md](../archive/2026-10-ai-dev-prep/reviews/ai-workflow-round-1.md)) 반영 — hook 재설계(C1), "수정 전 실패" verify(C2), `plan_approved` 필드(C3), OSIV 순서·게이트 규칙·init.sh 정정.
+> 개정: Round 2 리뷰([reviews/ai-workflow-round-2.md](../archive/2026-10-ai-dev-prep/reviews/ai-workflow-round-2.md)) 반영 — hook 이 `stop_hook_active` 로 풀리던 문제·base 비교 우회(C1·M1), `--tests` OR 결합으로 거짓 통과하던 verify(C2), 계획 반려 교착(C3), 사람 판정 항목 종료(M2), Docker 전제(M3), 기록 형식 고정(M4), 계획 작성 우선순위(M5), ARCH-A2 게이트(M6).
+> 개정: Round 3 리뷰([reviews/ai-workflow-round-3.md](../archive/2026-10-ai-dev-prep/reviews/ai-workflow-round-3.md)) 반영 — ArchUnit verify 를 메서드 단위로(C1: 클래스 단위 skip 검사가 항목 간 교착), base 에 session_id·matcher startup·pull(M1·M3), 반려 후 재제출 상태(M2), 브랜치 규칙(M3), ARCH-B2 의 SIG-1 의존(M4), hook 경미 5건.
 
 ---
 
@@ -87,7 +87,7 @@ flowchart TD
 | 계획 | 변경 예정 파일 목록, 추가할 테스트 이름, 영향받는 문서(05/06/03) | `docs/ai/plans/active/<id>.md` |
 | 구현 | **실패하는 테스트 커밋 → 수정 커밋** 순서 (conventions-proposal.md §6.1 T2) | git |
 | 검증 | §4.4 의 고정 형식 `verify: <id> OK` 줄 + 실행한 명령과 출력 요약 (성공 주장 대신 증거 — [F] best-practices "Have Claude show evidence rather than asserting success") | `docs/ai/progress.md` |
-| 리뷰 | 지적 사항 | `docs/ai/reviews/<id>-round-<N>.md` (이전 작업의 리뷰는 `docs/ai/reviews/`) |
+| 리뷰 | 지적 사항 | `docs/ai/reviews/<id>-round-<N>.md` (이전 작업의 리뷰는 `docs/ai/archive/2026-10-ai-dev-prep/reviews/`) |
 
 ### 2.2 사람 확인 지점 (H0~H3)
 
@@ -116,8 +116,8 @@ flowchart TD
 
 - 구현한 에이전트와 **다른 서브에이전트**를 새로 띄워 "승인 전에 반드시 문제를 찾는 시니어 Spring 엔지니어" 역할로 리뷰시킨다. 근거: [F] best-practices — "A fresh context improves code review", "Add an adversarial review step".
 - **코드 항목**: 1라운드, 통과 조건 = 치명·주요 0 + 리뷰어가 verify 를 직접 실행해 "수정 전 실패 → 수정 후 통과" 를 확인. 같은 문서의 경고("Tell the reviewer to flag only gaps that affect correctness or the stated requirements")에 따라 정확성·요구사항 밖의 지적은 반영 대상이 아니다.
-- **문서·제안서 항목**: rubric 4개(근거성·구체성·일관성·판단 가능성) 각 1~5점, 모두 4점 이상 + 최소 2라운드 — 이 문서 세트를 만든 방식 ([reviews/](../reviews/)).
-- 실제 효과: 이 문서 세트의 리뷰가 작성자가 놓친 **실행 가능한 결함**을 리뷰어의 프로브 실행으로 찾아냈다 — OSIV 커넥션 점유·`RestClient.Builder` 빈 부재([current-state-round-1.md](../reviews/current-state-round-1.md) C1·M2), 이 문서의 hook·verify 결함([ai-workflow-round-1.md](../reviews/ai-workflow-round-1.md) C1·C2, [round-2](../reviews/ai-workflow-round-2.md) C1·C2), read timeout 500([examples-round-1.md](../reviews/examples-round-1.md) C1).
+- **문서·제안서 항목**: rubric 4개(근거성·구체성·일관성·판단 가능성) 각 1~5점, 모두 4점 이상 + 최소 2라운드 — 이 문서 세트를 만든 방식 ([reviews/](../archive/2026-10-ai-dev-prep/reviews/)).
+- 실제 효과: 이 문서 세트의 리뷰가 작성자가 놓친 **실행 가능한 결함**을 리뷰어의 프로브 실행으로 찾아냈다 — OSIV 커넥션 점유·`RestClient.Builder` 빈 부재([current-state-round-1.md](../archive/2026-10-ai-dev-prep/reviews/current-state-round-1.md) C1·M2), 이 문서의 hook·verify 결함([ai-workflow-round-1.md](../archive/2026-10-ai-dev-prep/reviews/ai-workflow-round-1.md) C1·C2, [round-2](../archive/2026-10-ai-dev-prep/reviews/ai-workflow-round-2.md) C1·C2), read timeout 500([examples-round-1.md](../archive/2026-10-ai-dev-prep/reviews/examples-round-1.md) C1).
 
 ---
 
@@ -158,7 +158,7 @@ flowchart TD
 | `scripts/init.sh` | 기동 + 기본 검증 (§4.3) | 추가됨 (2026-10-14) |
 | `.claude/hooks/session-base.sh` | SessionStart hook (matcher `startup`) — `git pull --ff-only` 후 세션 시작 커밋·session_id 를 `$(git rev-parse --git-dir)/claude-session-base` 에 기록 (§4.6) | 스크립트 추가됨. **settings.json 등록은 사람** |
 | `.claude/hooks/check-feature.sh` | Stop hook 게이트 (§4.6) | 스크립트 추가됨. **settings.json 등록은 사람** |
-| `.claude/hooks/check-done.sh` | 이 문서 세트 작성용 게이트 (`checklist.json`) — **feature 루프 시작 시 settings.json 에서 내린다** | 사람 |
+| `.claude/hooks/check-done.sh` | 이 문서 세트 작성용 게이트 (`checklist.json`) — **2026-10-14 제거됨**, `check-feature.sh` 로 교체 | — |
 | `CLAUDE.md` | 세션 시작 시 자동 로드되는 규칙 요약 | 사람 승인 |
 
 - 예시 파일: [`feature_list.example.json`](../feature_list.example.json).

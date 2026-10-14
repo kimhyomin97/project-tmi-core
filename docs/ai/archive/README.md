@@ -4,4 +4,4 @@
 
 | 폴더 | 작업 | 기간 |
 |---|---|---|
-| [2026-10-ai-dev-prep/](2026-10-ai-dev-prep/) | AI 개발 준비 (TASK.md 지시서, PR 본문, 미커밋 WIP 패치) — PR #1. 같은 작업의 `checklist.json`·`reviews/` 는 옛 hook 이 읽어서 아직 `docs/ai/` 에 있다 ([../plans/active/context-structure.md](../plans/active/context-structure.md) "사람이 할 일") | 2026-10-10 ~ 10-12 |
+| [2026-10-ai-dev-prep/](2026-10-ai-dev-prep/) | AI 개발 준비 (TASK.md 지시서, 체크리스트, 리뷰 21개, PR 본문, 미커밋 WIP 패치) — PR #1 | 2026-10-10 ~ 10-12 |

@@ -12,12 +12,11 @@
 | [proposals/architecture-proposal.md](proposals/architecture-proposal.md) | 제안 | 구조 A′/B/C 비교, 추천 B |
 | [proposals/conventions-proposal.md](proposals/conventions-proposal.md) | 제안 | 네이밍·예외·DTO·트랜잭션·로깅·테스트 컨벤션 |
 | [proposals/ai-workflow.md](proposals/ai-workflow.md) | 제안 | 작업 단위, 사람 확인 지점, feature_list 루프, hook |
-| [proposals/context-structure-design.md](proposals/context-structure-design.md) | 적용 중 | 이 디렉터리·`.claude/` 구조 설계 |
+| [proposals/context-structure-design.md](proposals/context-structure-design.md) | 적용 완료 | 이 디렉터리·`.claude/` 구조 설계 |
 | [proposals/examples/](proposals/examples/) | 참고 | 답안 채점을 A′/B/C 로 재구성한 예시 (빌드 대상 아님) |
 | [decisions/](decisions/) | 현행 | 결정된 사항 (1건 = 1파일) |
 | [plans/active/](plans/active/) · [plans/completed/](plans/completed/) | 현행 | 기능·리팩터링별 실행 계획 |
 | [blockers.md](blockers.md) | 현행 | 환경 문제와 우회 방법 |
-| [reviews/](reviews/) · [checklist.json](checklist.json) | 보관 예정 | PR #1 작업의 리뷰 기록·체크리스트. 옛 hook 제거 후 archive 로 이동 |
 | [feature_list.json](feature_list.json) | 현행 | 루프 작업 목록. 에이전트는 `passes`·`blocked`·`awaiting_human` 만 수정 (ai-workflow §4.1) |
 | [progress.md](progress.md) | 현행 | 세션별 진행 기록 (추가만) |
 | [feature_list.example.json](feature_list.example.json) | 보관 예정 | 초안. `feature_list.json` 과 같은 내용 |

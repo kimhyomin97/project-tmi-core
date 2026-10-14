@@ -3,9 +3,9 @@
 > 상태: **제안 — 미확정**. 결정은 [decisions-needed.md](./decisions-needed.md) **D1**.
 > 입력: [current-state.md](../context/current-state.md) (사실), [research.md](../context/research.md) (외부 근거).
 > 비교용 예시 코드: [examples/answer-scoring/](./examples/answer-scoring/README.md) — 같은 "답안 채점" 기능을 선택지별로 재구성.
-> 개정: Round 1 리뷰([reviews/architecture-proposal-round-1.md](../reviews/architecture-proposal-round-1.md)) 반영 — 단계 계획(C1), 바꾸는 기존 규칙(C2), A′ 재정의(M2), Modulith(M1), 비용 근거(M4), R5·C 트리(M5·M6), 경미 전부.
-> 개정: Round 2 리뷰([reviews/architecture-proposal-round-2.md](../reviews/architecture-proposal-round-2.md)) 반영 — B 추천 근거를 "공개 표면의 크기·diff 가시성" 으로 좁힘(C1), F1T·DOC 단계(M1), 문서 목록(M2), 관찰 가능한 클라이언트 배치 규칙·Toss auth(M3), 산정식(M4).
-> 개정: Round 3 리뷰([reviews/architecture-proposal-round-3.md](../reviews/architecture-proposal-round-3.md)) 반영 — A′ 규칙 (b) 를 Toss 에도 성립하도록 재작성하고 "A′ 2개 / B 1개" 로 정정(M1), C 트리를 예시와 맞춤, §0 표 위치 보강, 산정 하한, 경미 11건.
+> 개정: Round 1 리뷰([reviews/architecture-proposal-round-1.md](../archive/2026-10-ai-dev-prep/reviews/architecture-proposal-round-1.md)) 반영 — 단계 계획(C1), 바꾸는 기존 규칙(C2), A′ 재정의(M2), Modulith(M1), 비용 근거(M4), R5·C 트리(M5·M6), 경미 전부.
+> 개정: Round 2 리뷰([reviews/architecture-proposal-round-2.md](../archive/2026-10-ai-dev-prep/reviews/architecture-proposal-round-2.md)) 반영 — B 추천 근거를 "공개 표면의 크기·diff 가시성" 으로 좁힘(C1), F1T·DOC 단계(M1), 문서 목록(M2), 관찰 가능한 클라이언트 배치 규칙·Toss auth(M3), 산정식(M4).
+> 개정: Round 3 리뷰([reviews/architecture-proposal-round-3.md](../archive/2026-10-ai-dev-prep/reviews/architecture-proposal-round-3.md)) 반영 — A′ 규칙 (b) 를 Toss 에도 성립하도록 재작성하고 "A′ 2개 / B 1개" 로 정정(M1), C 트리를 예시와 맞춤, §0 표 위치 보강, 산정 하한, 경미 11건.
 
 ---
 

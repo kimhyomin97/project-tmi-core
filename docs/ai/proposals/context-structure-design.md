@@ -1,6 +1,6 @@
 # AI 컨텍스트·문서 구조 설계
 
-> 상태: **적용 중** — 결정 E1~E4 는 [../decisions/0001-context-structure.md](../decisions/0001-context-structure.md). 진행: [../plans/active/context-structure.md](../plans/active/context-structure.md)
+> 상태: **적용 완료** — 결정 E1~E4 는 [../decisions/0001-context-structure.md](../decisions/0001-context-structure.md). 기록: [../plans/completed/context-structure.md](../plans/completed/context-structure.md)
 > 조사일 2026-10-13. 근거는 각 행의 출처 번호 → §9. 모든 출처는 원문을 직접 열어 확인했다. 예외는 §9 에 "미확인" 으로 표시했다.
 > 목적: 이 저장소에서 Claude Code 같은 코딩 에이전트가 **필요한 것만, 필요할 때** 읽도록 문서와 설정을 배치한다.
 
@@ -226,7 +226,7 @@ docs/
 | 3 | `feature_list.json` + `progress.md` + `feature-item` skill + `session-base.sh`·`check-feature.sh` hook + 문서 링크 검사 | ai-workflow §4.6 의 hook 시나리오 재실행 |
 | 4 | `spring-reviewer` 서브에이전트 + 첫 기능 `TEST-1` 을 이 구조로 진행 | TEST-1 verify 명령 통과, plans/completed 에 회고 |
 
-적용 결과 (2026-10-14): 1~4단계 모두 반영. `.claude/settings.json` 변경(옛 hook 제거·새 hook 등록)만 사람 작업으로 남았다 — [../plans/active/context-structure.md](../plans/active/context-structure.md).
+적용 결과 (2026-10-14): 1~4단계 모두 반영. 옛 hook 제거·새 hook 등록(`.claude/settings.json`)과 체크리스트·리뷰 보관 이동까지 끝났다 — [../plans/completed/context-structure.md](../plans/completed/context-structure.md).
 
 ---
 

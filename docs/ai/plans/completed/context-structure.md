@@ -26,27 +26,17 @@
 - [x] 2026-10-14 단계 3: `docs/ai/feature_list.json`(초안 복사), `docs/ai/progress.md`, `scripts/init.sh`, skill `feature-item`, hook 스크립트 `.claude/hooks/session-base.sh`·`check-feature.sh` (progress 경로만 `progress.md` 로 바꿈). 임시 저장소에서 hook 시나리오 5개 실행: 변경 없음 통과 / 기록 없는 passes=true 차단 / 기록 후 통과 / title 변경 차단 / 문자열 "true" 차단. `bash scripts/init.sh` rc=0 (compile OK, docker 없음, spotless 위반 정보). **hook 은 settings.json 등록 전이라 아직 동작하지 않는다**
 - [x] 2026-10-14 단계 4: 서브에이전트 정의 `.claude/agents/spring-reviewer.md`, 첫 항목 `TEST-1` 을 이 구조(feature-item 순서)로 진행 — 실패 재현 확인, 독립 리뷰(주요 3건 반영: 로케일 고정, progress 기록, 범위 메모), verify 4개 rc=0, `passes: true`. 학습 노트 `docs/study/spring/message-source-locale.md`
 
-## 사람이 할 일 (에이전트 권한 밖)
+## 마무리 (2026-10-14)
 
-1. **옛 Stop hook 제거** — `.claude/hooks/check-done.sh` 는 끝난 TASK.md 용이다. 지우고 `.claude/settings.json` 의 `hooks.Stop` 을 비운다.
-   ```bash
-   git rm .claude/hooks/check-done.sh
-   printf '{}\n' > .claude/settings.json
-   ```
-   위 두 줄 대신, 새 hook 등록까지 한 번에 하려면 `.claude/settings.json` 을 이 내용으로 바꾼다 (ai-workflow §4.6):
-   ```json
-   { "hooks": {
-     "SessionStart": [ { "matcher": "startup", "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-base.sh" } ] } ],
-     "Stop":         [ { "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-feature.sh" } ] } ]
-   } }
-   ```
-   두 hook 은 클라우드 세션(`CLAUDE_CODE_REMOTE=true`)에서만 동작한다. 등록하면 다음 세션부터 `docs/ai/progress.md` 에 `session-base` 줄이 생기고, Stop 시 verify 기록을 검사한다.
-2. 1번 후 `docs/ai/checklist.json` 과 `docs/ai/reviews/` 를 `docs/ai/archive/2026-10-ai-dev-prep/` 로 옮긴다 (지금은 옛 hook 이 이 경로를 읽어서 남겨 뒀다). 에이전트에게 "체크리스트·리뷰 보관으로 옮겨" 라고 하면 된다.
+- [x] 옛 Stop hook(`check-done.sh`) 제거, `.claude/settings.json` 에 `session-base.sh`(SessionStart, matcher `startup`)·`check-feature.sh`(Stop) 등록. 처음에는 직접 수정이 권한 검사에서 거부됐고, 사용자 요청 후 설정 변경 절차(update-config)로 반영했다
+- [x] `docs/ai/checklist.json`·`docs/ai/reviews/` → `docs/ai/archive/2026-10-ai-dev-prep/`, 링크 수정 (검사 0건)
+- [ ] 다음 새 세션에서 확인: `/memory` 로 rules 경로별 로드, `docs/ai/progress.md` 에 `session-base` 줄이 자동으로 생기는지
 
-## 남은 것
+## 회고
 
-- 위 "사람이 할 일" 1·2 (옛 hook 제거·새 hook 등록, 체크리스트·리뷰 보관 이동). 끝나면 이 계획을 `plans/completed/` 로 옮긴다.
-- 다음 새 세션에서 `/memory` 로 rules 로드 확인 (단계 2 메모).
+- 구조는 하루 안에 적용됐고, 첫 항목(TEST-1)에서 독립 리뷰가 실제 결함(로케일에 따른 거짓 통과)을 잡아 루프의 가치를 확인했다.
+- 에이전트가 자기 설정(`.claude/settings.json`, hook)을 바꾸는 일은 권한 검사에 걸린다. 처음부터 "사람이 할 일" 로 분리한 것이 맞았다.
+- 파일 이동 시 자동 링크 수정 스크립트가 디렉터리 링크를 잘못 매핑한 적이 있다. 이동 후 `check-doc-links.py` 를 반드시 돌린다.
 
 ## 발견·결정 로그
 
@@ -55,4 +45,4 @@
 - 2026-10-14 `docs/public` 의 깨진 링크 3건(`./06_배포·운영.md` → 실제 파일은 `07_배포·운영.md`)은 팀 문서라 고치지 않고 검사 기본 범위에서 뺐다. `--all` 로 확인 가능.
 - 2026-10-14 `.claude/rules`·`skills`·`agents`·hook **새 스크립트 파일** 추가는 허용됐고, `settings.json` 수정과 기존 hook 삭제만 거부됐다.
 - 2026-10-14 리뷰가 잡은 것: 기본 로케일이 en 인 환경에서는 F2 의 반쪽 수정을 테스트가 못 잡는다. 리뷰어가 실제로 로케일을 바꿔 실행해 확인했다 — 독립 리뷰의 효과.
-- 2026-10-14 `.claude/settings.json`·hook 수정은 권한 검사에서 거부됐다. 옛 hook 이 `docs/ai/checklist.json`·`docs/ai/reviews/` 를 읽으므로 둘은 원래 위치에 남겼다.
+- 2026-10-14 `.claude/settings.json`·hook 수정은 권한 검사에서 거부됐다. 옛 hook 이 `docs/ai/archive/2026-10-ai-dev-prep/checklist.json`·`docs/ai/archive/2026-10-ai-dev-prep/reviews/` 를 읽으므로 둘은 원래 위치에 남겼다.

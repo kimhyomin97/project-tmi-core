@@ -14,7 +14,7 @@
 - 다음 세션이 알아야 할 것:
   - 첫 항목은 `TEST-1` (DB 없이 도는 테스트 3종).
   - 전체 `build` 는 PostgreSQL 이 필요하다. 작업 트리에 미커밋 Toss WIP 가 있으면 빌드 전에 `git stash push -- src/main .gitattributes`.
-  - `.claude/` 설정 변경은 사람이 한다 (`docs/ai/plans/active/context-structure.md` "사람이 할 일").
+  - `.claude/` 설정 변경은 사람이 한다 (`docs/ai/plans/completed/context-structure.md`).
 
 ## 2026-10-14 TEST-1 (DB 없이 도는 테스트 3종)
 
@@ -29,3 +29,12 @@ verify: TEST-1 OK
 - 다음 세션이 알아야 할 것:
   - 다음 항목은 `FIX-F1` (`@Disabled` 를 지우는 것까지가 verify).
   - FIX-F2 는 basename 과 `fallback-to-system-locale=false` 두 줄이 모두 있어야 `SentenceControllerTest` 가 통과한다.
+
+## 2026-10-14 구조 적용 마무리
+
+- `.claude/settings.json`: 옛 Stop hook(`check-done.sh`) 제거, `session-base.sh`(SessionStart, `startup`)·`check-feature.sh`(Stop) 등록. `check-done.sh` 파일 삭제.
+- `docs/ai/checklist.json`·`docs/ai/reviews/` 를 `docs/ai/archive/2026-10-ai-dev-prep/` 로 이동, 링크 검사 0건.
+- 계획 `context-structure` 를 `plans/completed/` 로 옮김.
+- 다음 세션이 알아야 할 것:
+  - 이번 세션은 hook 등록 전에 시작해 `session-base` 줄이 없다. 다음 세션부터 자동으로 생긴다.
+  - 다음 항목은 `FIX-F1`.

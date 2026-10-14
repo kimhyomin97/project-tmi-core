@@ -23,4 +23,4 @@
 
 - `docs/ai/` 를 `context/ · proposals/ · decisions/ · plans/ · archive/` 로 재배치. 파일 이름은 유지 (본문에 이름으로 언급된 곳이 많음).
 - `scripts/check-doc-links.py` 로 문서 링크를 검사한다.
-- `.claude/` 아래 설정·hook·rules·skills 변경은 사람이 검토해 반영한다 (에이전트가 자기 설정을 바꾸는 것은 세션 권한 검사에서 막힌다). 반영할 내용은 [../plans/active/context-structure.md](../plans/active/context-structure.md) 에 있다.
+- `.claude/` 아래 설정·hook·rules·skills 변경은 사람이 검토해 반영한다 (에이전트가 자기 설정을 바꾸는 것은 세션 권한 검사에서 막힌다). 2026-10-14 사용자 요청으로 반영 완료 — [../plans/completed/context-structure.md](../plans/completed/context-structure.md).
