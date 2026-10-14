@@ -36,4 +36,4 @@ description: docs/ai/feature_list.json 의 작업 항목 하나를 처음부터 
 3. 실패로 끝나면 `blocked: "<원인 한 줄>"` + `docs/ai/blockers.md` 에 상세.
 4. 계획 파일이 있으면 회고 3줄을 붙여 `plans/completed/` 로 옮긴다.
 5. 핵심 개념이 쓰였으면 skill `study-note`.
-6. 커밋 → push → PR (본문에 verify 명령과 결과).
+6. 커밋 → push → PR (본문에 verify 명령과 결과) → verify·리뷰가 통과했으면 main 에 merge (사용자 지시). merge 후 로컬을 main 으로 맞춘다.
