@@ -226,6 +226,8 @@ docs/
 | 3 | `feature_list.json` + `progress.md` + `feature-item` skill + `session-base.sh`·`check-feature.sh` hook + 문서 링크 검사 | ai-workflow §4.6 의 hook 시나리오 재실행 |
 | 4 | `spring-reviewer` 서브에이전트 + 첫 기능 `TEST-1` 을 이 구조로 진행 | TEST-1 verify 명령 통과, plans/completed 에 회고 |
 
+적용 결과 (2026-10-14): 1~4단계 모두 반영. `.claude/settings.json` 변경(옛 hook 제거·새 hook 등록)만 사람 작업으로 남았다 — [../plans/active/context-structure.md](../plans/active/context-structure.md).
+
 ---
 
 ## 9. 출처

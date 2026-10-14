@@ -20,7 +20,7 @@
       ],
       "acceptance": "GradeTest 실행·통과(skip 0). SimilarityClientTest·SentenceControllerTest 는 클래스가 존재하고 @Disabled(\"FIX-F1 …\")/(\"FIX-F2 …\") — 사유는 '<ID> + 공백' 형식. @Disabled 를 지우면 현재 코드에서 실패함을 1회 실행해 progress 에 기록",
       "evidence": "conventions-proposal.md §6.3 (현재 코드로 실패 재현 검증됨)",
-      "passes": false,
+      "passes": true,
       "blocked": null,
       "requires": [],
       "awaiting_human": false

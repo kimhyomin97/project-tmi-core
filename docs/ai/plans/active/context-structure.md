@@ -24,7 +24,7 @@
 - [x] 2026-10-14 단계 1: 재배치·색인·링크 검사 스크립트. 링크 검사 0건(보관·팀 문서 제외), `bash ./gradlew build` 성공 (테스트 9: 통과 3, `@Disabled` 6)
 - [x] 2026-10-14 단계 2: `CLAUDE.md` 75 → 60줄 (경로별 규칙·절차를 분리), `.claude/rules/` testing·persistence·external-client, skill `study-note`·`new-error-type`. 링크 검사 0건, frontmatter YAML 파싱 확인. **로드 동작(경로가 맞을 때만 rules 로드)은 다음 새 세션에서 `/memory` 로 확인해야 한다** — 이번 세션은 시작할 때 이 파일들이 없었다
 - [x] 2026-10-14 단계 3: `docs/ai/feature_list.json`(초안 복사), `docs/ai/progress.md`, `scripts/init.sh`, skill `feature-item`, hook 스크립트 `.claude/hooks/session-base.sh`·`check-feature.sh` (progress 경로만 `progress.md` 로 바꿈). 임시 저장소에서 hook 시나리오 5개 실행: 변경 없음 통과 / 기록 없는 passes=true 차단 / 기록 후 통과 / title 변경 차단 / 문자열 "true" 차단. `bash scripts/init.sh` rc=0 (compile OK, docker 없음, spotless 위반 정보). **hook 은 settings.json 등록 전이라 아직 동작하지 않는다**
-- [ ] 단계 4
+- [x] 2026-10-14 단계 4: 서브에이전트 정의 `.claude/agents/spring-reviewer.md`, 첫 항목 `TEST-1` 을 이 구조(feature-item 순서)로 진행 — 실패 재현 확인, 독립 리뷰(주요 3건 반영: 로케일 고정, progress 기록, 범위 메모), verify 4개 rc=0, `passes: true`. 학습 노트 `docs/study/spring/message-source-locale.md`
 
 ## 사람이 할 일 (에이전트 권한 밖)
 
@@ -43,9 +43,16 @@
    두 hook 은 클라우드 세션(`CLAUDE_CODE_REMOTE=true`)에서만 동작한다. 등록하면 다음 세션부터 `docs/ai/progress.md` 에 `session-base` 줄이 생기고, Stop 시 verify 기록을 검사한다.
 2. 1번 후 `docs/ai/checklist.json` 과 `docs/ai/reviews/` 를 `docs/ai/archive/2026-10-ai-dev-prep/` 로 옮긴다 (지금은 옛 hook 이 이 경로를 읽어서 남겨 뒀다). 에이전트에게 "체크리스트·리뷰 보관으로 옮겨" 라고 하면 된다.
 
+## 남은 것
+
+- 위 "사람이 할 일" 1·2 (옛 hook 제거·새 hook 등록, 체크리스트·리뷰 보관 이동). 끝나면 이 계획을 `plans/completed/` 로 옮긴다.
+- 다음 새 세션에서 `/memory` 로 rules 로드 확인 (단계 2 메모).
+
 ## 발견·결정 로그
 
 - 2026-10-14 파일 이름은 유지하고 디렉터리만 옮겼다. 본문에 "current-state.md §3" 처럼 이름으로 언급된 곳이 많다.
 - 2026-10-14 링크 검사는 마크다운 링크만 본다. 본문 속 경로까지 검사하면 "앞으로 만들 파일" 언급이 모두 오류로 잡힌다.
 - 2026-10-14 `docs/public` 의 깨진 링크 3건(`./06_배포·운영.md` → 실제 파일은 `07_배포·운영.md`)은 팀 문서라 고치지 않고 검사 기본 범위에서 뺐다. `--all` 로 확인 가능.
+- 2026-10-14 `.claude/rules`·`skills`·`agents`·hook **새 스크립트 파일** 추가는 허용됐고, `settings.json` 수정과 기존 hook 삭제만 거부됐다.
+- 2026-10-14 리뷰가 잡은 것: 기본 로케일이 en 인 환경에서는 F2 의 반쪽 수정을 테스트가 못 잡는다. 리뷰어가 실제로 로케일을 바꿔 실행해 확인했다 — 독립 리뷰의 효과.
 - 2026-10-14 `.claude/settings.json`·hook 수정은 권한 검사에서 거부됐다. 옛 hook 이 `docs/ai/checklist.json`·`docs/ai/reviews/` 를 읽으므로 둘은 원래 위치에 남겼다.

@@ -15,6 +15,7 @@
 | 4 | [spring/http-interface.md](spring/http-interface.md) | 인터페이스만 선언하면 HTTP 클라이언트가 생긴다. 단 파라미터 어노테이션은 필수 | `FIX-F1` |
 | 5 | [be-standards/README.md](be-standards/README.md) | 국내 IT 기업 BE 관례(기업 블로그 원문 확인 [C✓], 2개 기업 이상이면 "국내 공통")와 이 프로젝트의 연습 로드맵 | 전체 (D1~D7 참고) |
 | 6 | [ai/context-engineering.md](ai/context-engineering.md) | AI 에이전트에게 무엇을 처음에, 무엇을 필요할 때 읽힐지 — 지침 파일·rules·skill·임시 파일 배치 | `docs/ai/proposals/context-structure-design.md` |
+| 7 | [spring/message-source-locale.md](spring/message-source-locale.md) | 메시지는 요청 언어로 찾고, 없으면 서버 로케일로 폴백한다 — basename 만 고치면 반쯤 고쳐진다 | `FIX-F2`, `TEST-1` |
 
 1·2 는 함께 읽으면 좋다. 같은 결함(F4)의 두 원인이다.
 

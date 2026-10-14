@@ -22,7 +22,7 @@ class SimilarityClientTest {
     @Test
     @Disabled("FIX-F1 SimilarityClient.score 파라미터에 @RequestBody 가 없어 호출 시 IllegalStateException — FIX-F1 에서 해제")
     @DisplayName("요청 본문을 JSON 으로 보내고 score 를 읽는다")
-    void shouldPostJsonBody_whenScore() {
+    void shouldSendJsonBodyAndParseScore_whenScoreCalled() {
         RestClient.Builder builder = RestClient.builder().baseUrl("http://similarity");
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         SimilarityClient client = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(builder.build()))
