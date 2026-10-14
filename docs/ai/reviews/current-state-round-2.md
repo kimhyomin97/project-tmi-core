@@ -1,6 +1,6 @@
 # current-state 리뷰 — Round 2
 
-> 대상: `docs/ai/current-state.md` @ `99aa1e3` (566줄). 이후 HEAD `7207e31` 에서도 이 파일은 바뀌지 않았다. 라인 번호는 이 버전 기준이다.
+> 대상: `docs/ai/context/current-state.md` @ `99aa1e3` (566줄). 이후 HEAD `7207e31` 에서도 이 파일은 바뀌지 않았다. 라인 번호는 이 버전 기준이다.
 > 검증 방법: 전용 worktree(`git worktree add --detach … HEAD`, `99aa1e3`)에서 실행했다. 끝난 뒤 제거했다.
 > - **ArchUnit @Disabled 무시 실행**: worktree 에만 `src/test/resources/junit-platform.properties`(`junit.jupiter.conditions.deactivate=org.junit.*DisabledCondition`)를 두고 `bash ./gradlew test --tests 'com.tmi.core.architecture.*'` 를 돌렸다. 결과는 8 tests, 6 failed. 실패 메시지 원문을 `build/test-results` XML 에서 뽑아 §6.2 와 한 줄씩 대조했다.
 > - **정상 빌드**: 위 파일을 지운 뒤 `bash ./gradlew build` 를 돌렸다(로컬 PostgreSQL).
@@ -49,7 +49,7 @@
   - R2 는 "ARCH-B2, ARCH-B3" 로 적혀 있다. 그러나 현재 R2 해제는 `ARCH-B3` 의 acceptance 에만 있다(`:221`).
   - 이 파일이 갱신된 뒤 feature_list 가 바뀐 것이 원인이다. 동기화가 필요하다.
 - [m5] §7.3 L561·L566, decisions-needed D5 "`src/main` 29파일을 건드리므로" — Spotless `target` 은 `src/*/java/**/*.java` 다. 그래서 `spotlessApply` 단독 커밋에는 `CoreApplicationTests.java`(+2/−4)도 들어가 **30 파일**이 된다. 29/34 와 +178/−214 수치 자체는 [R실행] 으로 정확하다. "의미 변경 없음" 은 표본 1개가 근거지만 더 강하게 쓸 수 있다. [R실행] 적용 전후 `src/main` 40개 class 파일의 상수 풀(Utf8/String, text block 포함)이 전부 동일하다. 근거를 이것으로 바꾸면 D5 판단이 쉬워진다.
-- [m6] §6.3 — R4·R4b 는 "통과" 만 있고 음성 대조(일부러 위반시켜 잡히는지)가 없다. 통과가 규칙이 동작해서인지, 비어 있어서인지 구분되지 않는다. R2·R5 처럼 픽스처 1건씩을 추가한다. 또 픽스처 코드가 삭제돼 §6.3 의 양성·음성 대조를 아무도 재현할 수 없다. `docs/ai/examples/` 등에 코드만이라도 보존한다.
+- [m6] §6.3 — R4·R4b 는 "통과" 만 있고 음성 대조(일부러 위반시켜 잡히는지)가 없다. 통과가 규칙이 동작해서인지, 비어 있어서인지 구분되지 않는다. R2·R5 처럼 픽스처 1건씩을 추가한다. 또 픽스처 코드가 삭제돼 §6.3 의 양성·음성 대조를 아무도 재현할 수 없다. `docs/ai/proposals/examples/` 등에 코드만이라도 보존한다.
 - [m7] §7.2 표 — P 번호가 P1…P6, **P9**, P7 순서이고 P8 이 없다. 번호를 다시 매기거나 P8 이 빠진 이유를 적는다.
 - [m8] 다른 문서와의 모순 (current-state 쪽 서술이 맞고 research.md 가 낡았다):
   - research.md §3.2 는 여전히 slash basename 을 "estimated, 테스트로 확인 필요" 로 둔다. current-state §3.3(b) L241 은 "실행으로 확인됨" 이라고 한다.

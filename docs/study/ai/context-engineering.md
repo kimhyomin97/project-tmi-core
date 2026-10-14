@@ -8,7 +8,7 @@ AI 에이전트의 컨텍스트 창은 **한정된 주의력 예산**이다. 많
 
 - `CLAUDE.md` 하나에 빌드 명령부터 학습 노트 작성 절차까지 모두 들어 있다. 테스트 규칙은 테스트 파일을 만질 때만 필요한데, 매 세션 전부 읽힌다.
 - `docs/ai/` 에 현행 지식과 끝난 작업 기록(리뷰 21개 등)이 섞여 있어, 에이전트가 낡은 기록을 현행 규칙으로 읽을 수 있다.
-- 설계안: `docs/ai/context-structure-design.md`
+- 설계안: `docs/ai/proposals/context-structure-design.md`
 
 ## 동작 원리
 

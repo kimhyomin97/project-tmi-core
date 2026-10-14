@@ -1,6 +1,6 @@
 # ai-workflow 리뷰 — Round 3
 
-> 대상 커밋: `83f7b92`. 대상 파일: `docs/ai/ai-workflow.md`, `docs/ai/feature_list.example.json`. 대조한 문서: `decisions-needed.md` §0·D1·D3·D5·D6·D12, ArchUnit 테스트 3개, hooks 공식 문서, 이전 리뷰 `ai-workflow-round-1.md`·`-round-2.md`.
+> 대상 커밋: `83f7b92`. 대상 파일: `docs/ai/proposals/ai-workflow.md`, `docs/ai/feature_list.example.json`. 대조한 문서: `decisions-needed.md` §0·D1·D3·D5·D6·D12, ArchUnit 테스트 3개, hooks 공식 문서, 이전 리뷰 `ai-workflow-round-1.md`·`-round-2.md`.
 > 검증 방법 (모든 실행은 전용 worktree `scratchpad/wt-ai-workflow` = `83f7b92` 에서 했고, 끝난 뒤 worktree 를 제거했다):
 > - §4.6 의 `session-base.sh`·`check-feature.sh` 를 문서 L301-345 에서 그대로 뽑아 임시 git 저장소(`scratchpad/hs3`)에서 돌렸다. 문서 표의 14개 시나리오를 재현하고, 새 우회 시도 15개를 추가로 실행했다(X1~X12, S6′·S6″, R1).
 > - feature_list 의 verify 13개 항목(사람 판정 3개 제외)을 HEAD 에서 모두 실행했다. 이어서 FIX-F1 을 **실제로 고친 상태**(TEST-1 의 `SimilarityClientTest` 추가 + `@RequestBody` 추가 + R7 `@Disabled` 제거)에서 FIX-F1 의 verify 를 다시 돌렸다. R1·R3·R5 의 `@Disabled` 를 지운 상태에서 클래스 단위 skip 수도 확인했다. Gradle 이 실행할 때마다 test-results 를 비우는지(이전 결과가 남아 판정을 오염시키는지)도 확인했다.

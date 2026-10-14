@@ -1,6 +1,6 @@
 # architecture-proposal 리뷰 — Round 4
 
-> 대상: `docs/ai/architecture-proposal.md` @ `01898ba`. 전용 worktree(`git worktree add --detach … 01898ba`)에서 읽었고, 라인 번호는 이 커밋 기준이다.
+> 대상: `docs/ai/proposals/architecture-proposal.md` @ `01898ba`. 전용 worktree(`git worktree add --detach … 01898ba`)에서 읽었고, 라인 번호는 이 커밋 기준이다.
 > 검증 방법:
 > 1. 정적 대조에 쓴 파일: 대상 문서, `reviews/architecture-proposal-round-{1,2,3}.md`, `decisions-needed.md` D1·D9, `examples/answer-scoring/README.md`, `option-a-layered/` 7개 파일, `feature_list.example.json`(items 11개, pending_decision `D1=B` 3개·`D1=A'` 2개), `conventions-proposal.md` §2.4·§4.3, `ai-workflow.md` §6 표, `docs/public/{02,99}` 의 §0 표 신규 인용 위치, `src/test/java/com/tmi/core/architecture/*`, 그리고 `git diff 83f7b92 01898ba`.
 > 2. 프로브 구현: 임시 `APrimeRulesProbeTest` 에 §2 A′ 규칙 (a)(b)(`:66-67`)를 **문구 그대로** ArchUnit `ArchCondition` 으로 구현했다.

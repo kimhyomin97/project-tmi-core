@@ -1,8 +1,8 @@
 # 결정 필요 사항 (decisions-needed)
 
 > 아침에 이 문서만 읽고 결정할 수 있도록 정리했다. **중요도 순**. 각 항목: 선택지 · 장단점 · 추천 · "결정하면 바로 시작할 수 있는 다음 작업".
-> 근거 문서: [current-state.md](./current-state.md) (사실, F1~F10) · [research.md](./research.md) · [architecture-proposal.md](./architecture-proposal.md) · [conventions-proposal.md](./conventions-proposal.md) · [ai-workflow.md](./ai-workflow.md)
-> 다음 작업의 ID 는 [feature_list.example.json](./feature_list.example.json) 항목이다.
+> 근거 문서: [current-state.md](../context/current-state.md) (사실, F1~F10) · [research.md](../context/research.md) · [architecture-proposal.md](./architecture-proposal.md) · [conventions-proposal.md](./conventions-proposal.md) · [ai-workflow.md](./ai-workflow.md)
+> 다음 작업의 ID 는 [feature_list.example.json](../feature_list.example.json) 항목이다.
 
 ---
 
@@ -107,7 +107,7 @@
 | (b) 현재 위치(`toss.holdings.infra` + `common/config` 등록)로 먼저 완성 | 즉시 진행 | 외부 클라이언트 규칙 2개 고착, `common ↔ toss` 순환 (R1·R3) |
 | (c) 폐기 | — | 작업 손실 |
 
-- WIP 는 [wip-snapshot.patch](./wip-snapshot.patch) 로 커밋돼 있고, 작업 종료 시 작업 트리에 미커밋 상태로 복원한다 (blockers.md §1).
+- WIP 는 [wip-snapshot.patch](../archive/2026-10-ai-dev-prep/wip-snapshot.patch) 로 커밋돼 있고, 작업 종료 시 작업 트리에 미커밋 상태로 복원한다 (blockers.md §1).
 - WIP 의 `HoldingsSnapshotEntity.create(HoldingsApiResponse.Result, …)` 는 `domain → dto` 의존 → ArchUnit R4b 위반 예정. 매핑을 서비스(또는 DTO 쪽 `toEntity`)로 옮길 것.
 - **결정하면 바로 시작**: feature_list 에 아직 id 가 없다 — H0 에서 `TOSS-1`(depends_on `ARCH-B3` 또는 `ARCH-A2`)을 신설. 내용: 패치 적용 → `TossHoldingsClient`·`HoldingsApiResponse`(+ A′ 면 `TossHoldingsFetcher`) 작성 → conventions §4.3 의 스케줄러 패턴 (설계 §6 에러 정책 포함).
 

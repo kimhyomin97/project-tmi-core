@@ -1,6 +1,6 @@
 # ai-workflow 리뷰 — Round 4
 
-> 대상 커밋: `01898ba`. 대상 파일: `docs/ai/ai-workflow.md`, `docs/ai/feature_list.example.json`. 대조한 문서: `decisions-needed.md` D5·D12, `CLAUDE.md`, ArchUnit 테스트(`ConventionArchitectureTest`·`ModuleArchitectureTest`), hooks 공식 문서, 이전 리뷰 `ai-workflow-round-1~3.md`.
+> 대상 커밋: `01898ba`. 대상 파일: `docs/ai/proposals/ai-workflow.md`, `docs/ai/feature_list.example.json`. 대조한 문서: `decisions-needed.md` D5·D12, `CLAUDE.md`, ArchUnit 테스트(`ConventionArchitectureTest`·`ModuleArchitectureTest`), hooks 공식 문서, 이전 리뷰 `ai-workflow-round-1~3.md`.
 > 검증 방법 (모든 실행은 전용 worktree `scratchpad/wt-ai-workflow` = `01898ba` 에서 했고, 끝난 뒤 worktree 를 제거했다):
 > - **verify 전수 실행**: feature_list 의 15개 항목 verify 를 jq 로 뽑아 그대로 실행하는 러너(`scratchpad/r4/runverify.sh`)로 HEAD 에서 돌렸다.
 > - **수정 시뮬레이션**: (a) TEST-1 완료 상태를 만들었다. `GradeTest`, `@Disabled("FIX-F1 …")` 를 붙인 `SimilarityClientTest`, `@Disabled("FIX-F2 …")` 를 붙인 `SentenceControllerTest` 를 conventions §6.3 코드로 추가했다. 그 위에서 각 항목을 **단독으로** 고쳤다. (b) FIX-F1 만: `@RequestBody` 를 추가하고 F1·R7 의 `@Disabled` 를 지웠다. (c) FIX-R5 만: `SentenceService.getRandom` 이 `SentenceResponse` 를 반환하게 하고 R5 의 `@Disabled` 를 지웠다. (d) FIX-F1 + ARCH-A1: `RestClientConfig` 를 `infra.similarity.SimilarityClientConfig` 로 옮기고 R1·R3 의 `@Disabled` 를 지웠다. (e) R6 만: `loadSentence` 의 `@Transactional` 을 지우고 R6 의 `@Disabled` 를 지웠다. R5 는 꺼진 채로 두었다. 각 상태에서 해당 항목과 이웃 항목의 verify 를 실행했다. 음성 대조로, R7 의 `@Disabled` 만 지우고 코드는 고치지 않은 상태도 실행했다.

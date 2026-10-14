@@ -2,7 +2,7 @@
   "items": [
     {
       "id": "current-state",
-      "artifact": "docs/ai/current-state.md",
+      "artifact": "docs/ai/context/current-state.md",
       "done": true,
       "review_rounds": 3,
       "rubric_scores": {
@@ -14,7 +14,7 @@
     },
     {
       "id": "research",
-      "artifact": "docs/ai/research.md",
+      "artifact": "docs/ai/context/research.md",
       "done": true,
       "review_rounds": 2,
       "rubric_scores": {
@@ -27,7 +27,7 @@
     },
     {
       "id": "architecture-proposal",
-      "artifact": "docs/ai/architecture-proposal.md",
+      "artifact": "docs/ai/proposals/architecture-proposal.md",
       "done": true,
       "review_rounds": 4,
       "rubric_scores": {
@@ -39,7 +39,7 @@
     },
     {
       "id": "conventions-proposal",
-      "artifact": "docs/ai/conventions-proposal.md",
+      "artifact": "docs/ai/proposals/conventions-proposal.md",
       "done": true,
       "review_rounds": 4,
       "rubric_scores": {
@@ -51,7 +51,7 @@
     },
     {
       "id": "ai-workflow",
-      "artifact": "docs/ai/ai-workflow.md",
+      "artifact": "docs/ai/proposals/ai-workflow.md",
       "done": true,
       "review_rounds": 4,
       "rubric_scores": {
@@ -63,7 +63,7 @@
     },
     {
       "id": "examples",
-      "artifact": "docs/ai/examples/",
+      "artifact": "docs/ai/proposals/examples/",
       "done": true,
       "review_rounds": 4,
       "rubric_scores": {
@@ -101,7 +101,7 @@
     },
     {
       "id": "decisions-needed",
-      "artifact": "docs/ai/decisions-needed.md",
+      "artifact": "docs/ai/proposals/decisions-needed.md",
       "done": true,
       "review_rounds": 2,
       "rubric_scores": {

@@ -1,9 +1,9 @@
 # examples 리뷰 — Round 3
 
-> **대상**: `docs/ai/examples/` 전체(25파일). 기준 커밋은 `83f7b92` 이고, examples 의 마지막 변경 커밋은 `8ce4a33` 이다. 대조 문서(`architecture-proposal.md`, `decisions-needed.md`, `conventions-proposal.md`, `feature_list.example.json`)와 `src/main` 도 `83f7b92` 기준으로 읽었다.
+> **대상**: `docs/ai/proposals/examples/` 전체(25파일). 기준 커밋은 `83f7b92` 이고, examples 의 마지막 변경 커밋은 `8ce4a33` 이다. 대조 문서(`architecture-proposal.md`, `decisions-needed.md`, `conventions-proposal.md`, `feature_list.example.json`)와 `src/main` 도 `83f7b92` 기준으로 읽었다.
 >
 > **검증 방법**: 전용 worktree 3개(`wt-examples`, `wt-examples-b`, `wt-examples-c`)를 `83f7b92` 에서 만들었고, 리뷰 후 모두 삭제했다. DB 는 SELECT 만 했다.
-> 1. **커밋 여부**: `git ls-files docs/ai/examples` 와 `find docs/ai/examples -type f` 를 비교했다. `git check-ignore -v --no-index` 도 돌렸다.
+> 1. **커밋 여부**: `git ls-files docs/ai/proposals/examples` 와 `find docs/ai/proposals/examples -type f` 를 비교했다. `git check-ignore -v --no-index` 도 돌렸다.
 > 2. **C 재현**: README §0 C 행대로 적용했다. 포트 3개·유스케이스 서비스·`AnswerScore`·`AnswerException`·`SentencePersistenceAdapter` 를 넣었다(리포지토리 이름은 AS-IS `SentenceRepository`). AS-IS `AnswerService`·`AnswerController`·`AnswerResponse` 는 삭제했다. 이어서 `compileJava` 를 돌렸다. 그다음 ArchUnit 의 `@Disabled` 를 모두 풀고 `*ArchitectureTest` 를 돌렸다.
 > 3. **A′·B 이식 + 점수 정책 프로브**: README §3 표대로 이식했다. `RestClientConfig` 는 삭제했고 `similarity.*` 키는 바꿨다. B 는 `infra/**` 를 삭제하고 `SimilarityException` 을 이동했다.
 >    - 가짜 Similarity 서버(python, `127.0.0.1:18777`, chunked 본문 지원)를 띄웠다.
@@ -72,7 +72,7 @@
 
 - [m1] README §5 C 행 `:124` 은 "한 흐름에 **신규 8**" 이라고 쓴다. 그러나 같은 README §3 `:98` 은 "신규 7개(포트 3·서비스 1·도메인 1·어댑터 2) + 수정 1 + 이동 1" 이고, architecture-proposal §3.2 `:172` 는 "신규 7 + 수정 1" 이다. 표의 행을 세면 7이 맞다. Round 2 m1 의 잔여분이다.
 - [m2] `conventions-proposal.md:317` 의 After 주석이 아직 "점수는 `Math.clamp(score, 0.0, 1.0)`" 다. 바뀐 정책(허용 오차, 그 밖 `Unavailable`)과 모순된다. 이 주석은 examples README §2 를 근거로 인용한다.
-- [m3] `.gitignore:25` 의 `out/` 는 그대로다. 4파일은 강제 add 로 추적만 되고 있다. 예를 들어 `git check-ignore -v --no-index docs/ai/examples/answer-scoring/option-c-hexagonal/application/port/out/NewPort.java` 의 결과는 `.gitignore:25:out/` 다. 그래서 C 예시의 `port/out/`·`adapter/out/` 에 새 파일을 만들면 또 조용히 빠진다. Round 2 C1 이 요구한 `.gitignore` 축소(또는 `!docs/**/out/`)와 ai-workflow 체크리스트 한 줄(`git status --ignored docs/ai`)은 둘 다 반영되지 않았다(`grep -n ignored docs/ai/ai-workflow.md` → 0건).
+- [m3] `.gitignore:25` 의 `out/` 는 그대로다. 4파일은 강제 add 로 추적만 되고 있다. 예를 들어 `git check-ignore -v --no-index docs/ai/examples/answer-scoring/option-c-hexagonal/application/port/out/NewPort.java` 의 결과는 `.gitignore:25:out/` 다. 그래서 C 예시의 `port/out/`·`adapter/out/` 에 새 파일을 만들면 또 조용히 빠진다. Round 2 C1 이 요구한 `.gitignore` 축소(또는 `!docs/**/out/`)와 ai-workflow 체크리스트 한 줄(`git status --ignored docs/ai`)은 둘 다 반영되지 않았다(`grep -n ignored docs/ai/proposals/ai-workflow.md` → 0건).
 - [m4] README §0 B 행 `:14` 이 "점수 보정을 허용 오차 방식으로 변경 — 재실행 전" 으로 남아 있다. 이번 라운드에서 다시 실행했으므로 결과 칸을 실행 기록으로 바꾼다. 결과: `build`·`contextLoads` 성공, R1·R2·R3·R4·R4b·R6·R7 통과, R5 1건(`getRandom`), 3초 지연·빈 200 → 503, 1.0000001 → 1.0, 1.5 → 503 (단 NaN 은 M1).
 - [m5] README §0 C 행 `:15` 의 절차를 문자 그대로 따르면 컴파일이 실패한다. AS-IS `AnswerApi`(`answer/controller/AnswerApi.java:3,37,107`)가 삭제된 `AnswerResponse` 를 참조해 `cannot find symbol` 3건이 난다. `AnswerApi` 도 삭제하면 성공한다. 그러니 "컨트롤러" 를 "`AnswerController`·`AnswerApi`" 로 적는다.
 - [m6] architecture-proposal §2 C 트리(`:121`, `:134`)는 "배치는 examples 와 같다" 고 하면서 `sentence/domain/Sentence (순수 모델)` 을 둔다. 그런데 `8ce4a33` 에서 예시의 `domain/Sentence.java` 는 삭제됐다. 어댑터도 JPA 엔티티를 바로 `SentenceForScoring` 으로 매핑한다(`SentencePersistenceAdapter.java:23`). §3.1 P4 C 칸 "해결 (도메인 모델)" 도 예시의 "포트 소유 record" 와 다르다. 결정에는 영향이 없다.
@@ -83,7 +83,7 @@
 
 | 지적 | 상태 | 확인 |
 |---|---|---|
-| C1 C 4파일 미커밋 | **해소** (재발 방지는 미반영 → m3) | `git ls-files docs/ai/examples` 25개 = `find` 25개. `LoadSentencePort`·`ScoreSimilarityPort`·`SentencePersistenceAdapter`·`SimilarityHttpAdapter` 가 `83f7b92` 에 있다. `git status --ignored docs/ai` 는 0건이다 |
+| C1 C 4파일 미커밋 | **해소** (재발 방지는 미반영 → m3) | `git ls-files docs/ai/proposals/examples` 25개 = `find` 25개. `LoadSentencePort`·`ScoreSimilarityPort`·`SentencePersistenceAdapter`·`SimilarityHttpAdapter` 가 `83f7b92` 에 있다. `git status --ignored docs/ai` 는 0건이다 |
 | M1 C 순환 해법 | **해소** | 포트가 `SentenceForScoring` record 를 반환한다(`LoadSentencePort.java:11,14`). `ScoreAnswerService` 에 `sentence.*` import 가 0개다. [실행] `compileJava` 성공, R1 위반은 `common → infra → common` 1건뿐이고 answer↔sentence 순환은 없다. R2 는 3건으로 모두 `sentence.adapter.out.persistence.SentencePersistenceAdapter → answer.application.port.out.LoadSentencePort(·$SentenceForScoring)` 이다. README §0 과 architecture-proposal `:139-140` 서술이 정확하다. "B 의 경계가 먼저 필요" 문구도 삭제됐다(grep 0건) |
 | M2 점수 clamp 정책 | **부분** | 허용 오차 방식 구현, D13 (a)(b)(c) 등록, `AnswerScore` 주석 갱신이 반영됐다. [실행] A′·B 에서 1.0000001 → 200 1.0, 1.5 → 503, -0.2 → 503, -0.0000005 → 200 0.0. 그러나 NaN 은 통과하고(M1), 원래 값 로그가 없으며 소유 항목도 없다(M2) |
 | M3 A′ 우회 | **부분** | README §5 `:119`·§6 Q2 `:131`·architecture-proposal `:63` (b) 가 반영됐다. 그러나 "규칙 1개" 3곳, `ARCH-A2`, Toss 와의 충돌이 남았다(M3) |

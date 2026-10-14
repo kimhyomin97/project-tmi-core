@@ -1,6 +1,6 @@
 # current-state.md 리뷰 — Round 1
 
-> 리뷰 대상: `docs/ai/current-state.md` @ `f1cca69` (469줄, 트랜잭션 서술 정정본). 라인 번호는 이 버전 기준.
+> 리뷰 대상: `docs/ai/context/current-state.md` @ `f1cca69` (469줄, 트랜잭션 서술 정정본). 라인 번호는 이 버전 기준.
 > 검증 방법: `src/main` 34개 파일 전부 정독, `docs/public/*` 대조, 그리고 **일회성 프로브 테스트 4종**(`src/test/.../zzreviewprobe/*` — 실행 후 삭제, `git status` 로 원상복구 확인)을 로컬 PostgreSQL(`localhost:15432`, `init.sql` 시드)에서 돌렸다. WIP 컴파일은 scratchpad 의 `git archive HEAD` 사본에 `wip-snapshot.patch` 를 적용해 확인했다. Mermaid 는 `mermaid@11.4.1` 파서(jsdom)로 파싱했다.
 > 아래에서 [R실행] 은 리뷰어가 직접 실행해 얻은 결과다.
 
@@ -39,7 +39,7 @@
 
 - [M8] §3.3(b) L223-233 / §1.7 L110 — basename 만 고친다고 i18n 이 맞아지지 않는다는 점을 놓쳤다. [R실행] `spring.messages.basename=messages/messages` 를 주고 JVM 기본 로케일을 `ko_KR` 로 둔 채 `Accept-Language: en` 과 `fr` 로 요청하면 둘 다 한글 메시지(`영어 문장을 찾을 수 없습니다: ...`)가 나온다. `spring.messages.fallback-to-system-locale` 기본값이 `true` 라서, `messages_en` 이 없으면 시스템 로케일인 ko 로 폴백한다. 03 §1.4 "영문 기본" 계약은 운영 서버 로케일에 따라 깨진다. 실제 Tomcat 에서는 헤더가 없을 때 `request.getLocale()` 이 서버 기본 로케일을 돌려주는 문제도 있다(이 부분은 [정적]). research.md §3.2 가 "slash 경로 형식 — estimated" 라고 적은 부분은 위 실행으로 **동작 확인**됐다. — 요구 수정: F2 에 "basename 수정 + `fallback-to-system-locale=false`(+ 필요 시 `spring.web.locale=en`)가 함께 필요" 를 사실로 기록한다.
 
-- [M9] §5 L395 "커밋하지도 되돌리지도 않았다", blockers.md §1 "작업 종료 시 `git stash pop` 으로 복원" — 현재 저장소 상태와 맞지 않는다. 지금 작업 트리에는 WIP 가 **없고**(`git status` 에 `src/main` 변경 없음) `stash@{0}` 에만 있다. 게다가 그 stash 에는 WIP 외에 `.claude/hooks/check-done.sh`, `.claude/settings.json`, `docs/ai/TASK.md` 가 함께 들어 있다. 이 파일들은 이미 HEAD 에 커밋돼 있어서 [R실행] `git stash show -p stash@{0} | git apply --check` 가 `already exists in working directory` 로 실패한다. 문서에 적힌 복원 절차를 그대로 따르면 실패한다. `git apply --check docs/ai/wip-snapshot.patch` 는 깨끗하게 통과한다. — 요구 수정: §5 를 "WIP 는 현재 stash@{0} 에 있음, 복원은 `git apply docs/ai/wip-snapshot.patch` (stash pop 은 충돌)" 로 고치고 blockers.md 와 맞춘다. 작업 종료 시 복원할 계획이면 그 시점에 다시 확인한다.
+- [M9] §5 L395 "커밋하지도 되돌리지도 않았다", blockers.md §1 "작업 종료 시 `git stash pop` 으로 복원" — 현재 저장소 상태와 맞지 않는다. 지금 작업 트리에는 WIP 가 **없고**(`git status` 에 `src/main` 변경 없음) `stash@{0}` 에만 있다. 게다가 그 stash 에는 WIP 외에 `.claude/hooks/check-done.sh`, `.claude/settings.json`, `docs/ai/archive/2026-10-ai-dev-prep/TASK.md` 가 함께 들어 있다. 이 파일들은 이미 HEAD 에 커밋돼 있어서 [R실행] `git stash show -p stash@{0} | git apply --check` 가 `already exists in working directory` 로 실패한다. 문서에 적힌 복원 절차를 그대로 따르면 실패한다. `git apply --check docs/ai/archive/2026-10-ai-dev-prep/wip-snapshot.patch` 는 깨끗하게 통과한다. — 요구 수정: §5 를 "WIP 는 현재 stash@{0} 에 있음, 복원은 `git apply docs/ai/archive/2026-10-ai-dev-prep/wip-snapshot.patch` (stash pop 은 충돌)" 로 고치고 blockers.md 와 맞춘다. 작업 종료 시 복원할 계획이면 그 시점에 다시 확인한다.
 
 - [M10] 존재하지 않는 문서·절을 근거로 인용한다(일관성). `decisions-needed.md`(L3, L376), `conventions-proposal.md §4`(L306), `conventions-proposal.md`(L461)는 아직 없는 파일이고, `research.md §1.3`(L389)은 없는 절이다. F6(L24) "ArchUnit §6" 과 표기 규칙 L10 "§6 ArchUnit 결과 참조" 는 내용이 "(6단계에서 채움)"(L413)뿐인 절을 [실행] 근거로 든다. — 요구 수정: 미작성 문서는 "(작성 예정)" 으로 표기하고, F6 의 검증 열은 §6 이 채워질 때까지 [정적] 으로만 둔다. research 인용은 실제 절 번호로 고친다(MessageSource 는 §3.2 로 맞게 인용돼 있음).
 

@@ -1,11 +1,11 @@
 # 아키텍처 제안 (architecture-proposal)
 
 > 상태: **제안 — 미확정**. 결정은 [decisions-needed.md](./decisions-needed.md) **D1**.
-> 입력: [current-state.md](./current-state.md) (사실), [research.md](./research.md) (외부 근거).
+> 입력: [current-state.md](../context/current-state.md) (사실), [research.md](../context/research.md) (외부 근거).
 > 비교용 예시 코드: [examples/answer-scoring/](./examples/answer-scoring/README.md) — 같은 "답안 채점" 기능을 선택지별로 재구성.
-> 개정: Round 1 리뷰([reviews/architecture-proposal-round-1.md](./reviews/architecture-proposal-round-1.md)) 반영 — 단계 계획(C1), 바꾸는 기존 규칙(C2), A′ 재정의(M2), Modulith(M1), 비용 근거(M4), R5·C 트리(M5·M6), 경미 전부.
-> 개정: Round 2 리뷰([reviews/architecture-proposal-round-2.md](./reviews/architecture-proposal-round-2.md)) 반영 — B 추천 근거를 "공개 표면의 크기·diff 가시성" 으로 좁힘(C1), F1T·DOC 단계(M1), 문서 목록(M2), 관찰 가능한 클라이언트 배치 규칙·Toss auth(M3), 산정식(M4).
-> 개정: Round 3 리뷰([reviews/architecture-proposal-round-3.md](./reviews/architecture-proposal-round-3.md)) 반영 — A′ 규칙 (b) 를 Toss 에도 성립하도록 재작성하고 "A′ 2개 / B 1개" 로 정정(M1), C 트리를 예시와 맞춤, §0 표 위치 보강, 산정 하한, 경미 11건.
+> 개정: Round 1 리뷰([reviews/architecture-proposal-round-1.md](../reviews/architecture-proposal-round-1.md)) 반영 — 단계 계획(C1), 바꾸는 기존 규칙(C2), A′ 재정의(M2), Modulith(M1), 비용 근거(M4), R5·C 트리(M5·M6), 경미 전부.
+> 개정: Round 2 리뷰([reviews/architecture-proposal-round-2.md](../reviews/architecture-proposal-round-2.md)) 반영 — B 추천 근거를 "공개 표면의 크기·diff 가시성" 으로 좁힘(C1), F1T·DOC 단계(M1), 문서 목록(M2), 관찰 가능한 클라이언트 배치 규칙·Toss auth(M3), 산정식(M4).
+> 개정: Round 3 리뷰([reviews/architecture-proposal-round-3.md](../reviews/architecture-proposal-round-3.md)) 반영 — A′ 규칙 (b) 를 Toss 에도 성립하도록 재작성하고 "A′ 2개 / B 1개" 로 정정(M1), C 트리를 예시와 맞춤, §0 표 위치 보강, 산정 하한, 경미 11건.
 
 ---
 
@@ -197,7 +197,7 @@ com.tmi.core.sentence
 ### 4.1 근거
 
 1. **공개 표면이 좁고, 넓히면 diff 로 드러난다.** A′ 도 결합을 막지만 "타 기능의 `service`·`dto` 패키지는 전부 공개" 다. `sentence.dto.SentenceResponse`(웹 응답)를 `answer` 가 재사용해도 규칙 위반이 아니고, 그 순간 웹 계약과 기능 간 계약이 묶인다. B 에서도 같은 결합은 가능하지만(§4.2 마지막 행) **`SentenceResponse` 를 base package 로 옮기거나 공개 API 가 웹 DTO 를 반환하는 변경이 diff 로 보여야** 한다 — 리뷰 체크리스트 한 줄로 잡힌다. 규칙 개수는 A′ 2개((a)+(b)), B 1개(R2) — round-2 리뷰 C1 의 "둘 다 1개" 는 (b) 추가 전 기준이었다 (round-3 M1).
-2. **Toss 배치 문제(P2)를 지금 결정한다.** WIP 의 `toss.holdings.infra.TossHoldingsClient` 는 B 의 `toss.holdings.client` 로 거의 그대로 간다 (`docs/ai/wip-snapshot.patch`). 단 WIP 는 그 빈을 `common/config/RestClientConfig` 에 등록하므로 R3 와 반대 방향이기도 하다 — WIP 가 B 를 "지지" 하는 근거는 절반이다.
+2. **Toss 배치 문제(P2)를 지금 결정한다.** WIP 의 `toss.holdings.infra.TossHoldingsClient` 는 B 의 `toss.holdings.client` 로 거의 그대로 간다 (`docs/ai/archive/2026-10-ai-dev-prep/wip-snapshot.patch`). 단 WIP 는 그 빈을 `common/config/RestClientConfig` 에 등록하므로 R3 와 반대 방향이기도 하다 — WIP 가 B 를 "지지" 하는 근거는 절반이다.
 3. **비용 차이가 작다.** A′ 대비 약 4파일 (주로 `infra.similarity` 패키지 이동), 시간 차 약 0.5일 (§3.2). 이동은 `git mv` 단독 커밋으로 분리 가능.
 - 참고 (A′·B 공통 — B 만의 근거 아님): 헥사고날의 이득 중 필요한 것(외부 HTTP 경계 격리)은 `SimilarityScorer` 클래스 하나로 A′·B 모두 얻는다.
 4. **Spring Modulith 와 규칙이 같다 — `common` 처리만 다르다.** Modulith 2.0.8 소스 확인 [J] (round-1 리뷰 M1, `spring-modulith-core-2.0.8-sources.jar` 의 `ApplicationModuleDetectionStrategy`·`NamedInterfaces.discoverNamedInterfaces`·`ApplicationModule.isValidDependencyWithin`, OPEN 지정은 `ApplicationModuleInformationFactory`): 직속 하위 패키지 = 모듈(`directSubPackage`), base package = 공개(unnamed named-interface 가 하위 패키지 제외). 다만 Modulith 에는 "공유 커널" 예외가 없어, 지금 상태로는 `common.exception.BaseException` 등을 쓰는 모든 모듈이 위반이 된다. `common` 에 `@ApplicationModule(type = Type.OPEN)` (`package-info.java` 1파일)을 두면 같은 규칙이 된다. 그 외 차이(이벤트, 문서화 등)는 미검증. A′ 도 `@NamedInterface` 로 표현 가능하나 기능당 1~2파일이 든다 (§3.1).
@@ -234,7 +234,7 @@ com.tmi.core.sentence
 
 ## 5. 추천안의 검증 규칙 (ArchUnit)
 
-`src/test/java/com/tmi/core/architecture/` 에 구현하고 실행했다. 결과(위반 목록·오탐 점검)는 [current-state.md §6](./current-state.md#6-archunit-위반-목록).
+`src/test/java/com/tmi/core/architecture/` 에 구현하고 실행했다. 결과(위반 목록·오탐 점검)는 [current-state.md §6](../context/current-state.md#6-archunit-위반-목록).
 
 | ID | 규칙 | 구현 범위·한계 | 막는 문제 | 현재 |
 |---|---|---|---|---|

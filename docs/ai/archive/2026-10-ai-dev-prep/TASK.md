@@ -4,7 +4,7 @@
 목표는 "결정"이 아니라 **"내가 아침에 결정할 수 있는 고품질 제안서"**를 만드는 것이다.
 속도보다 깊이와 정확성이 중요하다. 각 단계를 충분히 검증하며 진행한다.
 
-작업 중 맥락이 흐려지면 언제든 이 파일(docs/ai/TASK.md)을 다시 읽고 이어서 진행한다.
+작업 중 맥락이 흐려지면 언제든 이 파일(docs/ai/archive/2026-10-ai-dev-prep/TASK.md)을 다시 읽고 이어서 진행한다.
 
 ---
 
@@ -15,7 +15,7 @@
     - `CLAUDE.md`
     - ArchUnit 테스트 (`src/test`)
     - 빌드 설정의 포맷/정적분석 플러그인 추가
-- 질문하지 않는다. 판단이 필요한 사항은 `docs/ai/decisions-needed.md`에
+- 질문하지 않는다. 판단이 필요한 사항은 `docs/ai/proposals/decisions-needed.md`에
   선택지, 장단점, 추천을 적고 진행한다.
 - 모든 제안에는 현재 코드의 실제 파일·클래스 예시를 근거로 붙인다.
 - 외부 자료를 참고한 주장에는 출처 URL을 붙인다.
@@ -37,7 +37,7 @@
   "items": [
     {
       "id": "current-state",
-      "artifact": "docs/ai/current-state.md",
+      "artifact": "docs/ai/context/current-state.md",
       "done": false,
       "review_rounds": 0,
       "rubric_scores": {}
@@ -48,7 +48,7 @@
 
 ---
 
-## 2단계: 전수 분석 → `docs/ai/current-state.md`
+## 2단계: 전수 분석 → `docs/ai/context/current-state.md`
 
 - `src/main`의 **모든 클래스**를 표로 정리한다.
     - 열: 패키지, 클래스, 역할, 레이어, 의존 대상, 컨벤션 불일치 사항
@@ -57,7 +57,7 @@
 
 ---
 
-## 3단계: 리서치 → `docs/ai/research.md`
+## 3단계: 리서치 → `docs/ai/context/research.md`
 
 - 다음 주제를 조사한다.
     - Spring Boot 공식 권장 구조
@@ -69,16 +69,16 @@
 
 ## 4단계: 제안서 작성
 
-- `docs/ai/architecture-proposal.md`
+- `docs/ai/proposals/architecture-proposal.md`
     - 구조 선택지 2~3개, 장단점, 마이그레이션 비용, 추천안
-- `docs/ai/conventions-proposal.md`
+- `docs/ai/proposals/conventions-proposal.md`
     - 네이밍, 예외 처리, DTO 변환, 트랜잭션 경계, 로깅, 테스트 규칙
     - 항목마다 현재 코드의 Before 예시와 제안 After 예시를 포함
-- `docs/ai/ai-workflow.md`
+- `docs/ai/proposals/ai-workflow.md`
     - 작업 단위 설정 방법
     - 계획 → 구현 → 리뷰 흐름과 사람이 확인할 지점
     - `feature_list.json` 기반 장시간 루프 운영 방법
-- `docs/ai/examples/`
+- `docs/ai/proposals/examples/`
     - 기존 기능 하나를 골라, 구조 선택지별로 바뀐 형태의 예시 코드를 작성한다.
     - 컴파일 대상이 아니며, 비교와 판단을 돕는 용도다.
 
@@ -125,7 +125,7 @@
     - 확정 전 상태임을 상단에 명시
     - 빌드·테스트 명령 포함
 - 전체 문서 간 일관성을 최종 점검한다.
-- `docs/ai/decisions-needed.md` 최종 정리
+- `docs/ai/proposals/decisions-needed.md` 최종 정리
     - 결정 항목을 중요도 순으로 나열
     - 각 항목에 추천안과 "이걸 결정하면 바로 시작할 수 있는 다음 작업"을 포함
 

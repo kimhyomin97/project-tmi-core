@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.util.UriBuilderFactory;
 
-/** 기계 검증 가능한 컨벤션 R5~R7 (docs/ai/architecture-proposal.md §5, conventions-proposal.md). */
+/** 기계 검증 가능한 컨벤션 R5~R7 (docs/ai/proposals/architecture-proposal.md §5, conventions-proposal.md). */
 class ConventionArchitectureTest {
 
     private static final List<Class<? extends Annotation>> HTTP_BINDING_ANNOTATIONS = List.of(
@@ -51,7 +51,7 @@ class ConventionArchitectureTest {
 
     // 위반 1건: sentence.service.SentenceService.getRandom(Level, Category) 가 SentenceEntity 반환.
     // 해소 작업: 서비스가 응답 DTO 반환 (conventions-proposal.md §3.1, feature_list FIX-R5 — 구조 결정과 무관).
-    @Disabled("R5 위반 1건(SentenceService.getRandom → SentenceEntity) — FIX-R5 완료 시 해제. docs/ai/current-state.md §6")
+    @Disabled("R5 위반 1건(SentenceService.getRandom → SentenceEntity) — FIX-R5 완료 시 해제. docs/ai/context/current-state.md §6")
     @Test
     @DisplayName("R5 @Service 의 public 메서드는 @Entity 를 반환하지 않는다")
     void r5_servicesDoNotReturnEntities() {
@@ -67,7 +67,7 @@ class ConventionArchitectureTest {
 
     // 위반 1건: answer.service.AnswerService.score → loadSentence (AnswerService.java:28). @Transactional 이 무효.
     // 해소 작업: feature_list FIX-F4.
-    @Disabled("R6 위반 1건(AnswerService.score → loadSentence) — FIX-F4 완료 시 해제. docs/ai/current-state.md §6")
+    @Disabled("R6 위반 1건(AnswerService.score → loadSentence) — FIX-F4 완료 시 해제. docs/ai/context/current-state.md §6")
     @Test
     @DisplayName("R6 @Transactional 메서드를 같은 클래스 안에서 호출하지 않는다 (self-invocation)")
     void r6_transactionalMethodsAreNotSelfInvoked() {
@@ -78,7 +78,7 @@ class ConventionArchitectureTest {
     // 위반 1건: infra.similarity.SimilarityClient.score(SimilarityRequest) — @RequestBody 누락 → 호출 시 항상
     // IllegalStateException.
     // 해소 작업: feature_list FIX-F1.
-    @Disabled("R7 위반 1건(SimilarityClient.score @RequestBody 누락) — FIX-F1 완료 시 해제. docs/ai/current-state.md §6")
+    @Disabled("R7 위반 1건(SimilarityClient.score @RequestBody 누락) — FIX-F1 완료 시 해제. docs/ai/context/current-state.md §6")
     @Test
     @DisplayName("R7 HTTP Interface 메서드의 파라미터에는 바인딩 어노테이션이 있다")
     void r7_httpInterfaceParametersAreBound() {

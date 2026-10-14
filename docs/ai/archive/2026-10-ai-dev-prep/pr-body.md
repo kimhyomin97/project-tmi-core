@@ -1,8 +1,8 @@
 ## 요약
 
-`docs/ai/TASK.md` 지시에 따른 **AI 기반 개발 준비 작업**이다. 목표는 결정이 아니라 **아침에 결정할 수 있는 제안서**이며, `src/main` 은 한 줄도 바꾸지 않았다.
+`docs/ai/archive/2026-10-ai-dev-prep/TASK.md` 지시에 따른 **AI 기반 개발 준비 작업**이다. 목표는 결정이 아니라 **아침에 결정할 수 있는 제안서**이며, `src/main` 은 한 줄도 바꾸지 않았다.
 
-**먼저 읽을 문서**: [`docs/ai/decisions-needed.md`](docs/ai/decisions-needed.md) — 결정 13건을 중요도 순으로 정리했고, 각 항목에 추천안과 "결정하면 바로 시작할 작업"(feature_list id)을 붙였다.
+**먼저 읽을 문서**: [`docs/ai/proposals/decisions-needed.md`](docs/ai/proposals/decisions-needed.md) — 결정 13건을 중요도 순으로 정리했고, 각 항목에 추천안과 "결정하면 바로 시작할 작업"(feature_list id)을 붙였다.
 
 ### 분석 중 실행으로 확인한 결함 (current-state.md)
 
@@ -20,13 +20,13 @@
 
 | 파일 | 내용 | 최종 rubric (근거·구체·일관·판단) | 라운드 |
 |---|---|---|---|
-| `docs/ai/current-state.md` | `src/main` 34파일·40타입 전수 표, 의존 Mermaid, 불일치·결함, ArchUnit 위반 목록(§6), 빌드·프로브 결과(§7) | 4/4/4/4 | 3 |
-| `docs/ai/research.md` | Boot 구조·Modulith·헥사고날/레이어드·예외·DTO·트랜잭션·테스트·포맷 도구·AI 루프. 근거 등급([J] 소스 jar, [R] 실행, [F] 본문, [S] 검색)과 URL | 4/4/4/4 (final-consistency) | 2 |
-| `docs/ai/architecture-proposal.md` | A′(레이어드 + 접근 규칙) / **B(기능 모듈 + 공개 API, 추천)** / C(헥사고날), 비용·바뀌는 기존 규칙·단계 계획 | 4/4/4/4 | 4 |
-| `docs/ai/conventions-proposal.md` | 네이밍·예외·DTO·트랜잭션·로깅·테스트·포맷, 항목마다 Before/After. 핵심 After 코드는 worktree 에서 실제 컴파일·실행 검증 | 4/4/4/4 | 4 |
-| `docs/ai/ai-workflow.md` + `feature_list.example.json` | 작업 단위, 계획→구현→리뷰와 사람 확인 지점(H0~H3), feature_list 루프, Stop/SessionStart hook (20개 시나리오 실행 확인) | 4/4/4/4 | 4 |
-| `docs/ai/examples/answer-scoring/` | 답안 채점 기능을 A′·B·C 로 재구성 (A′·B 는 실제 적용해 빌드·ArchUnit 확인, C 는 핵심부 컴파일·순환 없음 확인) | 4/4/4/4 | 4 |
-| `docs/ai/decisions-needed.md` | 결정 13건, 중요도 순 | 4/4/4/4 (final-consistency) | 2 |
+| `docs/ai/context/current-state.md` | `src/main` 34파일·40타입 전수 표, 의존 Mermaid, 불일치·결함, ArchUnit 위반 목록(§6), 빌드·프로브 결과(§7) | 4/4/4/4 | 3 |
+| `docs/ai/context/research.md` | Boot 구조·Modulith·헥사고날/레이어드·예외·DTO·트랜잭션·테스트·포맷 도구·AI 루프. 근거 등급([J] 소스 jar, [R] 실행, [F] 본문, [S] 검색)과 URL | 4/4/4/4 (final-consistency) | 2 |
+| `docs/ai/proposals/architecture-proposal.md` | A′(레이어드 + 접근 규칙) / **B(기능 모듈 + 공개 API, 추천)** / C(헥사고날), 비용·바뀌는 기존 규칙·단계 계획 | 4/4/4/4 | 4 |
+| `docs/ai/proposals/conventions-proposal.md` | 네이밍·예외·DTO·트랜잭션·로깅·테스트·포맷, 항목마다 Before/After. 핵심 After 코드는 worktree 에서 실제 컴파일·실행 검증 | 4/4/4/4 | 4 |
+| `docs/ai/proposals/ai-workflow.md` + `feature_list.example.json` | 작업 단위, 계획→구현→리뷰와 사람 확인 지점(H0~H3), feature_list 루프, Stop/SessionStart hook (20개 시나리오 실행 확인) | 4/4/4/4 | 4 |
+| `docs/ai/proposals/examples/answer-scoring/` | 답안 채점 기능을 A′·B·C 로 재구성 (A′·B 는 실제 적용해 빌드·ArchUnit 확인, C 는 핵심부 컴파일·순환 없음 확인) | 4/4/4/4 | 4 |
+| `docs/ai/proposals/decisions-needed.md` | 결정 13건, 중요도 순 | 4/4/4/4 (final-consistency) | 2 |
 | `src/test/java/com/tmi/core/architecture/` | ArchUnit 규칙 8개 (R1~R7 + R4b). 위반 6개는 `@Disabled` + 사유·해소 작업 id | 4/4/4/4 (final-consistency) | 2 |
 | `CLAUDE.md` | 확정 전 초안 (빌드·테스트 명령, 알려진 함정, `[제안]` 표시) | 4/4/4/4 (final-consistency) | 2 |
 | `build.gradle` | ArchUnit core 1.5.1 (test), Spotless 8.10.4 + palantir-java-format (`enforceCheck = false` — 기존 코드 29파일 미포맷이라 build 에 묶지 않음) | — | — |
@@ -72,7 +72,7 @@
 
 ## 참고 · 남은 것
 
-- 수령 당시 작업 트리에 있던 미커밋 Toss WIP(`src/main` 4파일, 존재하지 않는 클래스를 import 해 컴파일 불가)는 커밋하지 않았다. `docs/ai/wip-snapshot.patch` 로 보존했고, 작업 트리에는 미커밋 상태로 복원했다(blockers.md §1, D9).
+- 수령 당시 작업 트리에 있던 미커밋 Toss WIP(`src/main` 4파일, 존재하지 않는 클래스를 import 해 컴파일 불가)는 커밋하지 않았다. `docs/ai/archive/2026-10-ai-dev-prep/wip-snapshot.patch` 로 보존했고, 작업 트리에는 미커밋 상태로 복원했다(blockers.md §1, D9).
 - `gradlew` 가 실행 권한 없이 커밋돼 있어 `bash ./gradlew` 로 실행했다(D11).
 - 이 클라우드 세션에는 Docker 데몬이 없어 Testcontainers 기반 검증은 하지 못했다(blockers.md §2 #4).
 

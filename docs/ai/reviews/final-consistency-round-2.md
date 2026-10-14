@@ -1,7 +1,7 @@
 # final-consistency 리뷰 — Round 2
 
 > 대상 커밋: `f3703ee` (전용 worktree `scratchpad/wt-final-consistency`, detached HEAD). 이전 라운드 기준 `01898ba` → 이번 `f3703ee` 사이 diff 를 함께 확인했다 (`git diff 01898ba f3703ee`, 17파일).
-> 직접 평가 대상: `docs/ai/research.md`, `docs/ai/decisions-needed.md`, `/CLAUDE.md`, `src/test/java/com/tmi/core/architecture/*.java`, `docs/ai/blockers.md`. current-state·architecture-proposal·conventions-proposal·ai-workflow·examples·feature_list.example.json 은 교차 확인용으로 읽었다.
+> 직접 평가 대상: `docs/ai/context/research.md`, `docs/ai/proposals/decisions-needed.md`, `/CLAUDE.md`, `src/test/java/com/tmi/core/architecture/*.java`, `docs/ai/blockers.md`. current-state·architecture-proposal·conventions-proposal·ai-workflow·examples·feature_list.example.json 은 교차 확인용으로 읽었다.
 > 검증 방법:
 > - [실행] `bash ./gradlew build --no-daemon` → **BUILD SUCCESSFUL** (EXIT=0). 결과 XML: CoreApplicationTests 1/skip 0, Layer 2/skip 0, Convention 3/skip 3, Module 3/skip 3
 > - [실행] `bash ./gradlew test --tests 'com.tmi.core.architecture.*'` → 성공, 결과 XML 이 아키텍처 3클래스만 남음 (CoreApplicationTests 미실행 = CLAUDE.md:25 의 "DB 불필요" 주장과 일치)

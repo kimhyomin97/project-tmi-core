@@ -105,7 +105,7 @@ common/{config,domain,exception}
 
 마지막 행의 근거 보강: 카카오페이 홈은 헥사고날을 걷어낸 뒤에도 **Controller DTO와 연동 DTO 분리만은 유지**했다 [C✓ 2025].
 
-### 4.3 기존 제안(`docs/ai/architecture-proposal.md`)과 비교
+### 4.3 기존 제안(`docs/ai/proposals/architecture-proposal.md`)과 비교
 
 | 항목 | 기존 제안 | 이번 조사 | 판단 |
 |---|---|---|---|

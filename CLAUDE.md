@@ -1,8 +1,8 @@
 # CLAUDE.md — TMI Core
 
-> **⚠ 확정 전 초안.** 아래 규칙 중 `[제안]` 표시는 [docs/ai/decisions-needed.md](docs/ai/decisions-needed.md) 의 결정을 기다리는 항목이다.
+> **⚠ 확정 전 초안.** 아래 규칙 중 `[제안]` 표시는 [docs/ai/proposals/decisions-needed.md](docs/ai/proposals/decisions-needed.md) 의 결정을 기다리는 항목이다.
 > 결정 전에는 `[제안]` 규칙을 근거로 **기존 코드를 고치지 말 것** — 새 코드에만 참고하고, 충돌하면 사람에게 묻는다.
-> 근거·상세: [docs/ai/](docs/ai/) (current-state · conventions-proposal · architecture-proposal · ai-workflow)
+> 근거·상세: [docs/ai/README.md](docs/ai/README.md) (색인: context · proposals · decisions · plans)
 
 ## 프로젝트
 
@@ -62,7 +62,7 @@ bash ./gradlew spotlessApply         # 포맷 자동 수정 — 사람 승인 �
 
 ## 작업 방식
 
-- 작업 단위 = 검증 명령이 정해진 항목 1개, 모듈 1개, `src/main` 변경 5파일 이하. 상세: [docs/ai/ai-workflow.md](docs/ai/ai-workflow.md).
+- 작업 단위 = 검증 명령이 정해진 항목 1개, 모듈 1개, `src/main` 변경 5파일 이하. 상세: [docs/ai/proposals/ai-workflow.md](docs/ai/proposals/ai-workflow.md).
 - 버그 수정은 **실패하는 테스트 먼저** 커밋, 그다음 수정.
 - 외부 API 응답 변경 · 패키지 이동 · 의존성 추가 · `docs/public` 수정은 구현 전에 사람에게 계획 확인.
 - 스키마 변경 시 3곳 동기화: `docs/public/04_데이터모델.md`, `docs/public/init.sql`, `*Entity.java` (Flyway 미사용).

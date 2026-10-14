@@ -1,6 +1,6 @@
 # architecture-proposal 리뷰 — Round 1
 
-> 대상: `docs/ai/architecture-proposal.md` (마지막 변경 커밋 `1f3e4c0`, 리뷰 시점 HEAD `b39d3e2` — `99aa1e3..b39d3e2` 는 CLAUDE.md 추가뿐이라 대상 문서와 테스트는 그대로)
+> 대상: `docs/ai/proposals/architecture-proposal.md` (마지막 변경 커밋 `1f3e4c0`, 리뷰 시점 HEAD `b39d3e2` — `99aa1e3..b39d3e2` 는 CLAUDE.md 추가뿐이라 대상 문서와 테스트는 그대로)
 > 검증 방법:
 > 1. 정적 대조: `src/main/**` 34개 Java 파일, `src/test/java/com/tmi/core/architecture/*.java`, `docs/ai/{current-state,research,decisions-needed,conventions-proposal,ai-workflow}.md`, `feature_list.example.json`, `examples/answer-scoring/**`, `docs/public/{02,05,99}`.
 > 2. 실행 1: 전용 worktree(`99aa1e3`)에 임시 `junit-platform.properties`(`junit.jupiter.conditions.deactivate=org.junit.*DisabledCondition`)를 두고 `bash ./gradlew test --tests 'com.tmi.core.architecture.*'` 를 돌렸다. 결과: R1 1, R2 19, R3 2, R5 1, R6 1, R7 1 위반. R4·R4b 는 통과.

@@ -1,6 +1,6 @@
 # ai-workflow 리뷰 — Round 2
 
-> 대상 커밋: `3e136c6` (HEAD). 대상: `docs/ai/ai-workflow.md`, `docs/ai/feature_list.example.json`. 대조: `decisions-needed.md` §0·D3·D5·D8·D12, `architecture-proposal.md` §4.3, `conventions-proposal.md` §6.3, ArchUnit 테스트, `.claude/hooks/check-done.sh`.
+> 대상 커밋: `3e136c6` (HEAD). 대상: `docs/ai/proposals/ai-workflow.md`, `docs/ai/feature_list.example.json`. 대조: `decisions-needed.md` §0·D3·D5·D8·D12, `architecture-proposal.md` §4.3, `conventions-proposal.md` §6.3, ArchUnit 테스트, `.claude/hooks/check-done.sh`.
 > 검증 방법 (모두 전용 worktree `scratchpad/wt-ai-workflow` = `3e136c6` 에서 실행, 끝난 뒤 제거):
 > - §4.6 `check-feature.sh` 를 문서에서 그대로 추출해 임시 git 저장소(`scratchpad/hooksim2`)에서 이전 5개 + 사람 판정·`stop_hook_active` 2개 + **새 우회 시나리오 11개**를 실행했다.
 > - feature_list 의 verify 명령을 HEAD 상태와 "의존 항목 완료" 상태에서 실행했다. TEST-1 상태는 conventions §6.3 의 테스트 3개를 `@Disabled("FIX-F1 …")`/`("FIX-F2 …")` 로 추가해 재현했고, FIX-F1·FIX-F2 는 실제로 수정한 뒤 "수정 전 실패 → 수정 후 통과"를 확인했다.

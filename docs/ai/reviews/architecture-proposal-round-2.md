@@ -1,6 +1,6 @@
 # architecture-proposal 리뷰 — Round 2
 
-> 대상: `docs/ai/architecture-proposal.md` @ `3e136c6` (전용 worktree 에서 읽음. 라인 번호는 이 커밋 기준)
+> 대상: `docs/ai/proposals/architecture-proposal.md` @ `3e136c6` (전용 worktree 에서 읽음. 라인 번호는 이 커밋 기준)
 > 검증 방법:
 > 1. 정적 대조: 대상 문서, `reviews/architecture-proposal-round-1.md`, `examples/answer-scoring/**`(README + A′·B 예시 전 파일), `feature_list.example.json`, `decisions-needed.md` D1, `ai-workflow.md` §4, `current-state.md` §6, `src/test/java/com/tmi/core/architecture/*`, `src/main/**` 34파일, `docs/public/{02,05,06,99}`, `docs/public/toss/00_인증.md`, `wip-snapshot.patch`.
 > 2. 실행 1 (A′ 적용, 파일 수 재계수): worktree `3e136c6` 의 `src/main` 에 `option-a-layered/` 7파일을 실제 경로로 복사하고 `RestClientConfig` 를 삭제했다. `similarity.timeout-ms` 는 `connect-timeout`/`read-timeout` 로 바꿨다. `git status` 결과 변경 9파일이 나왔다. F1 `SimilarityClient` 를 빼면 **8**이다.

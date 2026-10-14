@@ -1,6 +1,6 @@
 # conventions-proposal 리뷰 — Round 1
 
-> 대상: `docs/ai/conventions-proposal.md` @ `b39d3e2` (문서 내용은 `99aa1e3` 과 동일)
+> 대상: `docs/ai/proposals/conventions-proposal.md` @ `b39d3e2` (문서 내용은 `99aa1e3` 과 동일)
 > 검증 방법: 전용 worktree(`scratchpad/wt-conventions-proposal`, `--detach HEAD`)에서 `bash ./gradlew test --offline` 로 실행 검증. `/home/user/repo` 는 이 파일 외 수정하지 않음. worktree 는 검증 후 제거.
 > - (a) 수정 없는 HEAD 에 §6.3 테스트 3종을 문서 그대로 추가해서 실행
 > - (b) worktree 의 `src/main` 에 §2.1 설정 2줄, §2.5 `@RequestBody`, §2.2 After 핸들러를 **문서 코드 그대로** 넣고(main 소스셋이라 Lombok 사용 가능) `@WebMvcTest({SentenceController, AnswerController})` 시나리오 12건을 `Locale.setDefault(KOREA)` + `OutputCaptureExtension` 으로 실행
@@ -121,6 +121,6 @@
   - 06 §2.1 `AndDeletedAtIsNull`, 06 §2.3 "자동 바인딩" 문구, 06 §5.1 `from(Entity)`, 06 §4.3(컨트롤러 변환)과 06 §3.3(서비스 변환)이 혼재한다
   - 05 §5.4 "추가 `@RestControllerAdvice` 금지", 05 §5.5 영문 기본, 05 §6.6 `ERROR` 정의, 05 §6.7 운영 DEBUG 금지
   - 03 §2.1 은 누락도 `INVALID_REQUEST` 로 적었다(D6)
-- §4.3 이 인용한 WIP 클래스명(`TossHoldingsClient`, `HoldingsApiResponse`)은 `docs/ai/wip-snapshot.patch` 에 실제로 있다. 설계 §3 의 "save 만 트랜잭션" 인용도 정확하다(에러 정책 불일치는 M2).
+- §4.3 이 인용한 WIP 클래스명(`TossHoldingsClient`, `HoldingsApiResponse`)은 `docs/ai/archive/2026-10-ai-dev-prep/wip-snapshot.patch` 에 실제로 있다. 설계 §3 의 "save 만 트랜잭션" 인용도 정확하다(에러 정책 불일치는 M2).
 - D 번호(D2~D8, D10)는 모두 decisions-needed.md 에 있다. ArchUnit R5·R6·R7 은 `ConventionArchitectureTest` 에 구현되어 `@Disabled` 상태이며, 해제 조건이 본문 §3.1·§4.1·§2.5 와 맞다.
 - ai-workflow.md §3 체크리스트에 §1.3 로그 형식(#8), §5.4 민감 정보(#8), §5.1 throw 직전 로그 금지(#7)가 실제로 들어 있다.

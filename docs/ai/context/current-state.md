@@ -1,10 +1,10 @@
 # 현재 상태 전수 분석 (current-state)
 
-> 상태: **제안 단계 산출물** — 이 문서는 사실 기록이며 결정을 담지 않는다. 결정 항목은 [decisions-needed.md](./decisions-needed.md).
+> 상태: **제안 단계 산출물** — 이 문서는 사실 기록이며 결정을 담지 않는다. 결정 항목은 [decisions-needed.md](../proposals/decisions-needed.md).
 > 분석 기준: 브랜치 `claude/ai-dev-prep` 의 `src/main` (Java 34 파일, 중첩 클래스 포함 40 타입). 이 브랜치는 `src/main` 을 변경하지 않으므로 `main` HEAD `e85dba5` 와 동일하다 (`git diff e85dba5 HEAD -- src/main` 0줄).
-> 개정: Round 1 리뷰([reviews/current-state-round-1.md](./reviews/current-state-round-1.md)) 반영 — OSIV 커넥션 점유(C1), `RestClient.Builder` 빈 부재, SpEL 필요성, 계약 불일치 등.
-> 개정: Round 2 리뷰([reviews/current-state-round-2.md](./reviews/current-state-round-2.md)) 반영 — R2 위반 19건 분해(현행 규칙 위반 10 / B 기준 9), 규칙별 탐지 한계·음성 대조, read timeout → 500 추가.
-> 개정: Round 3 리뷰([reviews/current-state-round-3.md](./reviews/current-state-round-3.md)) — 4·4·4·4. 경미 7건 반영 (FIX-F1T 연결, P7/P8 번호, 43 class 파일·바이트코드 동일, R6 jakarta 한계).
+> 개정: Round 1 리뷰([reviews/current-state-round-1.md](../reviews/current-state-round-1.md)) 반영 — OSIV 커넥션 점유(C1), `RestClient.Builder` 빈 부재, SpEL 필요성, 계약 불일치 등.
+> 개정: Round 2 리뷰([reviews/current-state-round-2.md](../reviews/current-state-round-2.md)) 반영 — R2 위반 19건 분해(현행 규칙 위반 10 / B 기준 9), 규칙별 탐지 한계·음성 대조, read timeout → 500 추가.
+> 개정: Round 3 리뷰([reviews/current-state-round-3.md](../reviews/current-state-round-3.md)) — 4·4·4·4. 경미 7건 반영 (FIX-F1T 연결, P7/P8 번호, 43 class 파일·바이트코드 동일, R6 jakarta 한계).
 > 작업 트리에만 존재하는 미커밋 변경(WIP)은 §5 에 별도로 정리했다. 이 문서의 표는 **커밋된 코드** 기준이다.
 
 표기 규칙
@@ -437,9 +437,9 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 
 | 항목 | 상태 |
 |---|---|
-| 보존 | 패치 전문을 [`docs/ai/wip-snapshot.patch`](./wip-snapshot.patch) 로 커밋. `git apply --check` 통과 확인 |
-| 작업 중 위치 | 빌드·테스트 실행을 위해 작업 트리에서 치워 `git stash` 에 보관 중. 이 stash 에는 이미 커밋된 `.claude/*`, `docs/ai/TASK.md` 도 섞여 있어 **`git stash pop` 은 충돌한다** (round-1 M9) |
-| 복원 방법 | `git apply docs/ai/wip-snapshot.patch` (작업 트리에 미커밋 상태로 되돌림). **7단계 마지막 커밋·push 직후** 이 명령으로 복원하고 `git status --short src/main` 에 4파일(+`.gitattributes`)이 보이는지 확인, 결과를 blockers.md §1 에 기록한다 |
+| 보존 | 패치 전문을 [`docs/ai/archive/2026-10-ai-dev-prep/wip-snapshot.patch`](../archive/2026-10-ai-dev-prep/wip-snapshot.patch) 로 커밋. `git apply --check` 통과 확인 |
+| 작업 중 위치 | 빌드·테스트 실행을 위해 작업 트리에서 치워 `git stash` 에 보관 중. 이 stash 에는 이미 커밋된 `.claude/*`, `docs/ai/archive/2026-10-ai-dev-prep/TASK.md` 도 섞여 있어 **`git stash pop` 은 충돌한다** (round-1 M9) |
+| 복원 방법 | `git apply docs/ai/archive/2026-10-ai-dev-prep/wip-snapshot.patch` (작업 트리에 미커밋 상태로 되돌림). **7단계 마지막 커밋·push 직후** 이 명령으로 복원하고 `git status --short src/main` 에 4파일(+`.gitattributes`)이 보이는지 확인, 결과를 blockers.md §1 에 기록한다 |
 
 | 파일 | 변경 | 관찰 |
 |---|---|---|
@@ -449,7 +449,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | `application.properties` | `toss.*` 설정 7줄 | `${TOSS_CLIENT_ID}` 등 기본값 없는 placeholder. 현재 WIP 의 빈은 값이 있는 `toss.base-url`·`toss.timeout-ms` 만 읽으므로 지금은 문제없다. `client-id` 등을 읽는 빈이 추가되면 환경 변수 없는 환경(테스트 포함)에서 기동 실패 가능 [정적] |
 | `.gitattributes` | `*.sh text eol=lf` | 무해 |
 
-결론: WIP 상태에서는 `./gradlew build` 가 컴파일 단계에서 실패한다 [실행·리뷰, round-1 m3: `package com.tmi.core.toss.holdings.dto does not exist`, `package com.tmi.core.toss.holdings.infra does not exist`]. 이 작업의 빌드 검증은 WIP 를 치운 `claude/ai-dev-prep` 브랜치 기준으로 수행했다 (→ [blockers.md](./blockers.md)).
+결론: WIP 상태에서는 `./gradlew build` 가 컴파일 단계에서 실패한다 [실행·리뷰, round-1 m3: `package com.tmi.core.toss.holdings.dto does not exist`, `package com.tmi.core.toss.holdings.infra does not exist`]. 이 작업의 빌드 검증은 WIP 를 치운 `claude/ai-dev-prep` 브랜치 기준으로 수행했다 (→ [blockers.md](../blockers.md)).
 
 ---
 
@@ -520,7 +520,7 @@ return sentenceRepository.findByIdAndDeletedAtIsNull(sentenceId)
 | `claude/ai-dev-prep`, 로컬 PostgreSQL 16 (`localhost:15432/tmi_word`, `docs/public/init.sql` 적용) | `BUILD SUCCESSFUL` — 테스트 9개: `CoreApplicationTests` 1 통과, ArchUnit 8 중 2 통과·6 `@Disabled` (§6) |
 | WIP 포함 작업 트리 | 컴파일 실패 (§5, 없는 클래스 import) [실행·리뷰] |
 
-환경 구성 절차는 [blockers.md](./blockers.md) §2.
+환경 구성 절차는 [blockers.md](../blockers.md) §2.
 
 ### 7.2 동작 프로브 [실행]
 

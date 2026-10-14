@@ -1,6 +1,6 @@
 # examples 리뷰 — Round 1
 
-> 대상: `docs/ai/examples/` 전체 (마지막 변경 커밋 `99aa1e3`, 리뷰 시점 HEAD `7207e31`). 대조 문서: `architecture-proposal.md` 는 **리뷰 중 작업 트리에 반영된 최신본(A′ 개정)**, `conventions-proposal.md`, `current-state.md`, ArchUnit 테스트, `src/main/**`.
+> 대상: `docs/ai/proposals/examples/` 전체 (마지막 변경 커밋 `99aa1e3`, 리뷰 시점 HEAD `7207e31`). 대조 문서: `architecture-proposal.md` 는 **리뷰 중 작업 트리에 반영된 최신본(A′ 개정)**, `conventions-proposal.md`, `current-state.md`, ArchUnit 테스트, `src/main/**`.
 > 검증 방법 (전용 worktree `scratchpad/wt-examples`, 리뷰 후 삭제. DB 는 SELECT 만 했다):
 > 1. 정적 대조: 예시 23파일과 AS-IS `src/main` 을 줄 단위로 비교. import 수, 줄 번호, 파일 수를 다시 셌다.
 > 2. **선택지 B 이식**: 예시 7파일을 `src/main` 에 복사했다. `SimilarityException` 은 패키지만 바꿔 이동했다. `infra/**` 와 `RestClientConfig` 는 삭제했다. 그 뒤 `compileJava` 와 `test` 를 돌렸다. ArchUnit R1·R2·R3·R6·R7 의 `@Disabled` 도 풀고 실행했다.

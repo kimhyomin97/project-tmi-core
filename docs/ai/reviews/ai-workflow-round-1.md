@@ -1,7 +1,7 @@
 # ai-workflow 리뷰 — Round 1
 
 > 대상 커밋: `b39d3e2` (claude/ai-dev-prep — ai-workflow.md·feature_list.example.json 은 `99aa1e3` 이후 변경 없음, CLAUDE.md 초안 포함)
-> 대상: `docs/ai/ai-workflow.md`, `docs/ai/feature_list.example.json`
+> 대상: `docs/ai/proposals/ai-workflow.md`, `docs/ai/feature_list.example.json`
 > 검증 방법:
 > - 외부 출처 3건 + hooks 문서를 `curl` 로 받아(모두 HTTP 200) 본문 텍스트를 추출해 인용문과 대조: anthropic.com/engineering/effective-harnesses-for-long-running-agents, code.claude.com/docs/en/best-practices, /memory, /hooks
 > - 전용 worktree(`scratchpad/wt-ai-workflow`, HEAD)에서 `bash ./gradlew test --tests '*ArchitectureTest*' --no-daemon` 실행 → 매칭 클래스·skip 수 확인 (끝난 뒤 worktree 제거)

@@ -1,6 +1,6 @@
 # architecture-proposal 리뷰 — Round 3
 
-> 대상: `docs/ai/architecture-proposal.md` @ `83f7b92`. 전용 worktree(`git worktree add --detach … 83f7b92`)에서 읽었고, 라인 번호는 이 커밋 기준이다.
+> 대상: `docs/ai/proposals/architecture-proposal.md` @ `83f7b92`. 전용 worktree(`git worktree add --detach … 83f7b92`)에서 읽었고, 라인 번호는 이 커밋 기준이다.
 > 검증 방법:
 > 1. 정적 대조에 쓴 파일: 대상 문서, `reviews/architecture-proposal-round-{1,2}.md`, `feature_list.example.json`(items 11개, pending_decision 5개), `decisions-needed.md` D1, `examples/answer-scoring/README.md`, `option-a-layered/`·`option-b-modular/`·`option-c-hexagonal/` 전 파일, `src/main/**` 34개 java 파일, `src/test/java/com/tmi/core/architecture/*`, `docs/public/{02,05,06,99}`, `docs/public/toss/00_인증.md`, `wip-snapshot.patch`, Modulith 2.0.8 `spring-modulith-core` 소스(scratchpad 사본, `pom.properties` version=2.0.8).
 > 2. 실행 1 (A′ 규칙 (a)(b) 프로브, A′ 적용 상태): `option-a-layered/` 7개 파일을 실제 경로에 복사하고 `RestClientConfig` 를 삭제했다. `similarity.timeout-ms` 는 `connect-timeout`/`read-timeout` 로 바꿨다. 임시 `APrimeProbeTest` 에 두 조건을 넣었다. ruleA 는 `moduleOf` 기준으로 다른 기능 모듈(`common`·`infra` 제외)의 `{모듈}.(repository|domain|exception)` 에 의존하면 위반으로 본다. **exception 을 포함한** 형태다. ruleB 는 `infra` 밖에서 `infra.*` 의 `*Scorer` 가 아닌 타입에 의존하면 위반으로 본다. 결과는 **둘 다 통과**다.

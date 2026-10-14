@@ -130,7 +130,7 @@
 | AI 리뷰 | 사람 리뷰 전 사전 점검. 머지 승인은 사람이 한다 | 카카오페이손해보험(2026), LY(2026) |
 | 머지 | Squash and merge만 허용 | 우테코[B], 화해·NHN의 feature 머지 |
 
-### 4.4 기존 제안(`docs/ai/conventions-proposal.md`)과 다른 점
+### 4.4 기존 제안(`docs/ai/proposals/conventions-proposal.md`)과 다른 점
 
 | 항목 | 기존 제안 | 이번 조사 |
 |---|---|---|

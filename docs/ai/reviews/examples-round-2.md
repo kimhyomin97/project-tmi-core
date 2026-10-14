@@ -1,6 +1,6 @@
 # examples 리뷰 — Round 2
 
-> 대상: `docs/ai/examples/` 전체. 기준 커밋은 `3e136c6`이다. examples 의 마지막 변경 커밋은 `9a8a1f9` 이다. 대조 문서(`architecture-proposal.md`, `conventions-proposal.md`, `decisions-needed.md`, `docs/public/03_API명세.md`)도 `3e136c6` 기준으로 읽었다. 리뷰 도중 작업 브랜치가 `fc49d18` 까지 진행됐다. 이후 커밋에서 이미 해소된 사항은 따로 표시했다.
+> 대상: `docs/ai/proposals/examples/` 전체. 기준 커밋은 `3e136c6`이다. examples 의 마지막 변경 커밋은 `9a8a1f9` 이다. 대조 문서(`architecture-proposal.md`, `conventions-proposal.md`, `decisions-needed.md`, `docs/public/03_API명세.md`)도 `3e136c6` 기준으로 읽었다. 리뷰 도중 작업 브랜치가 `fc49d18` 까지 진행됐다. 이후 커밋에서 이미 해소된 사항은 따로 표시했다.
 >
 > 검증 방법: 전용 worktree 3개를 `3e136c6` 에서 만들었고, 리뷰 후 모두 삭제했다. DB 는 SELECT 만 했다.
 > 1. **A′ 이식** (`wt-examples`): README §3 A′ 표대로 7파일을 실제 경로에 복사했다. `common/config/RestClientConfig.java` 는 삭제했다. `similarity.timeout-ms=2000` 은 `connect-timeout=1s`·`read-timeout=2s` 로 바꿨다. 그 뒤 `bash ./gradlew build` 를 돌렸다. 이어서 ArchUnit 의 `@Disabled` 를 모두 풀고 `test` 를 돌렸다.
@@ -22,9 +22,9 @@
 
 - **[C1] `.gitignore:25` `out/` — C 예시 9파일 중 4파일이 커밋되지 않았다. README §3·§5 와 architecture-proposal §2 C 가 인용하는 근거가 HEAD 에 없다.**
   - 근거:
-    - `git ls-files docs/ai/examples | grep option-c` 결과는 5파일(`AnswerController`, `ScoreAnswerUseCase`, `ScoreAnswerService`, `AnswerScore`, `Sentence`)이다.
+    - `git ls-files docs/ai/proposals/examples | grep option-c` 결과는 5파일(`AnswerController`, `ScoreAnswerUseCase`, `ScoreAnswerService`, `AnswerScore`, `Sentence`)이다.
     - `git check-ignore -v …/application/port/out/LoadSentencePort.java` 의 결과는 `.gitignore:25:out/` 다. IntelliJ 출력 디렉터리 규칙에 `application/port/out/` 과 `adapter/out/` 이 걸린다. 예외 규칙은 `!**/src/main/**/out/` 뿐이고 `docs/` 는 덮지 않는다.
-    - `git show 3e136c6:docs/ai/examples/answer-scoring/option-c-hexagonal/application/port/out/LoadSentencePort.java` 의 결과는 `fatal: … does not exist`.
+    - `git show 3e136c6:docs/ai/proposals/examples/answer-scoring/option-c-hexagonal/application/port/out/LoadSentencePort.java` 의 결과는 `fatal: … does not exist`.
     - 빠진 파일: `LoadSentencePort`, `ScoreSimilarityPort`, `SentencePersistenceAdapter`, `SimilarityHttpAdapter`. 작성자의 작업 트리에는 `!!`(ignored) 상태로만 있다. `fc49d18` 에서도 여전히 0개다.
   - 영향:
     - README §5 C 행의 핵심 근거 `LoadSentencePort.java:5`, `SentencePersistenceAdapter.java:5` 와 §3 C 표의 4행을 커밋에서 확인할 수 없다.

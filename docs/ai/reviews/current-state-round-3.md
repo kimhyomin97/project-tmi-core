@@ -1,6 +1,6 @@
 # current-state 리뷰 — Round 3
 
-> 대상: `docs/ai/current-state.md` @ `3e136c6` (579줄, 마지막 변경 커밋 `18eea46`). 라인 번호는 이 버전 기준이다.
+> 대상: `docs/ai/context/current-state.md` @ `3e136c6` (579줄, 마지막 변경 커밋 `18eea46`). 라인 번호는 이 버전 기준이다.
 > 검증 방법: 전용 worktree(`git worktree add --detach … 3e136c6`)에서 실행했다. 끝난 뒤 제거했다.
 > - **ArchUnit @Disabled 무시 실행**: worktree 에만 `src/test/resources/junit-platform.properties`(`junit.jupiter.conditions.deactivate=org.junit.*DisabledCondition`)를 두고 `bash ./gradlew test --tests 'com.tmi.core.architecture.*'` 를 돌렸다. 결과는 8 tests, 6 failed. `build/test-results` XML 의 실패 메시지 원문을 §6.1·§6.2 와 한 줄씩 대조했다.
 > - **음성 대조 2 재현**: worktree 의 `sentence.service`·`sentence.controller`·`sentence.domain` 에 위반 클래스 3개를 넣고 전체 규칙을 다시 돌렸다. `@Service` 는 `Optional<E>`·`List<E>`·`Map<String,E[]>`·`E[]` 를 반환하게 했다. 확인 후 삭제했다.

@@ -3,9 +3,9 @@
 > **컴파일 대상이 아니다.** `docs/` 아래라 Gradle 소스셋에 포함되지 않는다. 비교와 판단을 돕는 용도다.
 > 각 파일 첫 줄 주석에 **실제로 놓일 경로**와 **AS-IS 대비 변경점**을 적었다.
 > 관련 문서: [architecture-proposal.md](../../architecture-proposal.md) §2 · [conventions-proposal.md](../../conventions-proposal.md)
-> 개정: Round 1 리뷰([reviews/examples-round-1.md](../../reviews/examples-round-1.md)) 반영 — A 를 A′ 로 재작성(C2), 세 선택지에 같은 예외 분류(catch 3개)·빈 응답·점수 범위 정책(C1, M3, m4), 누락된 마이그레이션 단계(M1), C 의 세 번째 배치(M2).
-> 개정: Round 2 리뷰([reviews/examples-round-2.md](../../reviews/examples-round-2.md)) 반영 — `.gitignore` 의 `out/` 에 걸려 빠졌던 C 4파일 커밋(C1), **C 예시를 순환 없는 표준형으로 교체**(M1), 점수 보정을 허용 오차로 제한(M2), A′ 의 클라이언트 우회 가능성(M3).
-> 개정: Round 3 리뷰([reviews/examples-round-3.md](../../reviews/examples-round-3.md)) 반영 — NaN 이 점수 검사를 통과하던 결함(M1), 점수 정책의 소유 항목·로그 전제(M2), A′ 규칙 (b) 재작성 전파(M3), 수치·절차 경미 8건.
+> 개정: Round 1 리뷰([reviews/examples-round-1.md](../../../reviews/examples-round-1.md)) 반영 — A 를 A′ 로 재작성(C2), 세 선택지에 같은 예외 분류(catch 3개)·빈 응답·점수 범위 정책(C1, M3, m4), 누락된 마이그레이션 단계(M1), C 의 세 번째 배치(M2).
+> 개정: Round 2 리뷰([reviews/examples-round-2.md](../../../reviews/examples-round-2.md)) 반영 — `.gitignore` 의 `out/` 에 걸려 빠졌던 C 4파일 커밋(C1), **C 예시를 순환 없는 표준형으로 교체**(M1), 점수 보정을 허용 오차로 제한(M2), A′ 의 클라이언트 우회 가능성(M3).
+> 개정: Round 3 리뷰([reviews/examples-round-3.md](../../../reviews/examples-round-3.md)) 반영 — NaN 이 점수 검사를 통과하던 결함(M1), 점수 정책의 소유 항목·로그 전제(M2), A′ 규칙 (b) 재작성 전파(M3), 수치·절차 경미 8건.
 
 ## 0. 실행 검증
 

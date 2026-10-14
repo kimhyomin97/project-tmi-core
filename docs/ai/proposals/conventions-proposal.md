@@ -2,11 +2,11 @@
 
 > 상태: **제안 — 미확정**. 결정 항목은 [decisions-needed.md](./decisions-needed.md) 에 D 번호로 연결했다.
 > 범위: 네이밍 · 예외 처리 · DTO 변환 · 트랜잭션 경계 · 로깅 · 테스트 (+ 포맷 도구).
-> 기존 규칙 [05_개발컨벤션.md](../public/05_개발컨벤션.md), [06_코드가이드라인.md](../public/06_코드가이드라인.md) 을 **대체하지 않고 고친다**. 각 항목에 "05/06 과의 관계" 를 적었다.
+> 기존 규칙 [05_개발컨벤션.md](../../public/05_개발컨벤션.md), [06_코드가이드라인.md](../../public/06_코드가이드라인.md) 을 **대체하지 않고 고친다**. 각 항목에 "05/06 과의 관계" 를 적었다.
 > 구조 선택(architecture-proposal.md D1)과 무관하게 적용되는 규칙이 기본이다. **규칙은 같고 After 코드의 클래스 위치·이름만 선택지에 따라 다른 경우** `[B 전제]` 로 표시하고 A′ 형태를 한 줄 덧붙였다.
-> 개정: Round 1 리뷰([reviews/conventions-proposal-round-1.md](./reviews/conventions-proposal-round-1.md)) 반영 — `BaseException` 생성자 NPE(C1), 상위 `handleExceptionInternal` 동작 보존(M1), Toss 예시를 설계 §6 과 일치(M2), §8 재작성(M5).
-> 개정: Round 2 리뷰([reviews/conventions-proposal-round-2.md](./reviews/conventions-proposal-round-2.md)) 반영 — §2.4 A′ 서술·timeout 분류를 요청 방식별 실행 결과로(M1·M2), Toss 토큰 단계 분리(M3), §8 누락 3행(M4), 경미 8건.
-> 개정: Round 3 리뷰([reviews/conventions-proposal-round-3.md](./reviews/conventions-proposal-round-3.md)) 반영 — 스케줄러의 raw 예외 분류를 §2.4 의 명시적 예외 규칙으로, Toss 예시에 `[B 전제]`·A′ 형태(M1), 검증 표 갱신 등 경미 7건.
+> 개정: Round 1 리뷰([reviews/conventions-proposal-round-1.md](../reviews/conventions-proposal-round-1.md)) 반영 — `BaseException` 생성자 NPE(C1), 상위 `handleExceptionInternal` 동작 보존(M1), Toss 예시를 설계 §6 과 일치(M2), §8 재작성(M5).
+> 개정: Round 2 리뷰([reviews/conventions-proposal-round-2.md](../reviews/conventions-proposal-round-2.md)) 반영 — §2.4 A′ 서술·timeout 분류를 요청 방식별 실행 결과로(M1·M2), Toss 토큰 단계 분리(M3), §8 누락 3행(M4), 경미 8건.
+> 개정: Round 3 리뷰([reviews/conventions-proposal-round-3.md](../reviews/conventions-proposal-round-3.md)) 반영 — 스케줄러의 raw 예외 분류를 §2.4 의 명시적 예외 규칙으로, Toss 예시에 `[B 전제]`·A′ 형태(M1), 검증 표 갱신 등 경미 7건.
 
 ## 0. 검증 방법
 
@@ -738,7 +738,7 @@ After (두 안 — D3)
 | 도입 방식 | `build.gradle` 에 플러그인 추가, **`enforceCheck = false`** 로 `check`/`build` 에 묶지 않음. `src/main` 수정 금지 규칙 때문에 기존 코드를 지금 포맷할 수 없기 때문 |
 | 전환 조건 | 사람이 `./gradlew spotlessApply` 단독 커밋을 승인하면 `enforceCheck = true` 로 전환 (→ D5) |
 
-7단계에서 실제로 추가하고 `spotlessCheck` 를 실행한 결과는 [current-state.md §7.3](./current-state.md#73-포맷-검사-spotless).
+7단계에서 실제로 추가하고 `spotlessCheck` 를 실행한 결과는 [current-state.md §7.3](../context/current-state.md#73-포맷-검사-spotless).
 
 ---
 

@@ -11,7 +11,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.stereotype.Service;
 
-/** 모듈 내부 레이어 규칙 R4 (docs/ai/architecture-proposal.md §5). */
+/** 모듈 내부 레이어 규칙 R4 (docs/ai/proposals/architecture-proposal.md §5). */
 class LayerArchitectureTest {
 
     @Test

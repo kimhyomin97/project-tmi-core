@@ -8,7 +8,7 @@ import java.util.Optional;
 
 /**
  * 아키텍처 테스트 공용 — 운영 코드(src/main)만 한 번 import 해서 재사용한다.
- * 모듈 = {@code com.tmi.core} 의 직속 하위 패키지 (docs/ai/architecture-proposal.md 선택지 B).
+ * 모듈 = {@code com.tmi.core} 의 직속 하위 패키지 (docs/ai/proposals/architecture-proposal.md 선택지 B).
  */
 final class ArchitectureClasses {
 

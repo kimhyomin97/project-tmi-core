@@ -1,6 +1,6 @@
 # AI 컨텍스트·문서 구조 설계
 
-> 상태: **제안 — 미확정**. §7 의 결정 4건을 정하면 §8 순서대로 적용한다.
+> 상태: **적용 중** — 결정 E1~E4 는 [../decisions/0001-context-structure.md](../decisions/0001-context-structure.md). 진행: [../plans/active/context-structure.md](../plans/active/context-structure.md)
 > 조사일 2026-10-13. 근거는 각 행의 출처 번호 → §9. 모든 출처는 원문을 직접 열어 확인했다. 예외는 §9 에 "미확인" 으로 표시했다.
 > 목적: 이 저장소에서 Claude Code 같은 코딩 에이전트가 **필요한 것만, 필요할 때** 읽도록 문서와 설정을 배치한다.
 
@@ -80,7 +80,8 @@ docs/
 │   │   ├── current-state.md  #     (이동) 코드 현황·결함·ArchUnit 위반
 │   │   └── research.md       #     (이동) 외부 근거
 │   ├── proposals/            #   결정 전 제안서
-│   │   ├── architecture.md · conventions.md · ai-workflow.md · context-structure.md (이 문서)
+│   │   ├── architecture-proposal.md · conventions-proposal.md · ai-workflow.md · context-structure-design.md (이 문서)
+│   │   ├── examples/         #     구조 제안 예시 코드 (빌드 대상 아님)
 │   │   └── decisions-needed.md
 │   ├── decisions/            #   결정된 것 (ADR, 짧게). NNNN-제목.md
 │   ├── plans/
@@ -89,6 +90,7 @@ docs/
 │   ├── feature_list.json     #   루프 상태 (JSON — passes 만 에이전트가 수정)
 │   ├── progress.md           #   세션별 진행 메모 (자유 서술, 최신이 위)
 │   ├── blockers.md           #   환경 문제와 우회
+│   ├── reviews/              #   독립 리뷰 기록 (<id>-round-<N>.md, 필요할 때 생성)
 │   └── archive/
 │       └── 2026-10-ai-dev-prep/   # TASK.md, checklist.json, reviews/, pr-body.md, wip-snapshot.patch, examples/
 └── study/                    # 사용자 학습 노트 (변경 없음)                              [커밋]
@@ -185,12 +187,13 @@ docs/
 
 | 현재 | 이동 후 | 이유 |
 |---|---|---|
-| `docs/ai/current-state.md` | `docs/ai/context/current-state.md` | 오래 가는 사실 |
-| `docs/ai/research.md` | `docs/ai/context/research.md` | 〃 |
-| `docs/ai/architecture-proposal.md` 외 제안서 3개 | `docs/ai/proposals/` | 결정 전 |
-| `docs/ai/decisions-needed.md` | `docs/ai/proposals/decisions-needed.md` | 〃 |
+| `docs/ai/context/current-state.md` | `docs/ai/context/current-state.md` | 오래 가는 사실 |
+| `docs/ai/context/research.md` | `docs/ai/context/research.md` | 〃 |
+| `docs/ai/proposals/architecture-proposal.md` 외 제안서 3개 (이름 유지) | `docs/ai/proposals/` | 결정 전. 본문에 파일 이름으로 언급된 곳이 많아 이름은 바꾸지 않는다 |
+| `docs/ai/proposals/decisions-needed.md` | `docs/ai/proposals/decisions-needed.md` | 〃 |
 | `docs/ai/feature_list.example.json` | `docs/ai/feature_list.json` (D12 결정 후 복사) | 실사용 |
-| `docs/ai/TASK.md`, `checklist.json`, `pr-body.md`, `wip-snapshot.patch`, `reviews/`, `examples/` | `docs/ai/archive/2026-10-ai-dev-prep/` | 끝난 작업 기록. examples 는 D1 결정 후 보관 |
+| `docs/ai/archive/2026-10-ai-dev-prep/TASK.md`, `checklist.json`, `pr-body.md`, `wip-snapshot.patch`, `reviews/` | `docs/ai/archive/2026-10-ai-dev-prep/` | 끝난 작업 기록 |
+| `docs/ai/proposals/examples/` | `docs/ai/proposals/examples/` | 구조 제안의 부속. D1 결정 후 보관 |
 | `.claude/hooks/check-done.sh` + settings 의 Stop hook | 제거 → `check-feature.sh` 로 교체 | 끝난 작업용 게이트 (C3) |
 | `CLAUDE.md` "학습 노트" 절 | `.claude/skills/study-note/SKILL.md` | 절차 |
 | `CLAUDE.md` 테스트·영속성·외부 호출 상세 | `.claude/rules/*.md` | 경로 한정 |

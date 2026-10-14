@@ -1,14 +1,14 @@
 # final-consistency 리뷰 — Round 1
 
 > 대상 커밋: `01898ba` (전용 worktree `scratchpad/wt-final-consistency`, detached HEAD)
-> 직접 평가 대상: `docs/ai/research.md`, `docs/ai/decisions-needed.md`, `/CLAUDE.md`, `src/test/java/com/tmi/core/architecture/*.java`, `docs/ai/blockers.md`. 다른 docs/ai 문서·docs/public·src/main 은 교차 확인용으로 읽었다.
+> 직접 평가 대상: `docs/ai/context/research.md`, `docs/ai/proposals/decisions-needed.md`, `/CLAUDE.md`, `src/test/java/com/tmi/core/architecture/*.java`, `docs/ai/blockers.md`. 다른 docs/ai 문서·docs/public·src/main 은 교차 확인용으로 읽었다.
 > 검증 방법:
 > - [실행] worktree 에서 `bash ./gradlew build --no-daemon` → **BUILD SUCCESSFUL** (CoreApplicationTests 1 통과, Layer 2 통과, Convention 3·Module 3 skip)
 > - [실행] `bash ./gradlew test --tests 'com.tmi.core.architecture.*'` → 8개 실행, skip 6. CLAUDE.md 명령 동작 확인
 > - [실행] feature_list 의 메서드 단위 verify 형식 `--tests '*ConventionArchitectureTest.r7_*' && grep -q 'skipped="0"' …` → XML 이 r7 1건만 담고(`tests="1" skipped="1"`) 이전 실행 결과는 남지 않음, grep 이 rc=1 로 정확히 실패 (현재 @Disabled 이므로 의도대로)
 > - [실행] `bash ./gradlew spotlessCheck` → 실패, "Violations also present in 29 other files" (CLAUDE.md "기존 코드 위반 있음" 과 일치)
 > - [실행] `docker info` → `failed to connect to the docker API` (데몬 없음)
-> - [실행] `git apply --check docs/ai/wip-snapshot.patch` 통과 (5파일), `/home/user/repo` 작업 트리 clean, `git stash list` 에 `stash@{0}` 존재, `~/.gradle/init.d/mirror.gradle` 존재, PostgreSQL 16 이 `/var/tmp/pgdata -p 15432` 로 기동 중
+> - [실행] `git apply --check docs/ai/archive/2026-10-ai-dev-prep/wip-snapshot.patch` 통과 (5파일), `/home/user/repo` 작업 트리 clean, `git stash list` 에 `stash@{0}` 존재, `~/.gradle/init.d/mirror.gradle` 존재, PostgreSQL 16 이 `/var/tmp/pgdata -p 15432` 로 기동 중
 > - [정적] 인용 절 번호 전수 대조: decisions-needed·CLAUDE.md·ArchUnit 주석이 인용하는 current-state / conventions / architecture-proposal / ai-workflow / blockers / docs/public 절, 다른 문서가 인용하는 research §0·§3.1·§3.2·§4.2·§5·§5.2·§5.3·§6.1·§6.3·§7·§8·§9
 
 ## 점수

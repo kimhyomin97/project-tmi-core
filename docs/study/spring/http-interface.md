@@ -66,4 +66,4 @@ ArchUnit 규칙 R7(`ConventionArchitectureTest`)이 "HTTP Interface 메서드의
 ## 더 읽을거리
 
 - Spring Framework — HTTP Interface: https://docs.spring.io/spring-framework/reference/integration/rest-clients.html#rest-http-interface
-- 이 저장소의 근거: `docs/ai/current-state.md` F1, §7.2 P8
+- 이 저장소의 근거: `docs/ai/context/current-state.md` F1, §7.2 P8

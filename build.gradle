@@ -36,7 +36,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-validation-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-	// 아키텍처 규칙 검증 (docs/ai/architecture-proposal.md §5). JUnit 엔진 대신 core 만 사용 — 규칙은 일반 @Test 에서 check()
+	// 아키텍처 규칙 검증 (docs/ai/proposals/architecture-proposal.md §5). JUnit 엔진 대신 core 만 사용 — 규칙은 일반 @Test 에서 check()
 	testImplementation 'com.tngtech.archunit:archunit:1.5.1'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0'
 }
@@ -45,9 +45,9 @@ tasks.named('test') {
 	useJUnitPlatform()
 }
 
-// 포맷 검사 (docs/ai/conventions-proposal.md §7).
+// 포맷 검사 (docs/ai/proposals/conventions-proposal.md §7).
 // 기존 src/main 은 이 작업 범위에서 수정할 수 없어 아직 포맷되지 않았다 → check/build 에 묶지 않는다 (enforceCheck = false).
-// 수동 실행: bash ./gradlew spotlessCheck / spotlessApply. 전환 조건은 docs/ai/decisions-needed.md D5.
+// 수동 실행: bash ./gradlew spotlessCheck / spotlessApply. 전환 조건은 docs/ai/proposals/decisions-needed.md D5.
 spotless {
 	enforceCheck = false
 	java {

@@ -1,6 +1,6 @@
 # conventions-proposal 리뷰 — Round 4
 
-> 대상: `docs/ai/conventions-proposal.md` @ `01898ba`. Round 3 이후 문서 변경은 `c577977`·`da98b42`·`01898ba` 이며, `83f7b92..01898ba` diff 로 확인했다. 코드 블록의 실행 코드는 바뀌지 않았고 주석·서술만 바뀌었다(§2.2 주석 1줄, §2.4 주석 1줄과 예외 규칙 bullet, §4.3 머리말·주석·bullet).
+> 대상: `docs/ai/proposals/conventions-proposal.md` @ `01898ba`. Round 3 이후 문서 변경은 `c577977`·`da98b42`·`01898ba` 이며, `83f7b92..01898ba` diff 로 확인했다. 코드 블록의 실행 코드는 바뀌지 않았고 주석·서술만 바뀌었다(§2.2 주석 1줄, §2.4 주석 1줄과 예외 규칙 bullet, §4.3 머리말·주석·bullet).
 > 검증 방법: 전용 worktree(`scratchpad/wt-conventions-proposal`, `--detach 01898ba`)를 만들어 `bash ./gradlew test --no-daemon --offline` 로 실행했다. 실행 뒤 worktree 는 제거했고, `/home/user/repo` 에서는 이 파일만 만들었다.
 > - (a) worktree `src/main` 에 문서 After 를 **문서에서 그대로 추출해** 적용했다.
 >   - §2.2 `GlobalExceptionHandler`: `:147-219` 를 그대로 쓰고, `:222` 의 import 와 기존 import 를 더했다.

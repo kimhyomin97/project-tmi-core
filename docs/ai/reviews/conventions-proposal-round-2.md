@@ -1,6 +1,6 @@
 # conventions-proposal 리뷰 — Round 2
 
-> 대상: `docs/ai/conventions-proposal.md` @ `3e136c6`. 이 커밋의 문서는 `18eea46` 과 같고, Round 1 반영은 `38a37e8`, `18eea46` 은 §2.4·§6.2 의 timeout 서술만 바꿨다.
+> 대상: `docs/ai/proposals/conventions-proposal.md` @ `3e136c6`. 이 커밋의 문서는 `18eea46` 과 같고, Round 1 반영은 `38a37e8`, `18eea46` 은 §2.4·§6.2 의 timeout 서술만 바꿨다.
 > 검증 방법: 전용 worktree(`scratchpad/wt-conventions-proposal`, `--detach 3e136c6`)에서 `bash ./gradlew test --no-daemon --offline` 로 실행했다. 검증이 끝난 뒤 worktree 는 제거했다. `/home/user/repo` 에서는 이 파일만 만들었다.
 > - (a) worktree `src/main` 에 문서 After 를 **글자 그대로** 넣었다. §2.3 `BaseException` 은 4개 생성자 위임과 `logMessage` 삭제, §2.2 `GlobalExceptionHandler` 는 commit 검사와 500 속성 포함, §2.1 설정 2줄, §2.5 `@RequestBody` 를 적용했다.
 > - (b) `@WebMvcTest({SentenceController, AnswerController, ProbeController})` + `OutputCaptureExtension` + `Locale.setDefault(KOREA)` 로 16개 요청을 실행했다. `ProbeController` 는 테스트 전용이며 500 표준 예외, commit 된 응답, `AsyncRequestTimeoutException` 을 만든다.

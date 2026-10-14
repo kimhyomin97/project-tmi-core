@@ -1,6 +1,6 @@
 # conventions-proposal 리뷰 — Round 3
 
-> 대상: `docs/ai/conventions-proposal.md` @ `83f7b92`. 이 커밋의 문서는 Round 2 반영 커밋 `fc49d18` 과 같다(`3e136c6..83f7b92` diff 에서 확인).
+> 대상: `docs/ai/proposals/conventions-proposal.md` @ `83f7b92`. 이 커밋의 문서는 Round 2 반영 커밋 `fc49d18` 과 같다(`3e136c6..83f7b92` diff 에서 확인).
 > 검증 방법: 전용 worktree(`scratchpad/wt-conventions-proposal`, `--detach 83f7b92`)에서 `bash ./gradlew test --no-daemon --offline` 로 실행했다. 끝난 뒤 worktree 는 제거했다. `/home/user/repo` 에서는 이 파일만 만들었다.
 > - (a) worktree `src/main` 에 문서 After 를 적용했다. §2.2 `GlobalExceptionHandler` 는 코드 블록을 **글자 그대로** 쓰고 `:220` 의 import 만 더했다. 여기에는 이번에 추가된 commit WARN 이 들어 있다. §2.3 `BaseException` 생성자 4개 위임과 `logMessage` 삭제, §2.1 설정 2줄, §2.5 `@RequestBody` 도 적용했다.
 > - (b) `@WebMvcTest(AnswerController)` 에 테스트 전용 `ProbeController` 를 붙이고 `OutputCaptureExtension` 으로 실행했다. 시나리오는 commit 된 응답(표준 예외 / `BaseException`), 깨진 JSON, 빈 body, text/plain, DELETE 다.

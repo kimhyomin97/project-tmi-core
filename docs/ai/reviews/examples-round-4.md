@@ -1,6 +1,6 @@
 # examples 리뷰 — Round 4
 
-> **대상**: `docs/ai/examples/` 전체(25파일, `git ls-files` = `find` = 25). 기준 커밋은 `01898ba` 다. 대조 문서(`architecture-proposal.md`, `decisions-needed.md`, `conventions-proposal.md`, `ai-workflow.md`, `feature_list.example.json`)와 `src/main` 도 `01898ba` 에서 읽었다. 이전 라운드는 `reviews/examples-round-1~3.md` 다.
+> **대상**: `docs/ai/proposals/examples/` 전체(25파일, `git ls-files` = `find` = 25). 기준 커밋은 `01898ba` 다. 대조 문서(`architecture-proposal.md`, `decisions-needed.md`, `conventions-proposal.md`, `ai-workflow.md`, `feature_list.example.json`)와 `src/main` 도 `01898ba` 에서 읽었다. 이전 라운드는 `reviews/examples-round-1~3.md` 다.
 >
 > **검증 방법**: 전용 worktree 4개(`wt-examples` 읽기용, `-a`, `-b`, `-c` 실행용)를 `01898ba` 에서 만들었고, 리뷰 후 모두 삭제했다. DB 는 SELECT 만 했다.
 > 1. **A′·B 이식**: README §3 표대로 복사했다. `RestClientConfig` 는 삭제했고, `similarity.timeout-ms` 는 `connect-timeout=1s`·`read-timeout=2s` 로 바꿨다. B 는 추가로 `infra/**` 를 삭제하고 `SimilarityException` 을 `similarity.exception` 으로 옮겼다. ArchUnit 의 `@Disabled` 를 모두 풀고 `build`(B)·`test`(A′) 를 `-i` 로 돌렸다.
