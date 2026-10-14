@@ -18,7 +18,9 @@
 | [plans/active/](plans/active/) · [plans/completed/](plans/completed/) | 현행 | 기능·리팩터링별 실행 계획 |
 | [blockers.md](blockers.md) | 현행 | 환경 문제와 우회 방법 |
 | [reviews/](reviews/) · [checklist.json](checklist.json) | 보관 예정 | PR #1 작업의 리뷰 기록·체크리스트. 옛 hook 제거 후 archive 로 이동 |
-| [feature_list.example.json](feature_list.example.json) | 제안 | 루프 작업 목록 초안 |
+| [feature_list.json](feature_list.json) | 현행 | 루프 작업 목록. 에이전트는 `passes`·`blocked`·`awaiting_human` 만 수정 (ai-workflow §4.1) |
+| [progress.md](progress.md) | 현행 | 세션별 진행 기록 (추가만) |
+| [feature_list.example.json](feature_list.example.json) | 보관 예정 | 초안. `feature_list.json` 과 같은 내용 |
 | [archive/](archive/) | 보관 | 끝난 작업 기록. 현행 규칙으로 읽지 않는다 |
 
 규칙

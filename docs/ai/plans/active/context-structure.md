@@ -23,7 +23,7 @@
 
 - [x] 2026-10-14 단계 1: 재배치·색인·링크 검사 스크립트. 링크 검사 0건(보관·팀 문서 제외), `bash ./gradlew build` 성공 (테스트 9: 통과 3, `@Disabled` 6)
 - [x] 2026-10-14 단계 2: `CLAUDE.md` 75 → 60줄 (경로별 규칙·절차를 분리), `.claude/rules/` testing·persistence·external-client, skill `study-note`·`new-error-type`. 링크 검사 0건, frontmatter YAML 파싱 확인. **로드 동작(경로가 맞을 때만 rules 로드)은 다음 새 세션에서 `/memory` 로 확인해야 한다** — 이번 세션은 시작할 때 이 파일들이 없었다
-- [ ] 단계 3
+- [x] 2026-10-14 단계 3: `docs/ai/feature_list.json`(초안 복사), `docs/ai/progress.md`, `scripts/init.sh`, skill `feature-item`, hook 스크립트 `.claude/hooks/session-base.sh`·`check-feature.sh` (progress 경로만 `progress.md` 로 바꿈). 임시 저장소에서 hook 시나리오 5개 실행: 변경 없음 통과 / 기록 없는 passes=true 차단 / 기록 후 통과 / title 변경 차단 / 문자열 "true" 차단. `bash scripts/init.sh` rc=0 (compile OK, docker 없음, spotless 위반 정보). **hook 은 settings.json 등록 전이라 아직 동작하지 않는다**
 - [ ] 단계 4
 
 ## 사람이 할 일 (에이전트 권한 밖)
@@ -33,6 +33,14 @@
    git rm .claude/hooks/check-done.sh
    printf '{}\n' > .claude/settings.json
    ```
+   위 두 줄 대신, 새 hook 등록까지 한 번에 하려면 `.claude/settings.json` 을 이 내용으로 바꾼다 (ai-workflow §4.6):
+   ```json
+   { "hooks": {
+     "SessionStart": [ { "matcher": "startup", "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-base.sh" } ] } ],
+     "Stop":         [ { "hooks": [ { "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-feature.sh" } ] } ]
+   } }
+   ```
+   두 hook 은 클라우드 세션(`CLAUDE_CODE_REMOTE=true`)에서만 동작한다. 등록하면 다음 세션부터 `docs/ai/progress.md` 에 `session-base` 줄이 생기고, Stop 시 verify 기록을 검사한다.
 2. 1번 후 `docs/ai/checklist.json` 과 `docs/ai/reviews/` 를 `docs/ai/archive/2026-10-ai-dev-prep/` 로 옮긴다 (지금은 옛 hook 이 이 경로를 읽어서 남겨 뒀다). 에이전트에게 "체크리스트·리뷰 보관으로 옮겨" 라고 하면 된다.
 
 ## 발견·결정 로그

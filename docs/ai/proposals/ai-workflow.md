@@ -65,7 +65,7 @@
 flowchart TD
     D[H0 사람: decisions-needed 결정 + 항목 승인] --> S[세션 시작: 항목 선택 §4.4]
     S -->|반려된 계획 있음| PR[계획 수정 → 세션 종료]
-    S -->|gate=plan, 의존 충족, 계획 없음| P[계획 작성 → docs/ai/plans/ID.md, 세션 종료]
+    S -->|gate=plan, 의존 충족, 계획 없음| P[계획 작성 → docs/ai/plans/active/ID.md, 세션 종료]
     PR --> H1
     P --> H1{H1 사람: 계획 검토}
     H1 -->|승인: plan_approved 에 날짜·sha| S
@@ -84,9 +84,9 @@ flowchart TD
 
 | 단계 | 에이전트가 남기는 것 | 위치 |
 |---|---|---|
-| 계획 | 변경 예정 파일 목록, 추가할 테스트 이름, 영향받는 문서(05/06/03) | `docs/ai/plans/<id>.md` |
+| 계획 | 변경 예정 파일 목록, 추가할 테스트 이름, 영향받는 문서(05/06/03) | `docs/ai/plans/active/<id>.md` |
 | 구현 | **실패하는 테스트 커밋 → 수정 커밋** 순서 (conventions-proposal.md §6.1 T2) | git |
-| 검증 | §4.4 의 고정 형식 `verify: <id> OK` 줄 + 실행한 명령과 출력 요약 (성공 주장 대신 증거 — [F] best-practices "Have Claude show evidence rather than asserting success") | `docs/ai/claude-progress.md` |
+| 검증 | §4.4 의 고정 형식 `verify: <id> OK` 줄 + 실행한 명령과 출력 요약 (성공 주장 대신 증거 — [F] best-practices "Have Claude show evidence rather than asserting success") | `docs/ai/progress.md` |
 | 리뷰 | 지적 사항 | `docs/ai/reviews/<id>-round-<N>.md` (이전 작업의 리뷰는 `docs/ai/reviews/`) |
 
 ### 2.2 사람 확인 지점 (H0~H3)
@@ -94,7 +94,7 @@ flowchart TD
 | ID | 시점 | 사람이 보는 것 | 소요 (estimated) | 기록 방법 |
 |---|---|---|---|---|
 | **H0** | 루프 시작 전 | decisions-needed.md 결정, `feature_list.json` 항목 승인. D5 가 (a) 가 아니면 `SIG-2` 를 `items` 에서 빼고 `FIX-F3` 의 `depends_on` 에서도 지운다. hook 등록(§4.6) 확인 | 30분 | 항목을 `items` 에 넣는 커밋 |
-| **H1** | `human_gate: "plan"` 항목의 구현 전 | `docs/ai/plans/<id>.md` 의 변경 파일 목록·계약 변경 여부 | 항목당 5분 | **사람이** `plan_approved` 에 날짜 또는 커밋 sha (승인) / `"rejected: <사유>"` (반려 — 재반려 시 계획 파일의 `Status: revised` 줄 삭제) |
+| **H1** | `human_gate: "plan"` 항목의 구현 전 | `docs/ai/plans/active/<id>.md` 의 변경 파일 목록·계약 변경 여부 | 항목당 5분 | **사람이** `plan_approved` 에 날짜 또는 커밋 sha (승인) / `"rejected: <사유>"` (반려 — 재반려 시 계획 파일의 `Status: revised` 줄 삭제) |
 | **H2** | PR 머지 | diff, 리뷰 파일, verify 출력. `verify: ["human"]` 항목은 판정 후 **사람이** `passes: true` (변경 요청이면 `awaiting_human: false`) | PR당 10~20분 | PR 승인 + feature_list 커밋 |
 | **H3** | `blocked` 발생 시 | blockers.md 의 원인·시도 내역 | 수시 | `blocked` 를 `null` 로 되돌리거나 항목 수정 |
 
@@ -153,11 +153,11 @@ flowchart TD
 | 파일 | 역할 | 수정 권한 |
 |---|---|---|
 | `docs/ai/feature_list.json` | 작업 항목과 완료 여부 | 사람: 그 외 전부. 에이전트: **`passes`, `blocked`, `awaiting_human` 만** (원문은 `passes` 만 — 나머지 둘은 이 저장소 확장). 사람 판정 항목(`verify: ["human"]`)의 `passes` 는 사람만 |
-| `docs/ai/plans/<id>.md` | gate=plan 항목의 계획 | 에이전트 작성, 사람 검토 |
-| `docs/ai/claude-progress.md` | 세션별 진행 로그 (append-only). 원문은 `claude-progress.txt` — 표·코드 블록을 쓰기 위해 `.md` | 에이전트 (`session-base` 줄은 hook) |
-| `scripts/init.sh` | 기동 + 기본 검증 (§4.3) | 사람 승인 후 추가 (이번 작업 범위 밖이라 미생성) |
-| `.claude/hooks/session-base.sh` | SessionStart hook (matcher `startup`) — `git pull --ff-only` 후 세션 시작 커밋·session_id 를 `$(git rev-parse --git-dir)/claude-session-base` 에 기록 (§4.6) | 사람 승인 후 추가 |
-| `.claude/hooks/check-feature.sh` | Stop hook 게이트 (§4.6) | 사람 승인 후 추가 |
+| `docs/ai/plans/active/<id>.md` | gate=plan 항목의 계획 | 에이전트 작성, 사람 검토 |
+| `docs/ai/progress.md` | 세션별 진행 로그 (append-only). 원문은 `claude-progress.txt` — 표·코드 블록을 쓰기 위해 `.md` | 에이전트 (`session-base` 줄은 hook) |
+| `scripts/init.sh` | 기동 + 기본 검증 (§4.3) | 추가됨 (2026-10-14) |
+| `.claude/hooks/session-base.sh` | SessionStart hook (matcher `startup`) — `git pull --ff-only` 후 세션 시작 커밋·session_id 를 `$(git rev-parse --git-dir)/claude-session-base` 에 기록 (§4.6) | 스크립트 추가됨. **settings.json 등록은 사람** |
+| `.claude/hooks/check-feature.sh` | Stop hook 게이트 (§4.6) | 스크립트 추가됨. **settings.json 등록은 사람** |
 | `.claude/hooks/check-done.sh` | 이 문서 세트 작성용 게이트 (`checklist.json`) — **feature 루프 시작 시 settings.json 에서 내린다** | 사람 |
 | `CLAUDE.md` | 세션 시작 시 자동 로드되는 규칙 요약 | 사람 승인 |
 
@@ -267,12 +267,12 @@ verify: <ID> OK                   ← 줄 전체가 정확히 이 형태. 목록
 
 **시작 (매 세션)**
 
-1. `git log --oneline -20` → `docs/ai/claude-progress.md` 마지막 블록 → `docs/ai/feature_list.json`
+1. `git log --oneline -20` → `docs/ai/progress.md` 마지막 블록 → `docs/ai/feature_list.json`
 2. `bash scripts/init.sh`. **실패하면 새 항목을 시작하지 않고** 깨진 원인부터 (직전 세션이 남긴 문제일 가능성)
 3. 항목 선택 — 아래 우선순위대로 배열 순서상 첫 번째 1개. 공통 제외 조건: `passes: true`, `blocked` 가 null 아님, `awaiting_human: true`, `requires` 를 이 환경이 충족하지 않음(예: Docker 없음 — init.sh 요약), `depends_on` 미충족
    0. `blocked == "changes-requested"` 이고 원격에 `ai/<id>` 가 있는 항목 → 그 브랜치에서 수정 (위 브랜치 표)
    1. `plan_approved` 가 `"rejected: …"` 이고 계획 파일 첫 줄이 `Status: revised` **가 아닌** 항목 → 계획을 고치고 첫 줄에 `Status: revised <날짜>` 를 쓰고 세션 종료 (H1 재요청). 첫 줄이 이미 `Status: revised` 면 사람 검토 대기 → 건너뜀. 사람은 다시 반려할 때 이 줄을 지운다
-   2. `human_gate: plan` + `plan_approved: null` + `docs/ai/plans/<id>.md` 없음 → **계획만 작성하고 세션 종료** (H1 대기가 뒤로 밀리지 않게 구현보다 우선)
+   2. `human_gate: plan` + `plan_approved: null` + `docs/ai/plans/active/<id>.md` 없음 → **계획만 작성하고 세션 종료** (H1 대기가 뒤로 밀리지 않게 구현보다 우선)
    3. `human_gate: none`, 또는 `plan_approved` 에 날짜·sha 가 있는 항목 → 구현
    4. 해당 없음 → progress 에 "대기 중: <id 목록과 이유>" 를 쓰고 종료
 
@@ -280,11 +280,11 @@ verify: <ID> OK                   ← 줄 전체가 정확히 이 형태. 목록
 
 | 세션 종류 | 브랜치 | 선택 규칙과의 관계 |
 |---|---|---|
-| 계획 작성·수정 (선택 규칙 1·2) | 브랜치를 만들지 않고 `main` 에 `docs/ai/plans/<id>.md` 만 커밋 (PR 없음, H1 이 파일을 직접 검토) | 원격 브랜치가 생기지 않으므로 승인 후 구현 단계로 정상 진행 |
+| 계획 작성·수정 (선택 규칙 1·2) | 브랜치를 만들지 않고 `main` 에 `docs/ai/plans/active/<id>.md` 만 커밋 (PR 없음, H1 이 파일을 직접 검토) | 원격 브랜치가 생기지 않으므로 승인 후 구현 단계로 정상 진행 |
 | 구현 (선택 규칙 3) | `main` 에서 `ai/<id>` 생성 → PR | 원격에 `ai/<id>` 가 있고 그 항목의 `blocked` 가 null 이면 PR 머지 대기 → 건너뜀 |
 | H2 변경 요청 | 사람이 PR 에 코멘트 + `blocked: "changes-requested"` 기록 | 선택 규칙 0번: `blocked == "changes-requested"` 이고 원격 `ai/<id>` 가 있으면 **그 브랜치를 체크아웃해 수정** (blocked 개수에서 제외, 수정 후 에이전트가 `blocked: null`) |
 
-- `claude-progress.md` 는 브랜치마다 append 되어 머지 시 충돌한다 (Round 4 [실행·리뷰]) → `.gitattributes` 에 `docs/ai/claude-progress.md merge=union` 추가를 권장 (이번 작업 범위 밖이라 미적용, H0 확인 항목). 세션 시작 시 SessionStart hook 이 `git pull --ff-only` 로 사람의 `plan_approved`·`passes` 변경을 먼저 받으므로 세션 중 pull 은 하지 않는다 (하면 hook 이 사람 전용 필드 변경으로 막는다).
+- `progress.md` 는 브랜치마다 append 되어 머지 시 충돌한다 (Round 4 [실행·리뷰]) → `.gitattributes` 에 `docs/ai/progress.md merge=union` 추가를 권장 (이번 작업 범위 밖이라 미적용, H0 확인 항목). 세션 시작 시 SessionStart hook 이 `git pull --ff-only` 로 사람의 `plan_approved`·`passes` 변경을 먼저 받으므로 세션 중 pull 은 하지 않는다 (하면 hook 이 사람 전용 필드 변경으로 막는다).
 
 **진행**
 
@@ -337,7 +337,7 @@ sid=$(jq -r '.session_id // "unknown"')
 git pull --ff-only --quiet 2>/dev/null || echo "session-base: git pull 실패 — 로컬 기준으로 진행" >&2
 gd=$(git rev-parse --git-dir)                                  # worktree 에서는 .git 이 파일이므로
 printf '%s %s\n' "$(git rev-parse HEAD)" "$sid" > "$gd/claude-session-base"
-printf '\nsession-base: %s\n' "$(cat "$gd/claude-session-base")" >> docs/ai/claude-progress.md
+printf '\nsession-base: %s\n' "$(cat "$gd/claude-session-base")" >> docs/ai/progress.md
 ```
 
 ```bash
@@ -347,7 +347,7 @@ printf '\nsession-base: %s\n' "$(cat "$gd/claude-session-base")" >> docs/ai/clau
 # 사람 전용 필드는 세션 시작 시점(base)에서 바뀌면 안 된다.
 [ "$CLAUDE_CODE_REMOTE" = "true" ] || exit 0
 cd "$CLAUDE_PROJECT_DIR" || exit 0
-f=docs/ai/feature_list.json; p=docs/ai/claude-progress.md
+f=docs/ai/feature_list.json; p=docs/ai/progress.md
 block() { echo "$1" >&2; exit 2; }
 # stop_hook_active 로 빠져나가지 않는다 — 막는 조건은 모두 에이전트가 해소할 수 있고,
 # 연속 차단은 Claude Code 내장 상한(연속 8회, 도구 호출 시 초기화)에 맡긴다 (ai-workflow.md §4.6).
