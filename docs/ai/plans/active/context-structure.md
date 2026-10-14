@@ -22,7 +22,7 @@
 ## 진행
 
 - [x] 2026-10-14 단계 1: 재배치·색인·링크 검사 스크립트. 링크 검사 0건(보관·팀 문서 제외), `bash ./gradlew build` 성공 (테스트 9: 통과 3, `@Disabled` 6)
-- [ ] 단계 2
+- [x] 2026-10-14 단계 2: `CLAUDE.md` 75 → 60줄 (경로별 규칙·절차를 분리), `.claude/rules/` testing·persistence·external-client, skill `study-note`·`new-error-type`. 링크 검사 0건, frontmatter YAML 파싱 확인. **로드 동작(경로가 맞을 때만 rules 로드)은 다음 새 세션에서 `/memory` 로 확인해야 한다** — 이번 세션은 시작할 때 이 파일들이 없었다
 - [ ] 단계 3
 - [ ] 단계 4
 
