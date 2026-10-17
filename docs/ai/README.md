@@ -13,7 +13,7 @@
 | [proposals/conventions-proposal.md](proposals/conventions-proposal.md) | 제안 | 네이밍·예외·DTO·트랜잭션·로깅·테스트 컨벤션 |
 | [proposals/ai-workflow.md](proposals/ai-workflow.md) | 제안 | 작업 단위, 사람 확인 지점, feature_list 루프, hook |
 | [proposals/context-structure-design.md](proposals/context-structure-design.md) | 적용 완료 | 이 디렉터리·`.claude/` 구조 설계 |
-| [proposals/deployment-design.md](proposals/deployment-design.md) | 결정 대기 | 클라우드 배포 설계 (OCI 무료 VM, GitHub Actions, AI 운영자 + 사람 승인 1회), 결정 DP0~DP10 |
+| [proposals/deployment-design.md](proposals/deployment-design.md) | 결정 대기 | 클라우드 배포 설계 (OCI 무료 VM, GitHub Actions, AI 운영자 + 사람 승인 1회), 결정 DP0~DP10 (리뷰 3회 반영) |
 | [reviews/](reviews/) | 참고 | 설계 문서 독립 리뷰 기록 (라운드별) |
 | [proposals/examples/](proposals/examples/) | 참고 | 답안 채점을 A′/B/C 로 재구성한 예시 (빌드 대상 아님) |
 | [decisions/](decisions/) | 현행 | 결정된 사항 (1건 = 1파일) |
